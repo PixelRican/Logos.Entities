@@ -101,15 +101,17 @@ namespace Monophyll.Entities
 
 		void ICollection.CopyTo(Array array, int index)
 		{
-			if (array != null && array.Rank != 1)
+            ArgumentNullException.ThrowIfNull(array, nameof(array));
+
+            if (array.Rank != 1)
 			{
 				throw new ArgumentException("Multi-dimensional arrays are not supported.");
 			}
 
 			try
-			{
-				CopyTo((Entity[])array!, index);
-			}
+            {
+				GetEntities().CopyTo(((Entity[])array).AsSpan(index));
+            }
 			catch (InvalidCastException)
 			{
 				throw new ArgumentException("Array is not of type Entity[].", nameof(array));
@@ -135,8 +137,7 @@ namespace Monophyll.Entities
 
 		public ReadOnlySpan<Entity> GetEntities()
 		{
-			return MemoryMarshal.CreateReadOnlySpan(
-				ref Unsafe.As<byte, Entity>(ref MemoryMarshal.GetArrayDataReference(m_data)), m_count);
+			return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, Entity>(ref m_data[0]), m_count);
 		}
 
 		public Enumerator GetEnumerator()

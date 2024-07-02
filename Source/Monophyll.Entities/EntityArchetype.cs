@@ -192,7 +192,7 @@ namespace Monophyll.Entities
 			return other == this
 				|| other != null
 				&& m_sequenceNumber == other.m_sequenceNumber
-				&& ((ReadOnlySpan<uint>)m_componentBits).SequenceEqual((ReadOnlySpan<uint>)other.m_componentBits);
+				&& ((ReadOnlySpan<uint>)m_componentBits).SequenceEqual(other.m_componentBits);
 		}
 
 		public override bool Equals(object? obj)
@@ -202,7 +202,7 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			HashCode hashCode = new();
+			HashCode hashCode = default;
 
 			for (int i = 0; i < m_componentBits.Length; i++)
 			{
