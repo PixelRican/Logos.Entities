@@ -1,20 +1,33 @@
-﻿namespace Monophyll.Entities.Test
+﻿using System;
+using System.Diagnostics;
+
+namespace Monophyll.Entities.Tests
 {
 	internal static class Program
 	{
 		public static void Main()
 		{
-			IUnitTest[] unitTests =
+			Stopwatch stopwatch = new();
+			ReadOnlySpan<IUnitTest> unitTests =
 			[
 				new ComponentTypeFactoryTest(),
 				new EntityArchetypeConstructorTest(),
+				new EntityArchetypeChunkPushPopTest(),
+				new EntityArchetypeChunkPushPopRangeTest(),
 				new ComponentBitEqualityComparerTest()
 			];
 
+			Console.WriteLine($"Running {unitTests.Length} test cases...\n");
+
 			foreach (IUnitTest testCase in unitTests)
 			{
+				stopwatch.Restart();
 				testCase.Run();
+				stopwatch.Stop();
+				Console.WriteLine($"{testCase.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
 			}
+
+			Console.WriteLine("\nNo errors detected.");
 		}
 	}
 }

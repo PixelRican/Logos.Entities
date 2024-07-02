@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Numerics;
 
 namespace Monophyll.Entities
 {
-	public readonly struct Entity : IEquatable<Entity>, IComparable<Entity>, IComparable
+	public readonly struct Entity : IEqualityOperators<Entity, Entity, bool>, IEquatable<Entity>, IComparable<Entity>, IComparable
 	{
 		private readonly int m_sequenceNumber;
 		private readonly int m_version;

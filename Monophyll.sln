@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monophyll.Entities", "Source\Monophyll.Entities\Monophyll.Entities.csproj", "{3D27C67C-CECB-4FFE-A45E-235A088ABDC9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monophyll.Entities", "Source\Monophyll.Entities\Monophyll.Entities.csproj", "{3D27C67C-CECB-4FFE-A45E-235A088ABDC9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{A0848C99-DA67-4808-9D79-FE351E2CFDA9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0F4B9182-4DA0-405F-A14A-023D9ABBE798}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monophyll.Entities.Tests", "Tests\Monophyll.Entities.Tests\Monophyll.Entities.Tests.csproj", "{7C4D7D32-1208-446E-94E7-2D284A054053}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Monophyll.Entities.Tests", "Tests\Monophyll.Entities.Tests\Monophyll.Entities.Tests.csproj", "{7C4D7D32-1208-446E-94E7-2D284A054053}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

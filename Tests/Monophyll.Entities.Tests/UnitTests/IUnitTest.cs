@@ -1,4 +1,4 @@
-﻿namespace Monophyll.Entities.Test
+﻿namespace Monophyll.Entities.Tests
 {
     internal interface IUnitTest
     {

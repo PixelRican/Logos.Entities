@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Monophyll.Entities.Test
+namespace Monophyll.Entities.Tests
 {
 	internal record struct Color(byte R, byte G, byte B, byte A)
 	{

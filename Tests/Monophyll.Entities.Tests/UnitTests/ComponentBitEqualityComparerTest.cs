@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using static Monophyll.Entities.ComponentType;
 
-namespace Monophyll.Entities.Test
+namespace Monophyll.Entities.Tests
 {
-	internal class ComponentBitEqualityComparerTest : IUnitTest
+	internal sealed class ComponentBitEqualityComparerTest : IUnitTest
 	{
 		public void Run()
 		{
@@ -15,17 +16,17 @@ namespace Monophyll.Entities.Test
 			Debug.Assert(dictionary.Count == 3);
 			Debug.Assert(dictionary.ContainsKey(ReadOnlyMemory<uint>.Empty));
 
-			buffer[0] = (1u << ComponentType.TypeOf<Position2D>().SequenceNumber) |
-						(1u << ComponentType.TypeOf<Rotation2D>().SequenceNumber) |
-						(1u << ComponentType.TypeOf<Scale2D>().SequenceNumber) |
-						(1u << ComponentType.TypeOf<Matrix3x2>().SequenceNumber);
+			buffer[0] = (1u << TypeOf<Position2D>().SequenceNumber) |
+						(1u << TypeOf<Rotation2D>().SequenceNumber) |
+						(1u << TypeOf<Scale2D>().SequenceNumber) |
+						(1u << TypeOf<Matrix3x2>().SequenceNumber);
 
 			Debug.Assert(dictionary.ContainsKey(buffer));
 
-			buffer[0] = (1u << ComponentType.TypeOf<Position3D>().SequenceNumber) |
-						(1u << ComponentType.TypeOf<Rotation3D>().SequenceNumber) |
-						(1u << ComponentType.TypeOf<Scale3D>().SequenceNumber) |
-						(1u << ComponentType.TypeOf<Matrix4x4>().SequenceNumber);
+			buffer[0] = (1u << TypeOf<Position3D>().SequenceNumber) |
+						(1u << TypeOf<Rotation3D>().SequenceNumber) |
+						(1u << TypeOf<Scale3D>().SequenceNumber) |
+						(1u << TypeOf<Matrix4x4>().SequenceNumber);
 
 			Debug.Assert(dictionary.ContainsKey(buffer));
 
@@ -38,25 +39,12 @@ namespace Monophyll.Entities.Test
 		{
 			Dictionary<ReadOnlyMemory<uint>, EntityArchetype> dictionary = new(3, ComponentBitEqualityComparer.Instance);
 			EntityArchetype archetype = EntityArchetype.Base;
-
 			dictionary.Add(archetype.ComponentBits.AsMemory(), archetype);
 
-			archetype = new([
-				ComponentType.TypeOf<Position2D>(),
-				ComponentType.TypeOf<Rotation2D>(),
-				ComponentType.TypeOf<Scale2D>(),
-				ComponentType.TypeOf<Matrix3x2>()
-			]);
-
+			archetype = new([TypeOf<Position2D>(), TypeOf<Rotation2D>(), TypeOf<Scale2D>(), TypeOf<Matrix3x2>()]);
 			dictionary.Add(archetype.ComponentBits.AsMemory(), archetype);
 
-			archetype = new([
-				ComponentType.TypeOf<Position3D>(),
-				ComponentType.TypeOf<Rotation3D>(),
-				ComponentType.TypeOf<Scale3D>(),
-				ComponentType.TypeOf<Matrix4x4>()
-			]);
-
+			archetype = new([TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Matrix4x4>()]);
 			dictionary.Add(archetype.ComponentBits.AsMemory(), archetype);
 			return dictionary;
 		}

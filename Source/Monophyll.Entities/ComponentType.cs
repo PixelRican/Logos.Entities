@@ -8,8 +8,6 @@ namespace Monophyll.Entities
 	public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
 	{
 		private const BindingFlags FieldBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-		private const int IsReferenceOrContainsReferencesFlag = 1 << 32;
-		private const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
 		private static int s_nextSequenceNumber = -1;
 
@@ -17,15 +15,11 @@ namespace Monophyll.Entities
 		private readonly int m_byteSize;
 		private readonly int m_sequenceNumber;
 
-		private ComponentType(Type type, int byteSize, int sequenceNumber, bool isReferenceOrContainsReferences)
+		private ComponentType(Type type, int byteSize, int sequenceNumber)
 		{
 			if (byteSize == 1 && type.GetFields(FieldBindingFlags).Length == 0)
 			{
 				byteSize = 0;
-			}
-			else if (isReferenceOrContainsReferences)
-			{
-				byteSize |= IsReferenceOrContainsReferencesFlag;
 			}
 
 			m_type = type;
@@ -40,7 +34,7 @@ namespace Monophyll.Entities
 
 		public int ByteSize
 		{
-			get => m_byteSize & RemoveFlagsBitMask;
+			get => m_byteSize;
 		}
 
 		public int SequenceNumber
@@ -48,14 +42,9 @@ namespace Monophyll.Entities
 			get => m_sequenceNumber;
 		}
 
-		public bool IsReferenceOrContainsReferences
+		public static ComponentType TypeOf<T>() where T : unmanaged
 		{
-			get => m_byteSize < 0;
-		}
-
-		public static ComponentType TypeOf<T>()
-		{
-			return RuntimeComponentType<T>.Instance;
+			return TypeLookup<T>.Value;
 		}
 
 		public int CompareTo(ComponentType? other)
@@ -104,14 +93,13 @@ namespace Monophyll.Entities
 
 		public override string ToString()
 		{
-			return $"ComponentType {{ Type = {m_type.Name} SequenceNumber = {m_sequenceNumber} }}";
+			return $"ComponentType {{ Type = {m_type.Name} ByteSize = {m_byteSize} SequenceNumber = {m_sequenceNumber} }}";
 		}
 
-		private static class RuntimeComponentType<T>
+		private static class TypeLookup<T> where T : unmanaged
 		{
-			public static readonly ComponentType Instance =
-				new(typeof(T), Unsafe.SizeOf<T>(), Interlocked.Increment(ref s_nextSequenceNumber),
-					RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+			public static readonly ComponentType Value =
+				new(typeof(T), Unsafe.SizeOf<T>(), Interlocked.Increment(ref s_nextSequenceNumber));
 		}
 	}
 }
