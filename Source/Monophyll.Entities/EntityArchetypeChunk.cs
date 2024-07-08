@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 
 namespace Monophyll.Entities
 {
@@ -12,6 +13,7 @@ namespace Monophyll.Entities
 		private readonly EntityArchetypeChunk? m_next;
 		private readonly EntityArchetype m_archetype;
 		private readonly byte[] m_data;
+		private readonly int m_capacity;
 		private int m_count;
 		private int m_version;
 
@@ -19,6 +21,7 @@ namespace Monophyll.Entities
 		{
 			m_archetype = archetype ?? throw new ArgumentNullException(nameof(archetype));
 			m_data = new byte[archetype.ChunkByteSize];
+			m_capacity = archetype.ChunkCapacity;
 		}
 
 		public EntityArchetypeChunk(EntityArchetypeChunk chunk)
@@ -26,6 +29,7 @@ namespace Monophyll.Entities
 			m_next = chunk ?? throw new ArgumentNullException(nameof(chunk));
 			m_archetype = chunk.m_archetype;
 			m_data = new byte[chunk.m_data.Length];
+			m_capacity = m_archetype.ChunkCapacity;
 		}
 
 		public EntityArchetypeChunk? Next
@@ -45,7 +49,7 @@ namespace Monophyll.Entities
 
 		public int Capacity
 		{
-			get => m_archetype.ChunkCapacity;
+			get => m_capacity;
 		}
 
 		public int Count
@@ -125,8 +129,8 @@ namespace Monophyll.Entities
 			int offset;
 
 			if (componentType.ByteSize == 0 ||
-				componentType.SequenceNumber >= componentOffsets.Length ||
-				(offset = componentOffsets[componentType.SequenceNumber]) == 0)
+				componentType.Id >= componentOffsets.Length ||
+				(offset = componentOffsets[componentType.Id]) == 0)
 			{
 				throw new ArgumentException(
 					$"The EntityArchetypeChunk does not store components of type {typeof(T).Name}.");
@@ -157,7 +161,7 @@ namespace Monophyll.Entities
 
 		public void Push(Entity item)
 		{
-			if (m_count >= m_archetype.ChunkCapacity)
+			if (m_count >= m_capacity)
 			{
 				throw new InvalidOperationException("The EntityArchetypeChunk is full.");
 			}
@@ -171,7 +175,7 @@ namespace Monophyll.Entities
 			for (int i = 0; i < componentTypes.Length; i++)
 			{
 				ComponentType componentType = componentTypes[i];
-				int offset = componentOffsets[componentType.SequenceNumber] + componentType.ByteSize * m_count;
+				int offset = componentOffsets[componentType.Id] + componentType.ByteSize * m_count;
 				Unsafe.InitBlock(ref Unsafe.Add(ref data, offset), 0, (uint)componentType.ByteSize);
 			}
 
@@ -181,7 +185,7 @@ namespace Monophyll.Entities
 
 		public bool TryPush(Entity item)
 		{
-			if (m_count >= m_archetype.ChunkCapacity)
+			if (m_count >= m_capacity)
 			{
 				return false;
 			}
@@ -195,7 +199,7 @@ namespace Monophyll.Entities
 			for (int i = 0; i < componentTypes.Length; i++)
 			{
 				ComponentType componentType = componentTypes[i];
-				int offset = componentOffsets[componentType.SequenceNumber] + componentType.ByteSize * m_count;
+				int offset = componentOffsets[componentType.Id] + componentType.ByteSize * m_count;
 				Unsafe.InitBlock(ref Unsafe.Add(ref data, offset), 0, (uint)componentType.ByteSize);
 			}
 
@@ -226,7 +230,7 @@ namespace Monophyll.Entities
 					"Range exceeds the bounds of the other EntityArchetypeChunk.");
 			}
 
-			if (m_archetype.ChunkCapacity - m_count < count)
+			if (m_capacity - m_count < count)
 			{
 				throw new ArgumentOutOfRangeException(nameof(count), count,
 					"Range exceeds the capacity of the EntityArchetypeChunk.");
@@ -245,20 +249,19 @@ namespace Monophyll.Entities
 			for (int i = 0; i < componentTypes.Length; i++)
 			{
 				ComponentType componentType = componentTypes[i];
-				int offset = componentOffsets[componentType.SequenceNumber];
+				int offset = componentOffsets[componentType.Id] + m_count * componentType.ByteSize;
 				int otherOffset;
 
-				if (componentType.SequenceNumber < otherComponentOffsets.Length &&
-					(otherOffset = otherComponentOffsets[componentType.SequenceNumber]) != 0)
+				if (componentType.Id < otherComponentOffsets.Length &&
+					(otherOffset = otherComponentOffsets[componentType.Id]) != 0)
 				{
-					Unsafe.CopyBlock(ref Unsafe.Add(ref data, offset + m_count * componentType.ByteSize),
+					Unsafe.CopyBlock(ref Unsafe.Add(ref data, offset),
 						ref Unsafe.Add(ref otherData, otherOffset + chunkIndex * componentType.ByteSize),
 						(uint)(count * componentType.ByteSize));
 				}
 				else
 				{
-					Unsafe.InitBlock(ref Unsafe.Add(ref data, offset + m_count * componentType.ByteSize),
-						0, (uint)(count * componentType.ByteSize));
+					Unsafe.InitBlock(ref Unsafe.Add(ref data, offset), 0, (uint)(count * componentType.ByteSize));
 				}
 			}
 
@@ -333,20 +336,19 @@ namespace Monophyll.Entities
 			for (int i = 0; i < otherComponentTypes.Length; i++)
 			{
 				ComponentType componentType = otherComponentTypes[i];
-				int otherOffset = otherComponentOffsets[componentType.SequenceNumber];
+				int otherOffset = otherComponentOffsets[componentType.Id] + chunkIndex * componentType.ByteSize;
 				int offset;
 
-				if (componentType.SequenceNumber < componentOffsets.Length &&
-					(offset = componentOffsets[componentType.SequenceNumber]) != 0)
+				if (componentType.Id < componentOffsets.Length &&
+					(offset = componentOffsets[componentType.Id]) != 0)
 				{
-					Unsafe.CopyBlock(ref Unsafe.Add(ref otherData, otherOffset + chunkIndex * componentType.ByteSize),
+					Unsafe.CopyBlock(ref Unsafe.Add(ref otherData, otherOffset),
 						ref Unsafe.Add(ref data, offset + copyIndex * componentType.ByteSize),
 						(uint)(count * componentType.ByteSize));
 				}
 				else
 				{
-					Unsafe.InitBlock(ref Unsafe.Add(ref otherData, otherOffset + chunkIndex * componentType.ByteSize),
-						0, (uint)(count * componentType.ByteSize));
+					Unsafe.InitBlock(ref Unsafe.Add(ref otherData, otherOffset), 0, (uint)(count * componentType.ByteSize));
 				}
 			}
 

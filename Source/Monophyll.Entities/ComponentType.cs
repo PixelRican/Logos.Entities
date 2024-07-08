@@ -13,9 +13,9 @@ namespace Monophyll.Entities
 
 		private readonly Type m_type;
 		private readonly int m_byteSize;
-		private readonly int m_sequenceNumber;
+		private readonly int m_id;
 
-		private ComponentType(Type type, int byteSize, int sequenceNumber)
+		private ComponentType(Type type, int byteSize, int id)
 		{
 			if (byteSize == 1 && type.GetFields(FieldBindingFlags).Length == 0)
 			{
@@ -24,7 +24,7 @@ namespace Monophyll.Entities
 
 			m_type = type;
 			m_byteSize = byteSize;
-			m_sequenceNumber = sequenceNumber;
+			m_id = id;
 		}
 
 		public Type Type
@@ -37,9 +37,9 @@ namespace Monophyll.Entities
 			get => m_byteSize;
 		}
 
-		public int SequenceNumber
+		public int Id
 		{
-			get => m_sequenceNumber;
+			get => m_id;
 		}
 
 		public static ComponentType TypeOf<T>() where T : unmanaged
@@ -54,7 +54,7 @@ namespace Monophyll.Entities
 				return 1;
 			}
 
-			return m_sequenceNumber.CompareTo(other.m_sequenceNumber);
+			return m_id.CompareTo(other.m_id);
 		}
 
 		public int CompareTo(object? obj)
@@ -69,14 +69,14 @@ namespace Monophyll.Entities
 				throw new ArgumentException("obj is not the same type as this instance.");
 			}
 
-			return m_sequenceNumber.CompareTo(other.m_sequenceNumber);
+			return m_id.CompareTo(other.m_id);
 		}
 
 		public bool Equals(ComponentType? other)
 		{
 			return ReferenceEquals(this, other)
 				|| other is not null
-				&& m_sequenceNumber == other.m_sequenceNumber
+				&& m_id == other.m_id
 				&& m_byteSize == other.m_byteSize
 				&& m_type == other.m_type;
 		}
@@ -88,12 +88,12 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(m_type, m_byteSize, m_sequenceNumber);
+			return HashCode.Combine(m_type, m_byteSize, m_id);
 		}
 
 		public override string ToString()
 		{
-			return $"ComponentType {{ Type = {m_type.Name} ByteSize = {m_byteSize} SequenceNumber = {m_sequenceNumber} }}";
+			return $"ComponentType {{ Type = {m_type.Name} ByteSize = {m_byteSize} Id = {m_id} }}";
 		}
 
 		private static class TypeLookup<T> where T : unmanaged

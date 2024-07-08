@@ -16,21 +16,21 @@ namespace Monophyll.Entities.Tests
 			Debug.Assert(dictionary.Count == 3);
 			Debug.Assert(dictionary.ContainsKey(ReadOnlyMemory<uint>.Empty));
 
-			buffer[0] = (1u << TypeOf<Position2D>().SequenceNumber) |
-						(1u << TypeOf<Rotation2D>().SequenceNumber) |
-						(1u << TypeOf<Scale2D>().SequenceNumber) |
-						(1u << TypeOf<Matrix3x2>().SequenceNumber);
+			buffer[0] = (1u << TypeOf<Position2D>().Id) |
+						(1u << TypeOf<Rotation2D>().Id) |
+						(1u << TypeOf<Scale2D>().Id) |
+						(1u << TypeOf<Matrix3x2>().Id);
 
 			Debug.Assert(dictionary.ContainsKey(buffer));
 
-			buffer[0] = (1u << TypeOf<Position3D>().SequenceNumber) |
-						(1u << TypeOf<Rotation3D>().SequenceNumber) |
-						(1u << TypeOf<Scale3D>().SequenceNumber) |
-						(1u << TypeOf<Matrix4x4>().SequenceNumber);
+			buffer[0] = (1u << TypeOf<Position3D>().Id) |
+						(1u << TypeOf<Rotation3D>().Id) |
+						(1u << TypeOf<Scale3D>().Id) |
+						(1u << TypeOf<Matrix4x4>().Id);
 
 			Debug.Assert(dictionary.ContainsKey(buffer));
 
-			buffer[0] = 1u << ComponentType.TypeOf<Tag>().SequenceNumber;
+			buffer[0] = 1u << TypeOf<Tag>().Id;
 
 			Debug.Assert(!dictionary.ContainsKey(buffer));
 		}

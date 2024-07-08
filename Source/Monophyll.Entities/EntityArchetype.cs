@@ -19,7 +19,7 @@ namespace Monophyll.Entities
 		private readonly uint[] m_componentBits;
 		private readonly int[] m_componentOffsets;
 		private readonly int m_entityByteSize;
-		private readonly int m_sequenceNumber;
+		private readonly int m_id;
 
 		public EntityArchetype()
 		{
@@ -36,7 +36,7 @@ namespace Monophyll.Entities
 			m_componentBits = other.m_componentBits;
 			m_componentOffsets = other.m_componentOffsets;
 			m_entityByteSize = other.m_entityByteSize;
-			m_sequenceNumber = other.m_sequenceNumber;
+			m_id = other.m_id;
 		}
 
 		public EntityArchetype(params ComponentType[] componentTypes)
@@ -104,10 +104,10 @@ namespace Monophyll.Entities
 			get => m_entityByteSize;
 		}
 
-		public int SequenceNumber
+		public int Id
 		{
-			get => m_sequenceNumber;
-			init => m_sequenceNumber = value;
+			get => m_id;
+			init => m_id = value;
 		}
 
 		private static void Initialize(ComponentType[] args, out ComponentType[] componentTypes,
@@ -125,8 +125,8 @@ namespace Monophyll.Entities
 			}
 
 			componentTypes = args;
-			componentBits = new uint[componentTypeToCompare.SequenceNumber + 32 >> 5];
-			componentLookup = new int[componentTypeToCompare.SequenceNumber + 1];
+			componentBits = new uint[componentTypeToCompare.Id + 32 >> 5];
+			componentLookup = new int[componentTypeToCompare.Id + 1];
 			componentTypeToCompare = null;
 
 			int freeIndex = 0;
@@ -138,7 +138,7 @@ namespace Monophyll.Entities
 				if (currentComponentType != componentTypeToCompare)
 				{
 					componentTypes[freeIndex++] = componentTypeToCompare = currentComponentType;
-					componentBits[currentComponentType.SequenceNumber >> 5] |= 1u << currentComponentType.SequenceNumber;
+					componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
 					entityByteSize += currentComponentType.ByteSize;
 				}
 			}
@@ -150,7 +150,7 @@ namespace Monophyll.Entities
 			for (int i = 0; i < componentTypes.Length; i++)
 			{
 				ComponentType componentType = componentTypes[i];
-				componentLookup[componentType.SequenceNumber] = freeIndex;
+				componentLookup[componentType.Id] = freeIndex;
 				freeIndex += chunkCapacity * componentType.ByteSize;
 			}
 		}
@@ -158,8 +158,8 @@ namespace Monophyll.Entities
 		public bool Contains(ComponentType componentType)
 		{
 			return componentType != null
-				&& componentType.SequenceNumber < m_componentOffsets.Length
-				&& m_componentOffsets[componentType.SequenceNumber] != 0;
+				&& componentType.Id < m_componentOffsets.Length
+				&& m_componentOffsets[componentType.Id] != 0;
 		}
 
 		public int CompareTo(EntityArchetype? other)
@@ -169,7 +169,7 @@ namespace Monophyll.Entities
 				return 1;
 			}
 
-			return m_sequenceNumber.CompareTo(other.m_sequenceNumber);
+			return m_id.CompareTo(other.m_id);
 		}
 
 		public int CompareTo(object? obj)
@@ -184,14 +184,14 @@ namespace Monophyll.Entities
 				throw new ArgumentException("obj is not the same type as this instance.");
 			}
 
-			return m_sequenceNumber.CompareTo(other.m_sequenceNumber);
+			return m_id.CompareTo(other.m_id);
 		}
 
 		public bool Equals(EntityArchetype? other)
 		{
 			return other == this
 				|| other != null
-				&& m_sequenceNumber == other.m_sequenceNumber
+				&& m_id == other.m_id
 				&& ((ReadOnlySpan<uint>)m_componentBits).SequenceEqual(other.m_componentBits);
 		}
 
@@ -203,18 +203,19 @@ namespace Monophyll.Entities
 		public override int GetHashCode()
 		{
 			HashCode hashCode = default;
+			hashCode.Add(m_id);
 
 			for (int i = 0; i < m_componentBits.Length; i++)
 			{
 				hashCode.Add(m_componentBits[i]);
 			}
 
-			return HashCode.Combine(m_sequenceNumber, hashCode.ToHashCode());
+			return hashCode.ToHashCode();
 		}
 
 		public override string ToString()
 		{
-			StringBuilder builder = new("EntityArchetype { ComponentTypes = [");
+			StringBuilder builder = new($"EntityArchetype {{ Id = {m_id} ComponentTypes = [");
 
 			if (m_componentTypes.Length > 0)
 			{
@@ -226,7 +227,7 @@ namespace Monophyll.Entities
 				}
 			}
 
-			builder.Append($"] SequenceNumber = {m_sequenceNumber} }}");
+			builder.Append("] }");
 			return builder.ToString();
 		}
 	}

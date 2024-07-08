@@ -5,24 +5,24 @@ namespace Monophyll.Entities
 {
 	public readonly struct Entity : IEqualityOperators<Entity, Entity, bool>, IEquatable<Entity>, IComparable<Entity>, IComparable
 	{
-		private readonly int m_sequenceNumber;
+		private readonly int m_id;
 		private readonly int m_version;
 
 		public Entity()
 		{
-			m_sequenceNumber = 0;
+			m_id = 0;
 			m_version = 0;
 		}
 
-		public Entity(int sequenceNumber, int version)
+		public Entity(int id, int version)
 		{
-			m_sequenceNumber = sequenceNumber;
+			m_id = id;
 			m_version = version;
 		}
 
-		public int SequenceNumber
+		public int Id
 		{
-			get => m_sequenceNumber;
+			get => m_id;
 		}
 
 		public int Version
@@ -32,7 +32,7 @@ namespace Monophyll.Entities
 
 		public int CompareTo(Entity other)
 		{
-			return m_sequenceNumber.CompareTo(other.m_sequenceNumber);
+			return m_id.CompareTo(other.m_id);
 		}
 
 		public int CompareTo(object? obj)
@@ -47,12 +47,12 @@ namespace Monophyll.Entities
 				throw new ArgumentException("obj is not the same type as this instance.");
 			}
 
-			return m_sequenceNumber.CompareTo(other.m_sequenceNumber);
+			return m_id.CompareTo(other.m_id);
 		}
 
 		public bool Equals(Entity other)
 		{
-			return m_sequenceNumber == other.m_sequenceNumber
+			return m_id == other.m_id
 				&& m_version == other.m_version;
 		}
 
@@ -63,12 +63,12 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(m_sequenceNumber, m_version);
+			return HashCode.Combine(m_id, m_version);
 		}
 
 		public override string ToString()
 		{
-			return $"Entity {{ SequenceNumber = {m_sequenceNumber} Version = {m_version} }}";
+			return $"Entity {{ Id = {m_id} Version = {m_version} }}";
 		}
 
 		public static bool operator ==(Entity left, Entity right)

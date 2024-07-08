@@ -43,10 +43,6 @@ namespace Monophyll.Entities.Tests
 			Debug.Assert(transform2DFromSpan.ComponentTypes.SequenceEqual(transform2DFromEnumerable.ComponentTypes));
 			Debug.Assert(transform2DFromSpan.ComponentBits.SequenceEqual(transform2DFromEnumerable.ComponentBits));
 			Debug.Assert(transform2DFromSpan.ComponentOffsets.SequenceEqual(transform2DFromEnumerable.ComponentOffsets));
-
-			Debug.Assert(transform2DFromEnumerable.ComponentTypes.SequenceEqual(transform2DFromArray.ComponentTypes));
-			Debug.Assert(transform2DFromEnumerable.ComponentBits.SequenceEqual(transform2DFromArray.ComponentBits));
-			Debug.Assert(transform2DFromEnumerable.ComponentOffsets.SequenceEqual(transform2DFromArray.ComponentOffsets));
 		}
 	}
 }

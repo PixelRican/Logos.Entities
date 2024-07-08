@@ -44,8 +44,8 @@ namespace Monophyll.Entities
 
 		public int GetHashCode(ReadOnlyMemory<uint> obj)
 		{
-			HashCode hashCode = new();
 			ReadOnlySpan<uint> objSpan = obj.Span;
+			HashCode hashCode = default;
 
 			for (int i = 0; i < objSpan.Length; i++)
 			{

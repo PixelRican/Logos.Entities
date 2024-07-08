@@ -14,6 +14,8 @@ namespace Monophyll.Entities.Tests
 				new EntityArchetypeConstructorTest(),
 				new EntityArchetypeChunkPushPopTest(),
 				new EntityArchetypeChunkPushPopRangeTest(),
+				new EntityFilterConstructorTest(),
+				new EntityFilterMatchTest(),
 				new ComponentBitEqualityComparerTest()
 			];
 
