@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
 
 namespace Monophyll.Entities
 {
@@ -13,7 +12,6 @@ namespace Monophyll.Entities
 		private readonly EntityArchetypeChunk? m_next;
 		private readonly EntityArchetype m_archetype;
 		private readonly byte[] m_data;
-		private readonly int m_capacity;
 		private int m_count;
 		private int m_version;
 
@@ -21,7 +19,6 @@ namespace Monophyll.Entities
 		{
 			m_archetype = archetype ?? throw new ArgumentNullException(nameof(archetype));
 			m_data = new byte[archetype.ChunkByteSize];
-			m_capacity = archetype.ChunkCapacity;
 		}
 
 		public EntityArchetypeChunk(EntityArchetypeChunk chunk)
@@ -29,7 +26,6 @@ namespace Monophyll.Entities
 			m_next = chunk ?? throw new ArgumentNullException(nameof(chunk));
 			m_archetype = chunk.m_archetype;
 			m_data = new byte[chunk.m_data.Length];
-			m_capacity = m_archetype.ChunkCapacity;
 		}
 
 		public EntityArchetypeChunk? Next
@@ -45,11 +41,6 @@ namespace Monophyll.Entities
 		public int ByteSize
 		{
 			get => m_data.Length;
-		}
-
-		public int Capacity
-		{
-			get => m_capacity;
 		}
 
 		public int Count
@@ -161,7 +152,7 @@ namespace Monophyll.Entities
 
 		public void Push(Entity item)
 		{
-			if (m_count >= m_capacity)
+			if (m_count >= m_archetype.ChunkCapacity)
 			{
 				throw new InvalidOperationException("The EntityArchetypeChunk is full.");
 			}
@@ -185,7 +176,7 @@ namespace Monophyll.Entities
 
 		public bool TryPush(Entity item)
 		{
-			if (m_count >= m_capacity)
+			if (m_count >= m_archetype.ChunkCapacity)
 			{
 				return false;
 			}
@@ -230,7 +221,7 @@ namespace Monophyll.Entities
 					"Range exceeds the bounds of the other EntityArchetypeChunk.");
 			}
 
-			if (m_capacity - m_count < count)
+			if (m_archetype.ChunkCapacity - m_count < count)
 			{
 				throw new ArgumentOutOfRangeException(nameof(count), count,
 					"Range exceeds the capacity of the EntityArchetypeChunk.");

@@ -57,7 +57,7 @@ namespace Monophyll.Entities
 
 		public int GetHashCode(object obj)
 		{
-			ArgumentNullException.ThrowIfNull(obj, nameof(obj));
+			ArgumentNullException.ThrowIfNull(obj);
 
 			if (obj is ReadOnlyMemory<uint> memory)
 			{

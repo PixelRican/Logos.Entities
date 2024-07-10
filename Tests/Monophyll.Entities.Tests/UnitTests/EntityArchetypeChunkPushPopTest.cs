@@ -23,7 +23,6 @@ namespace Monophyll.Entities.Tests
 			Span<Matrix3x2> matrices = chunk.GetComponents<Matrix3x2>();
 
 			Debug.Assert(chunk.ByteSize == chunk.Archetype.ChunkByteSize);
-			Debug.Assert(chunk.Capacity == chunk.Archetype.ChunkCapacity);
 			Debug.Assert(entities.Length == 0);
 			Debug.Assert(positions.Length == 0);
 			Debug.Assert(rotations.Length == 0);
@@ -110,7 +109,7 @@ namespace Monophyll.Entities.Tests
 			{
 			}
 
-			Debug.Assert(chunk.Count == chunk.Capacity);
+			Debug.Assert(chunk.Count == chunk.Archetype.ChunkCapacity);
 
 			while (chunk.TryPop(out _))
 			{

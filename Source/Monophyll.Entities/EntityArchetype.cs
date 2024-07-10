@@ -31,7 +31,7 @@ namespace Monophyll.Entities
 
 		public EntityArchetype(EntityArchetype other)
 		{
-			ArgumentNullException.ThrowIfNull(other, nameof(other));
+			ArgumentNullException.ThrowIfNull(other);
 			m_componentTypes = other.m_componentTypes;
 			m_componentBits = other.m_componentBits;
 			m_componentOffsets = other.m_componentOffsets;
@@ -41,7 +41,7 @@ namespace Monophyll.Entities
 
 		public EntityArchetype(params ComponentType[] componentTypes)
 		{
-			ArgumentNullException.ThrowIfNull(componentTypes, nameof(componentTypes));
+			ArgumentNullException.ThrowIfNull(componentTypes);
 			ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
 			Array.Copy(componentTypes, args, args.Length);
 			Array.Sort(args);

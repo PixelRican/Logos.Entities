@@ -29,7 +29,7 @@ namespace Monophyll.Entities
 
         public EntityFilter(EntityFilter other)
         {
-            ArgumentNullException.ThrowIfNull(other, nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
             m_requiredComponentTypes = other.m_requiredComponentTypes;
             m_includedComponentTypes = other.m_includedComponentTypes;
             m_excludedComponentTypes = other.m_excludedComponentTypes;
@@ -40,7 +40,7 @@ namespace Monophyll.Entities
 
         public EntityFilter(params ComponentType[] requiredComponentTypes)
         {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes, nameof(requiredComponentTypes));
+            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
 			ComponentType[] args = requiredComponentTypes.Length == 0 ? [] : new ComponentType[requiredComponentTypes.Length];
 			Array.Copy(requiredComponentTypes, args, args.Length);
             Array.Sort(args);
@@ -86,9 +86,9 @@ namespace Monophyll.Entities
 
 		public EntityFilter(ComponentType[] requiredComponentTypes, ComponentType[] includedComponentTypes, ComponentType[] excludedComponentTypes)
         {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes, nameof(requiredComponentTypes));
-			ArgumentNullException.ThrowIfNull(includedComponentTypes, nameof(includedComponentTypes));
-			ArgumentNullException.ThrowIfNull(excludedComponentTypes, nameof(excludedComponentTypes));
+            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
+			ArgumentNullException.ThrowIfNull(includedComponentTypes);
+			ArgumentNullException.ThrowIfNull(excludedComponentTypes);
 
 			ComponentType[] args = requiredComponentTypes.Length == 0 ? [] : new ComponentType[requiredComponentTypes.Length];
 			Array.Copy(requiredComponentTypes, args, args.Length);
@@ -108,9 +108,9 @@ namespace Monophyll.Entities
 
 		public EntityFilter(IEnumerable<ComponentType> requiredComponentTypes, IEnumerable<ComponentType> includedComponentTypes, IEnumerable<ComponentType> excludedComponentTypes)
 		{
-			ArgumentNullException.ThrowIfNull(requiredComponentTypes, nameof(requiredComponentTypes));
-			ArgumentNullException.ThrowIfNull(includedComponentTypes, nameof(includedComponentTypes));
-			ArgumentNullException.ThrowIfNull(excludedComponentTypes, nameof(excludedComponentTypes));
+			ArgumentNullException.ThrowIfNull(requiredComponentTypes);
+			ArgumentNullException.ThrowIfNull(includedComponentTypes);
+			ArgumentNullException.ThrowIfNull(excludedComponentTypes);
 
 			ComponentType[] args = requiredComponentTypes.ToArray();
 			Array.Sort(args);
@@ -481,7 +481,7 @@ namespace Monophyll.Entities
 
             public Builder Require(params ComponentType[] componentTypes)
             {
-				ArgumentNullException.ThrowIfNull(componentTypes, nameof(componentTypes));
+				ArgumentNullException.ThrowIfNull(componentTypes);
 				ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
 				Array.Copy(componentTypes, args, args.Length);
 				Array.Sort(args);
@@ -515,7 +515,7 @@ namespace Monophyll.Entities
 
 			public Builder Include(params ComponentType[] componentTypes)
 			{
-				ArgumentNullException.ThrowIfNull(componentTypes, nameof(componentTypes));
+				ArgumentNullException.ThrowIfNull(componentTypes);
 				ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
 				Array.Copy(componentTypes, args, args.Length);
 				Array.Sort(args);
@@ -549,7 +549,7 @@ namespace Monophyll.Entities
 
 			public Builder Exclude(params ComponentType[] componentTypes)
 			{
-				ArgumentNullException.ThrowIfNull(componentTypes, nameof(componentTypes));
+				ArgumentNullException.ThrowIfNull(componentTypes);
 				ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
 				Array.Copy(componentTypes, args, args.Length);
 				Array.Sort(args);

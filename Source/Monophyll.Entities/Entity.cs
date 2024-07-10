@@ -1,18 +1,11 @@
 ﻿using System;
-using System.Numerics;
 
 namespace Monophyll.Entities
 {
-	public readonly struct Entity : IEqualityOperators<Entity, Entity, bool>, IEquatable<Entity>, IComparable<Entity>, IComparable
+	public readonly struct Entity : IEquatable<Entity>, IComparable<Entity>, IComparable
 	{
 		private readonly int m_id;
 		private readonly int m_version;
-
-		public Entity()
-		{
-			m_id = 0;
-			m_version = 0;
-		}
 
 		public Entity(int id, int version)
 		{
