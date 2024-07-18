@@ -157,21 +157,7 @@ namespace Monophyll.Entities
 				throw new InvalidOperationException("The EntityArchetypeChunk is full.");
 			}
 
-			ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			ref byte data = ref m_data[0];
-
-			Unsafe.Add(ref Unsafe.As<byte, Entity>(ref data), m_count) = item;
-
-			for (int i = 0; i < componentTypes.Length; i++)
-			{
-				ComponentType componentType = componentTypes[i];
-				int offset = componentOffsets[componentType.Id] + componentType.ByteSize * m_count;
-				Unsafe.InitBlock(ref Unsafe.Add(ref data, offset), 0, (uint)componentType.ByteSize);
-			}
-
-			m_count++;
-			m_version++;
+			UnsafePush(item);
 		}
 
 		public bool TryPush(Entity item)
@@ -181,6 +167,12 @@ namespace Monophyll.Entities
 				return false;
 			}
 
+			UnsafePush(item);
+			return true;
+		}
+
+		private void UnsafePush(Entity item)
+		{
 			ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
 			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
 			ref byte data = ref m_data[0];
@@ -196,66 +188,17 @@ namespace Monophyll.Entities
 
 			m_count++;
 			m_version++;
-			return true;
 		}
 
-		public void PushRange(EntityArchetypeChunk chunk, int chunkIndex, int count)
+		public void PushRange(EntityArchetypeChunk chunk, int startIndex, int count)
 		{
-			ArgumentNullException.ThrowIfNull(chunk, nameof(chunk));
+			ArgumentNullException.ThrowIfNull(chunk);
+			ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+			ArgumentOutOfRangeException.ThrowIfNegative(count);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, chunk.m_count - startIndex);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, m_archetype.ChunkCapacity - m_count);
 
-			if (chunkIndex < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(chunkIndex), chunkIndex,
-					"Chunk index must be a non-negative number.");
-			}
-
-			if (count < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count,
-					"Count must be a non-negative number.");
-			}
-
-			if (chunk.m_count - chunkIndex < count)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count,
-					"Range exceeds the bounds of the other EntityArchetypeChunk.");
-			}
-
-			if (m_archetype.ChunkCapacity - m_count < count)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count,
-					"Range exceeds the capacity of the EntityArchetypeChunk.");
-			}
-
-			ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			ImmutableArray<int> otherComponentOffsets = chunk.m_archetype.ComponentOffsets;
-			ref byte data = ref m_data[0];
-			ref byte otherData = ref chunk.m_data[0];
-
-			Unsafe.CopyBlock(ref Unsafe.Add(ref data, m_count * Unsafe.SizeOf<Entity>()),
-				ref Unsafe.Add(ref otherData, chunkIndex * Unsafe.SizeOf<Entity>()),
-				(uint)(count * Unsafe.SizeOf<Entity>()));
-
-			for (int i = 0; i < componentTypes.Length; i++)
-			{
-				ComponentType componentType = componentTypes[i];
-				int offset = componentOffsets[componentType.Id] + m_count * componentType.ByteSize;
-				int otherOffset;
-
-				if (componentType.Id < otherComponentOffsets.Length &&
-					(otherOffset = otherComponentOffsets[componentType.Id]) != 0)
-				{
-					Unsafe.CopyBlock(ref Unsafe.Add(ref data, offset),
-						ref Unsafe.Add(ref otherData, otherOffset + chunkIndex * componentType.ByteSize),
-						(uint)(count * componentType.ByteSize));
-				}
-				else
-				{
-					Unsafe.InitBlock(ref Unsafe.Add(ref data, offset), 0, (uint)(count * componentType.ByteSize));
-				}
-			}
-
+			UnsafeCopy(chunk, startIndex, this, m_count, count);
 			m_count += count;
 			m_version++;
 		}
@@ -285,67 +228,52 @@ namespace Monophyll.Entities
 			return true;
 		}
 
-		public void PopRange(EntityArchetypeChunk chunk, int chunkIndex, int count)
+		public void PopRange(EntityArchetypeChunk chunk, int startIndex, int count)
 		{
-			ArgumentNullException.ThrowIfNull(chunk, nameof(chunk));
+			ArgumentNullException.ThrowIfNull(chunk);
+			ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+			ArgumentOutOfRangeException.ThrowIfNegative(count);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, chunk.m_count - startIndex);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, m_count);
 
-			if (chunkIndex < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(chunkIndex), chunkIndex,
-					"Chunk index must be a non-negative number.");
-			}
-
-			if (count < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count,
-					"Count must be a non-negative number.");
-			}
-
-			if (chunk.m_count - chunkIndex < count)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count,
-					"Range exceeds the bounds of the other EntityArchetypeChunk.");
-			}
-
-			if (m_count < count)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count,
-					"Range exceeds the capacity of the EntityArchetypeChunk.");
-			}
-
-			ImmutableArray<ComponentType> otherComponentTypes = chunk.m_archetype.ComponentTypes;
-			ImmutableArray<int> otherComponentOffsets = chunk.m_archetype.ComponentOffsets;
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			ref byte otherData = ref chunk.m_data[0];
-			ref byte data = ref m_data[0];
 			int copyIndex = m_count - count;
 
-			Unsafe.CopyBlock(ref Unsafe.Add(ref otherData, chunkIndex * Unsafe.SizeOf<Entity>()),
-				ref Unsafe.Add(ref data, copyIndex * Unsafe.SizeOf<Entity>()),
+			UnsafeCopy(this, copyIndex, chunk, startIndex, count);
+			m_count = copyIndex;
+			m_version++;
+			chunk.m_version++;
+		}
+
+		private static void UnsafeCopy(EntityArchetypeChunk sourceChunk, int sourceIndex, EntityArchetypeChunk destinationChunk, int destinationIndex, int count)
+		{
+			ImmutableArray<ComponentType> destinationComponentTypes = destinationChunk.m_archetype.ComponentTypes;
+			ImmutableArray<int> destinationComponentOffsets = destinationChunk.m_archetype.ComponentOffsets;
+			ImmutableArray<int> sourceComponentOffsets = sourceChunk.m_archetype.ComponentOffsets;
+			ref byte destinationData = ref destinationChunk.m_data[0];
+			ref byte sourceData = ref sourceChunk.m_data[0];
+
+			Unsafe.CopyBlock(ref Unsafe.Add(ref destinationData, destinationIndex * Unsafe.SizeOf<Entity>()),
+				ref Unsafe.Add(ref sourceData, sourceIndex * Unsafe.SizeOf<Entity>()),
 				(uint)(count * Unsafe.SizeOf<Entity>()));
 
-			for (int i = 0; i < otherComponentTypes.Length; i++)
+			for (int i = 0; i < destinationComponentTypes.Length; i++)
 			{
-				ComponentType componentType = otherComponentTypes[i];
-				int otherOffset = otherComponentOffsets[componentType.Id] + chunkIndex * componentType.ByteSize;
-				int offset;
+				ComponentType componentType = destinationComponentTypes[i];
+				int destinationOffset = destinationComponentOffsets[componentType.Id] + destinationIndex * componentType.ByteSize;
+				int sourceOffset;
 
-				if (componentType.Id < componentOffsets.Length &&
-					(offset = componentOffsets[componentType.Id]) != 0)
+				if (componentType.Id < sourceComponentOffsets.Length &&
+					(sourceOffset = sourceComponentOffsets[componentType.Id]) != 0)
 				{
-					Unsafe.CopyBlock(ref Unsafe.Add(ref otherData, otherOffset),
-						ref Unsafe.Add(ref data, offset + copyIndex * componentType.ByteSize),
+					Unsafe.CopyBlock(ref Unsafe.Add(ref destinationData, destinationOffset),
+						ref Unsafe.Add(ref sourceData, sourceOffset + sourceIndex * componentType.ByteSize),
 						(uint)(count * componentType.ByteSize));
 				}
 				else
 				{
-					Unsafe.InitBlock(ref Unsafe.Add(ref otherData, otherOffset), 0, (uint)(count * componentType.ByteSize));
+					Unsafe.InitBlock(ref Unsafe.Add(ref destinationData, destinationOffset), 0, (uint)(count * componentType.ByteSize));
 				}
 			}
-
-			m_count = copyIndex;
-			m_version++;
-			chunk.m_version++;
 		}
 
 		public struct Enumerator : IEnumerator<Entity>

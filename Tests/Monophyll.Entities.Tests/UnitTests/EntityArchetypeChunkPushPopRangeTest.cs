@@ -97,7 +97,7 @@ namespace Monophyll.Entities.Tests
 			try
 			{
 				chunkWithMatrix.PushRange(chunkWithoutMatrix, -1, 5);
-				Debug.Fail("PushRange should not allow negative chunk indices.");
+				Debug.Fail("PushRange should not allow negative indices.");
 			}
 			catch (ArgumentOutOfRangeException)
 			{

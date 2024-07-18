@@ -16,7 +16,9 @@ namespace Monophyll.Entities.Tests
 				new EntityArchetypeChunkPushPopRangeTest(),
 				new EntityFilterConstructorTest(),
 				new EntityFilterMatchTest(),
-				new ComponentBitEqualityComparerTest()
+				new ComponentBitEqualityComparerTest(),
+				new EntityRegistryCreateArchetypeTest(),
+				new EntityRegistryCreateDestroyEntityTest()
 			];
 
 			Console.WriteLine($"Running {unitTests.Length} test cases...\n");
