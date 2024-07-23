@@ -40,33 +40,72 @@ namespace Monophyll.Entities
 		}
 
 		public EntityArchetype(params ComponentType[] componentTypes)
+			: this(CloneComponentTypeArray(componentTypes), true)
 		{
-			ArgumentNullException.ThrowIfNull(componentTypes);
-			ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
-			Array.Copy(componentTypes, args, args.Length);
-			Array.Sort(args);
-			Initialize(args, out m_componentTypes, out m_componentBits, out m_componentOffsets, out m_entityByteSize);
 		}
 
 		public EntityArchetype(IEnumerable<ComponentType> componentTypes)
+			: this(componentTypes.ToArray(), true)
 		{
-			ComponentType[] args = componentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_componentTypes, out m_componentBits, out m_componentOffsets, out m_entityByteSize);
 		}
 
 		public EntityArchetype(ReadOnlySpan<ComponentType> componentTypes)
+			: this(componentTypes.ToArray(), true)
 		{
-			ComponentType[] args = componentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_componentTypes, out m_componentBits, out m_componentOffsets, out m_entityByteSize);
 		}
 
 		public EntityArchetype(Span<ComponentType> componentTypes)
+			: this(componentTypes.ToArray(), true)
 		{
-			ComponentType[] args = componentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_componentTypes, out m_componentBits, out m_componentOffsets, out m_entityByteSize);
+		}
+
+		private EntityArchetype(ComponentType[] componentTypes, bool sortArray)
+		{
+			ComponentType? componentTypeToCompare;
+			m_entityByteSize = Unsafe.SizeOf<Entity>();
+
+			if (sortArray)
+			{
+				Array.Sort(componentTypes);
+			}
+
+			if (componentTypes.Length == 0 || (componentTypeToCompare = componentTypes[^1]) == null)
+			{
+				m_componentTypes = [];
+				m_componentBits = [];
+				m_componentOffsets = [];
+				return;
+			}
+
+			m_componentTypes = componentTypes;
+			m_componentBits = new uint[componentTypeToCompare.Id + 32 >> 5];
+			m_componentOffsets = new int[componentTypeToCompare.Id + 1];
+			componentTypeToCompare = null;
+
+			int freeIndex = 0;
+
+			for (int i = 0; i < m_componentTypes.Length; i++)
+			{
+				ComponentType currentComponentType = m_componentTypes[i];
+
+				if (currentComponentType != componentTypeToCompare)
+				{
+					m_componentTypes[freeIndex++] = componentTypeToCompare = currentComponentType;
+					m_componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
+					m_entityByteSize += currentComponentType.ByteSize;
+				}
+			}
+
+			Array.Resize(ref m_componentTypes, freeIndex);
+			int chunkCapacity = Math.Max(TargetChunkByteSize / m_entityByteSize, MinChunkCapacity);
+			freeIndex = chunkCapacity * Unsafe.SizeOf<Entity>();
+
+			for (int i = 0; i < m_componentTypes.Length; i++)
+			{
+				ComponentType componentType = m_componentTypes[i];
+				m_componentOffsets[componentType.Id] = freeIndex;
+				freeIndex += chunkCapacity * componentType.ByteSize;
+			}
 		}
 
 		public static EntityArchetype Base
@@ -110,49 +149,100 @@ namespace Monophyll.Entities
 			init => m_id = value;
 		}
 
-		private static void Initialize(ComponentType[] args, out ComponentType[] componentTypes,
-			out uint[] componentBits, out int[] componentLookup, out int entityByteSize)
+		private static ComponentType[] CloneComponentTypeArray(ComponentType[] array)
 		{
-			ComponentType? componentTypeToCompare;
-			entityByteSize = Unsafe.SizeOf<Entity>();
+			ArgumentNullException.ThrowIfNull(array);
 
-			if (args.Length == 0 || (componentTypeToCompare = args[^1]) == null)
+			if (array.Length == 0)
 			{
-				componentTypes = [];
-				componentBits = [];
-				componentLookup = [];
-				return;
+				return [];
 			}
 
-			componentTypes = args;
-			componentBits = new uint[componentTypeToCompare.Id + 32 >> 5];
-			componentLookup = new int[componentTypeToCompare.Id + 1];
-			componentTypeToCompare = null;
+			ComponentType[] clone = new ComponentType[array.Length];
+			Array.Copy(array, clone, clone.Length);
+			return clone;
+		}
 
-			int freeIndex = 0;
+		public EntityArchetype Add(ComponentType componentType, int id = 0)
+		{
+			ArgumentNullException.ThrowIfNull(componentType);
 
-			for (int i = 0; i < componentTypes.Length; i++)
+			if (componentType.Id < m_componentOffsets.Length &&
+				m_componentOffsets[componentType.Id] != 0)
 			{
-				ComponentType currentComponentType = componentTypes[i];
-
-				if (currentComponentType != componentTypeToCompare)
+				if (m_id != id)
 				{
-					componentTypes[freeIndex++] = componentTypeToCompare = currentComponentType;
-					componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
-					entityByteSize += currentComponentType.ByteSize;
+					return new EntityArchetype(this) { Id = id };
+				}
+
+				return this;
+			}
+
+			ComponentType[] destinationComponentTypes = new ComponentType[m_componentTypes.Length + 1];
+			int destinationIndex = 0;
+			int sourceIndex = 0;
+
+			while (sourceIndex < m_componentTypes.Length)
+			{
+				ComponentType currentComponentType = m_componentTypes[sourceIndex++];
+
+				if (componentType.Id < currentComponentType.Id)
+				{
+					break;
+				}
+
+				destinationComponentTypes[destinationIndex++] = currentComponentType;
+			}
+
+			destinationComponentTypes[destinationIndex++] = componentType;
+
+			while (sourceIndex < m_componentTypes.Length)
+			{
+				destinationComponentTypes[destinationIndex++] = m_componentTypes[sourceIndex++];
+			}
+
+			return new EntityArchetype(destinationComponentTypes, false) { Id = id };
+		}
+
+		public EntityArchetype Remove(ComponentType componentType, int id = 0)
+		{
+			ArgumentNullException.ThrowIfNull(componentType);
+
+			if (componentType.Id >= m_componentOffsets.Length ||
+				m_componentOffsets[componentType.Id] == 0)
+			{
+				if (m_id != id)
+				{
+					return new EntityArchetype(this) { Id = id };
+				}
+
+				return this;
+			}
+
+			if (m_componentTypes.Length == 1)
+			{
+				if (id == 0)
+				{
+					return s_base;
+				}
+
+				return new EntityArchetype() { Id = id };
+			}
+
+			ComponentType[] destinationComponentTypes = new ComponentType[m_componentTypes.Length - 1];
+			int destinationIndex = 0;
+
+			for (int i = 0; i < m_componentTypes.Length; i++)
+			{
+				ComponentType currentComponentType = m_componentTypes[i];
+
+				if (currentComponentType != componentType)
+				{
+					destinationComponentTypes[destinationIndex++] = currentComponentType;
 				}
 			}
 
-			Array.Resize(ref componentTypes, freeIndex);
-			int chunkCapacity = Math.Max(TargetChunkByteSize / entityByteSize, MinChunkCapacity);
-			freeIndex = chunkCapacity * Unsafe.SizeOf<Entity>();
-
-			for (int i = 0; i < componentTypes.Length; i++)
-			{
-				ComponentType componentType = componentTypes[i];
-				componentLookup[componentType.Id] = freeIndex;
-				freeIndex += chunkCapacity * componentType.ByteSize;
-			}
+			return new EntityArchetype(destinationComponentTypes, false) { Id = id };
 		}
 
 		public bool Contains(ComponentType componentType)

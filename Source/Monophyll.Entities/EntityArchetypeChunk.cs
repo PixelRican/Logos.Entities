@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Monophyll.Entities
 {
-	public class EntityArchetypeChunk : IReadOnlyList<Entity>, ICollection
+	public sealed class EntityArchetypeChunk : IReadOnlyList<Entity>, ICollection
 	{
 		private readonly EntityArchetypeChunk? m_next;
 		private readonly EntityArchetype m_archetype;
@@ -17,13 +17,15 @@ namespace Monophyll.Entities
 
 		public EntityArchetypeChunk(EntityArchetype archetype)
 		{
-			m_archetype = archetype ?? throw new ArgumentNullException(nameof(archetype));
+			ArgumentNullException.ThrowIfNull(archetype);
+			m_archetype = archetype;
 			m_data = new byte[archetype.ChunkByteSize];
 		}
 
 		public EntityArchetypeChunk(EntityArchetypeChunk chunk)
 		{
-			m_next = chunk ?? throw new ArgumentNullException(nameof(chunk));
+			ArgumentNullException.ThrowIfNull(chunk);
+			m_next = chunk;
 			m_archetype = chunk.m_archetype;
 			m_data = new byte[chunk.m_data.Length];
 		}
@@ -130,6 +132,59 @@ namespace Monophyll.Entities
 			return MemoryMarshal.CreateSpan(ref Unsafe.As<byte, T>(ref m_data[offset]), m_count);
 		}
 
+		public bool TryGetComponents<T>(out Span<T> result) where T : unmanaged
+		{
+			ComponentType componentType = ComponentType.TypeOf<T>();
+			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
+			int offset;
+
+			if (componentType.ByteSize == 0 ||
+				componentType.Id >= componentOffsets.Length ||
+				(offset = componentOffsets[componentType.Id]) == 0)
+			{
+				result = default;
+				return false;
+			}
+
+			result = MemoryMarshal.CreateSpan(ref Unsafe.As<byte, T>(ref m_data[offset]), m_count);
+			return true;
+		}
+
+		public Span<byte> GetComponentData(ComponentType componentType)
+		{
+			ArgumentNullException.ThrowIfNull(componentType);
+			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
+			int offset;
+
+			if (componentType.ByteSize == 0 ||
+				componentType.Id >= componentOffsets.Length ||
+				(offset = componentOffsets[componentType.Id]) == 0)
+			{
+				throw new ArgumentException(
+					$"The EntityArchetypeChunk does not store components of type {componentType.Type.Name}.");
+			}
+
+			return MemoryMarshal.CreateSpan(ref m_data[offset], m_count * componentType.ByteSize);
+		}
+
+		public bool TryGetComponentData(ComponentType componentType, out Span<byte> result)
+		{
+			ArgumentNullException.ThrowIfNull(componentType);
+			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
+			int offset;
+
+			if (componentType.ByteSize == 0 ||
+				componentType.Id >= componentOffsets.Length ||
+				(offset = componentOffsets[componentType.Id]) == 0)
+			{
+				result = default;
+				return false;
+			}
+
+			result = MemoryMarshal.CreateSpan(ref m_data[offset], m_count * componentType.ByteSize);
+			return true;
+		}
+
 		public ReadOnlySpan<Entity> GetEntities()
 		{
 			return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, Entity>(ref m_data[0]), m_count);
@@ -203,6 +258,21 @@ namespace Monophyll.Entities
 			m_version++;
 		}
 
+		public bool TryPushRange(EntityArchetypeChunk chunk, int startIndex, int count)
+		{
+			if (chunk == null || startIndex < 0 || count < 0 ||
+				count >= chunk.m_count - startIndex ||
+				count >= m_archetype.ChunkCapacity - m_count)
+			{
+				return false;
+			}
+
+			UnsafeCopy(chunk, startIndex, this, m_count, count);
+			m_count += count;
+			m_version++;
+			return true;
+		}
+
 		public Entity Pop()
 		{
 			if (m_count <= 0)
@@ -237,11 +307,26 @@ namespace Monophyll.Entities
 			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, m_count);
 
 			int copyIndex = m_count - count;
-
 			UnsafeCopy(this, copyIndex, chunk, startIndex, count);
 			m_count = copyIndex;
 			m_version++;
 			chunk.m_version++;
+		}
+
+		public bool TryPopRange(EntityArchetypeChunk chunk, int startIndex, int count)
+		{
+			if (chunk == null || startIndex < 0 || count < 0 ||
+				count >= chunk.m_count - startIndex || count >= m_count)
+			{
+				return false;
+			}
+
+			int copyIndex = m_count - count;
+			UnsafeCopy(this, copyIndex, chunk, startIndex, count);
+			m_count = copyIndex;
+			m_version++;
+			chunk.m_version++;
+			return true;
 		}
 
 		private static void UnsafeCopy(EntityArchetypeChunk sourceChunk, int sourceIndex, EntityArchetypeChunk destinationChunk, int destinationIndex, int count)

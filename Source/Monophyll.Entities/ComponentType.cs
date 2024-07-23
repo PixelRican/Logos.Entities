@@ -9,7 +9,7 @@ namespace Monophyll.Entities
 	{
 		private const BindingFlags FieldBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-		private static int s_nextSequenceNumber = -1;
+		private static int s_nextComponentTypeId = -1;
 
 		private readonly Type m_type;
 		private readonly int m_byteSize;
@@ -99,7 +99,7 @@ namespace Monophyll.Entities
 		private static class TypeLookup<T> where T : unmanaged
 		{
 			public static readonly ComponentType Value =
-				new(typeof(T), Unsafe.SizeOf<T>(), Interlocked.Increment(ref s_nextSequenceNumber));
+				new(typeof(T), Unsafe.SizeOf<T>(), Interlocked.Increment(ref s_nextComponentTypeId));
 		}
 	}
 }
