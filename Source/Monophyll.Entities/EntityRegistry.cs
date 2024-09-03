@@ -1,599 +1,292 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities
 {
 	public class EntityRegistry
 	{
-		private const int InitialEntityGroupCapacity = 16;
-		private const int InitialEntityRecordCapacity = 128;
+		private const int DefaultCapacity = 128;
 
-		private readonly Dictionary<ReadOnlyMemory<uint>, EntityGroup> m_componentBitsToEntityGroups;
-		private readonly Queue<int> m_freeEntityIds;
-		private EntityGroup[] m_entityGroups;
-		private EntityRecord[] m_entityRecords;
-		private int m_entityCount;
+		private readonly EntityArchetypeChunkLookup m_chunks;
+		private Entry[] m_entries;
+		private int[] m_freeEntityIds;
 		private int m_nextEntityId;
+		private int m_count;
 
 		public EntityRegistry()
 		{
-			m_componentBitsToEntityGroups = new Dictionary<ReadOnlyMemory<uint>, EntityGroup>(InitialEntityGroupCapacity, ComponentBitEqualityComparer.Instance);
-			m_entityGroups = new EntityGroup[InitialEntityGroupCapacity];
-			m_freeEntityIds = new Queue<int>(InitialEntityRecordCapacity);
-			m_entityRecords = new EntityRecord[InitialEntityRecordCapacity];
-			m_componentBitsToEntityGroups.Add(ReadOnlyMemory<uint>.Empty, m_entityGroups[0] = new EntityGroup(EntityArchetype.Base));
+			m_chunks = new EntityArchetypeChunkLookup();
+			m_chunks.GetOrCreate(EntityArchetype.Base);
+			m_entries = Array.Empty<Entry>();
+			m_freeEntityIds = Array.Empty<int>();
 		}
 
-		public event EventHandler<Entity>? EntityCreated;
-
-		public event EventHandler<Entity>? EntityDestroyed;
-
-		public int EntityCapacity
+		public int Capacity
 		{
-			get => m_entityRecords.Length;
+			get => m_entries.Length;
 		}
 
-		public int EntityCount
+		public int Count
 		{
-			get => m_entityCount;
+			get => m_count;
 		}
 
 		public Entity CreateEntity()
 		{
-			return CreateEntity(m_entityGroups[0]);
-		}
-
-		public Entity CreateEntity(ReadOnlySpan<ComponentType> componentTypes)
-		{
-			return CreateEntity(GetOrCreateEntityGroup(componentTypes));
+			return CreateEntity(EntityArchetype.Base);
 		}
 
 		public Entity CreateEntity(EntityArchetype archetype)
 		{
-			return CreateEntity(GetOrCreateEntityGroup(archetype));
+			return CreateEntity(m_chunks.GetOrCreate(archetype));
 		}
 
-		private Entity CreateEntity(EntityGroup group)
+		public Entity CreateEntity(params ComponentType[] componentTypes)
 		{
-			lock (m_freeEntityIds)
+			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
+		}
+
+		public Entity CreateEntity(IEnumerable<ComponentType> componentTypes)
+		{
+			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
+		}
+
+		public Entity CreateEntity(ReadOnlySpan<ComponentType> componentTypes)
+		{
+			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
+		}
+
+		private Entity CreateEntity(EntityArchetypeChunkGrouping grouping)
+		{
+			lock (m_chunks)
 			{
-				if (!m_freeEntityIds.TryDequeue(out int entityId))
-				{
-					entityId = m_nextEntityId++;
+				int entityId = m_count++ < m_nextEntityId ?
+							   m_freeEntityIds[m_nextEntityId - m_count] :
+							   m_nextEntityId++;
 
-					if (entityId >= m_entityRecords.Length)
+				if (entityId >= m_entries.Length)
+				{
+					int newCapacity = m_entries.Length == 0 ? DefaultCapacity : 2 * m_entries.Length;
+
+					if ((uint)newCapacity > (uint)Array.MaxLength)
 					{
-						GrowEntityRecordArray(entityId + 1);
+						newCapacity = Array.MaxLength;
 					}
+
+					if (newCapacity < m_count)
+					{
+						newCapacity = m_count;
+					}
+
+					Array.Resize(ref m_entries, newCapacity);
 				}
 
-				ref EntityRecord record = ref m_entityRecords[entityId];
-				EntityArchetypeChunk? chunk = group.LastChunk;
-				Entity entity = new(entityId, record.Version);
+				ref Entry entry = ref m_entries[entityId];
+				Entity entity = new Entity(entityId, entry.Version);
 
-				if (chunk == null || !chunk.TryPush(entity))
+				if (!grouping.TryPeek(out EntityArchetypeChunk? chunk) || chunk.IsFull)
 				{
-					chunk = group.Allocate();
-					chunk.Push(entity);
+					grouping.TryAdd(chunk = new EntityRegistryChunk(grouping.Key));
 				}
 
-				record.Chunk = chunk;
-				record.Index = chunk.Count - 1;
-
-				m_entityCount++;
-				EntityCreated?.Invoke(this, entity);
+				entry.Chunk = (EntityRegistryChunk)chunk;
+				entry.Index = chunk.Count;
+				entry.Chunk.Push(entity);
 				return entity;
 			}
 		}
 
-		private void GrowEntityRecordArray(int capacity)
-		{
-			int newCapacity = m_entityRecords.Length * 2;
-
-			if ((uint)newCapacity > (uint)Array.MaxLength)
-			{
-				newCapacity = Array.MaxLength;
-			}
-
-			if (newCapacity < capacity)
-			{
-				newCapacity = capacity;
-			}
-
-			Array.Resize(ref m_entityRecords, newCapacity);
-		}
-
 		public bool DestroyEntity(Entity entity)
 		{
-			lock (m_freeEntityIds)
+			lock (m_chunks)
 			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
+				ref Entry entry = ref FindEntry(entity);
 
-				if (Unsafe.IsNullRef(ref record))
+				if (Unsafe.IsNullRef(ref entry))
 				{
 					return false;
 				}
 
-				EntityGroup group = m_entityGroups[record.Chunk.Archetype.Id];
-				ref EntityRecord recordToMove = ref m_entityRecords[group.LastChunk![^1].Id];
+				m_chunks[entry.Chunk.Archetype].TryPeek(out EntityArchetypeChunk? chunkToPop);
+				entry.Chunk.SetRange(entry.Index, chunkToPop!, 1);
 
-				recordToMove.Chunk!.PopRange(record.Chunk, record.Index, 1);
+				ref Entry entryToPop = ref m_entries[chunkToPop![^1].Id];
+				entryToPop.Chunk.Pop();
+				entryToPop.Chunk = entry.Chunk;
+				entryToPop.Index = entry.Index;
 
-				if (recordToMove.Chunk.Count == 0)
+				entry.Chunk = null!;
+				entry.Index = 0;
+				entry.Version++;
+
+				int freeIndex = m_nextEntityId - m_count--;
+
+				if (freeIndex >= m_freeEntityIds.Length)
 				{
-					group.Deallocate();
+					int newCapacity = m_freeEntityIds.Length == 0 ? DefaultCapacity : 2 * m_freeEntityIds.Length;
+
+					if ((uint)newCapacity > (uint)Array.MaxLength)
+					{
+						newCapacity = Array.MaxLength;
+					}
+
+					if (newCapacity < m_count)
+					{
+						newCapacity = m_count;
+					}
+
+					Array.Resize(ref m_freeEntityIds, newCapacity);
 				}
 
-				recordToMove.Chunk = record.Chunk;
-				recordToMove.Index = record.Index;
-
-				record.Chunk = null!;
-				record.Index = 0;
-				record.Version++;
-
-				m_entityCount--;
-				m_freeEntityIds.Enqueue(entity.Id);
-				EntityDestroyed?.Invoke(this, entity);
+				m_freeEntityIds[freeIndex] = entity.Id;
 				return true;
 			}
 		}
 
-		public bool IsEntityAlive(Entity entity)
+		public bool HasEntity(Entity entity)
 		{
-			return !Unsafe.IsNullRef(ref FindEntityRecord(entity));
+			return !Unsafe.IsNullRef(ref FindEntry(entity));
 		}
 
-		public EntityQueryResults LocateEntity(Entity entity, out int index)
+		public EntityArchetype GetEntityArchetype(params ComponentType[] componentTypes)
 		{
-			ref EntityRecord record = ref FindEntityRecord(entity);
+			return m_chunks.GetOrCreate(componentTypes).Key;
+		}
 
-			if (Unsafe.IsNullRef(ref record))
+		public EntityArchetype GetEntityArchetype(IEnumerable<ComponentType> componentTypes)
+		{
+			return m_chunks.GetOrCreate(componentTypes).Key;
+		}
+
+		public EntityArchetype GetEntityArchetype(ReadOnlySpan<ComponentType> componentTypes)
+		{
+			return m_chunks.GetOrCreate(componentTypes).Key;
+		}
+
+		public bool TryGetEntityArchetypeChunk(Entity entity, [MaybeNullWhen(false)] out EntityArchetypeChunk chunk)
+		{
+			ref Entry entry = ref FindEntry(entity);
+
+			if (Unsafe.IsNullRef(ref entry))
 			{
-				throw new ArgumentException($"{entity} does not exist within the EntityRegistry.", nameof(entity));
+				chunk = null;
+				return false;
 			}
 
-			index = record.Index;
-			return new EntityQueryResults(record.Chunk);
+			chunk = entry.Chunk;
+			return true;
 		}
 
-		public (EntityQueryResults Results, int Index) LocateEntity(Entity entity)
+		private ref Entry FindEntry(Entity entity)
 		{
-			ref EntityRecord record = ref FindEntityRecord(entity);
-
-			if (Unsafe.IsNullRef(ref record))
+			if ((uint)entity.Id < (uint)m_nextEntityId)
 			{
-				throw new ArgumentException($"{entity} does not exist within the EntityRegistry.", nameof(entity));
-			}
+				ref Entry entry = ref m_entries[entity.Id];
 
-			return (new EntityQueryResults(record.Chunk), record.Index);
-		}
-
-		private ref EntityRecord FindEntityRecord(Entity entity)
-		{
-			EntityRecord[] entityRecords = m_entityRecords;
-
-			if ((uint)entity.Id < (uint)entityRecords.Length)
-			{
-				ref EntityRecord record = ref entityRecords[entity.Id];
-
-				if (record.Chunk != null && record.Version == entity.Version)
+				if (entry.Chunk != null && entry.Version == entity.Version)
 				{
-					return ref record;
+					return ref entry;
 				}
 			}
 
-			return ref Unsafe.NullRef<EntityRecord>();
+			return ref Unsafe.NullRef<Entry>();
 		}
 
-		public EntityArchetype CreateEntityArchetype(ReadOnlySpan<ComponentType> componentTypes)
+		public bool AddComponent(Entity entity, ComponentType componentType)
 		{
-			return GetOrCreateEntityGroup(componentTypes).Archetype;
+			throw new NotImplementedException();
 		}
 
-		private EntityGroup GetOrCreateEntityGroup(ReadOnlySpan<ComponentType> componentTypes)
+		public bool AddComponent<T>(Entity entity, T component) where T : unmanaged
 		{
-			uint[] buffer = ArrayPool<uint>.Shared.Rent(0);
-			int bufferLength = 0;
-
-			for (int i = 0; i < componentTypes.Length; i++)
-			{
-				ComponentType componentType = componentTypes[i];
-
-				if (componentType != null)
-				{
-					int typeId = componentType.Id;
-					int bufferIndex = typeId >> 5;
-
-					if (bufferIndex >= bufferLength)
-					{
-						int newBufferLength = bufferIndex + 1;
-
-						if (newBufferLength > buffer.Length)
-						{
-							uint[] oldBuffer = buffer;
-							buffer = ArrayPool<uint>.Shared.Rent(newBufferLength);
-							Array.Copy(oldBuffer, buffer, bufferLength);
-							ArrayPool<uint>.Shared.Return(oldBuffer);
-						}
-
-						Array.Clear(buffer, bufferLength, newBufferLength);
-						bufferLength = newBufferLength;
-					}
-
-					buffer[bufferIndex] |= 1u << typeId;
-				}
-			}
-
-			EntityGroup? group;
-
-			lock (m_componentBitsToEntityGroups)
-			{
-				if (!m_componentBitsToEntityGroups.TryGetValue(new ReadOnlyMemory<uint>(buffer, 0, bufferLength), out group))
-				{
-					EntityArchetype archetype = new(componentTypes) { Id = m_componentBitsToEntityGroups.Count };
-					group = new EntityGroup(archetype);
-					m_componentBitsToEntityGroups.Add(archetype.ComponentBits.AsMemory(), group);
-
-					if (m_componentBitsToEntityGroups.Count > m_entityGroups.Length)
-					{
-						GrowEntityGroupArray(m_componentBitsToEntityGroups.Count);
-					}
-
-					m_entityGroups[archetype.Id] = group;
-				}
-			}
-
-			ArrayPool<uint>.Shared.Return(buffer);
-			return group;
-		}
-
-		public EntityArchetype CreateEntityArchetype(EntityArchetype archetype)
-		{
-			return GetOrCreateEntityGroup(archetype).Archetype;
-		}
-
-		private EntityGroup GetOrCreateEntityGroup(EntityArchetype archetype)
-		{
-			ArgumentNullException.ThrowIfNull(archetype);
-			EntityGroup[] groups = m_entityGroups;
-			EntityGroup? group;
-
-			if (archetype.Id >= groups.Length || !archetype.Equals((group = groups[archetype.Id])?.Archetype))
-			{
-				lock (m_componentBitsToEntityGroups)
-				{
-					if (!m_componentBitsToEntityGroups.TryGetValue(archetype.ComponentBits.AsMemory(), out group))
-					{
-						EntityArchetype clone = new(archetype) { Id = m_componentBitsToEntityGroups.Count };
-						group = new EntityGroup(clone);
-						m_componentBitsToEntityGroups.Add(clone.ComponentBits.AsMemory(), group);
-
-						if (m_componentBitsToEntityGroups.Count > m_entityGroups.Length)
-						{
-							GrowEntityGroupArray(m_componentBitsToEntityGroups.Count);
-						}
-
-						m_entityGroups[clone.Id] = group;
-					}
-				}
-			}
-
-			return group;
-		}
-
-		private void GrowEntityGroupArray(int capacity)
-		{
-			int newCapacity = m_entityGroups.Length * 2;
-
-			if ((uint)newCapacity > (uint)Array.MaxLength)
-			{
-				newCapacity = Array.MaxLength;
-			}
-
-			if (newCapacity < capacity)
-			{
-				newCapacity = capacity;
-			}
-
-			Array.Resize(ref m_entityGroups, newCapacity);
-		}
-
-		public void AddComponent(Entity entity, ComponentType componentType)
-		{
-			ArgumentNullException.ThrowIfNull(componentType);
-
-			lock (m_freeEntityIds)
-			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
-
-				if (Unsafe.IsNullRef(ref record))
-				{
-					throw new ArgumentException($"{entity} does not exist within the EntityRegistry.", nameof(entity));
-				}
-
-				if (!record.Chunk.TryGetComponentData(componentType, out Span<byte> componentData))
-				{
-					MoveEntity(ref record, GetOrCreateEntityGroupSuperset(record.Chunk.Archetype, componentType));
-					componentData = record.Chunk.GetComponentData(componentType);
-				}
-
-				Unsafe.InitBlock(ref componentData[record.Index * componentType.ByteSize], 0, (uint)componentType.ByteSize);
-			}
-		}
-
-		public bool TryAddComponent(Entity entity, ComponentType componentType)
-		{
-			ArgumentNullException.ThrowIfNull(componentType);
-
-			lock (m_freeEntityIds)
-			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
-
-				if (Unsafe.IsNullRef(ref record))
-				{
-					return false;
-				}
-
-				if (!record.Chunk.TryGetComponentData(componentType, out Span<byte> componentData))
-				{
-					MoveEntity(ref record, GetOrCreateEntityGroupSuperset(record.Chunk.Archetype, componentType));
-					componentData = record.Chunk.GetComponentData(componentType);
-				}
-
-				Unsafe.InitBlock(ref componentData[record.Index * componentType.ByteSize], 0, (uint)componentType.ByteSize);
-				return true;
-			}
+			throw new NotImplementedException();
 		}
 
 		public bool RemoveComponent(Entity entity, ComponentType componentType)
 		{
-			ArgumentNullException.ThrowIfNull(componentType);
-
-			lock (m_freeEntityIds)
-			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
-
-				if (Unsafe.IsNullRef(ref record) || !record.Chunk.TryGetComponentData(componentType, out Span<byte> componentData))
-				{
-					return false;
-				}
-
-				MoveEntity(ref record, GetOrCreateEntityGroupSubset(record.Chunk.Archetype, componentType));
-				return true;
-			}
+			throw new NotImplementedException();
 		}
 
 		public bool RemoveComponent<T>(Entity entity, out T component) where T : unmanaged
 		{
-			lock (m_freeEntityIds)
-			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
-
-				if (Unsafe.IsNullRef(ref record) || !record.Chunk.TryGetComponents(out Span<T> components))
-				{
-					component = default;
-					return false;
-				}
-
-				component = components[record.Index];
-				MoveEntity(ref record, GetOrCreateEntityGroupSubset(record.Chunk.Archetype, ComponentType.TypeOf<T>()));
-				return true;
-			}
+			throw new NotImplementedException();
 		}
 
-		public void SetComponent<T>(Entity entity, T component) where T : unmanaged
+		public ref T GetComponent<T>(Entity entity) where T : unmanaged
 		{
-			lock (m_freeEntityIds)
-			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
-
-				if (Unsafe.IsNullRef(ref record))
-				{
-					throw new ArgumentException($"{entity} does not exist within the EntityRegistry.", nameof(entity));
-				}
-
-				if (!record.Chunk.TryGetComponents(out Span<T> components))
-				{
-					MoveEntity(ref record, GetOrCreateEntityGroupSuperset(record.Chunk.Archetype, ComponentType.TypeOf<T>()));
-					components = record.Chunk.GetComponents<T>();
-				}
-
-				components[record.Index] = component;
-			}
+			throw new NotImplementedException();
 		}
 
-		public bool TrySetComponent<T>(Entity entity, T component) where T : unmanaged
+		public bool TryGetComponent<T>(Entity entity, out T component) where T : unmanaged
 		{
-			lock (m_freeEntityIds)
-			{
-				ref EntityRecord record = ref FindEntityRecord(entity);
-
-				if (Unsafe.IsNullRef(ref record))
-				{
-					return false;
-				}
-
-				if (!record.Chunk.TryGetComponents(out Span<T> components))
-				{
-					MoveEntity(ref record, GetOrCreateEntityGroupSuperset(record.Chunk.Archetype, ComponentType.TypeOf<T>()));
-					components = record.Chunk.GetComponents<T>();
-				}
-
-				components[record.Index] = component;
-				return true;
-			}
+			throw new NotImplementedException();
 		}
 
-		private EntityGroup GetOrCreateEntityGroupSuperset(EntityArchetype archetype, ComponentType componentType)
+		private struct Entry
 		{
-			ImmutableArray<uint> componentBits = archetype.ComponentBits;
-			int bufferLength = Math.Max(componentBits.Length, componentType.Id + 32 >> 5);
-			uint[] buffer = ArrayPool<uint>.Shared.Rent(bufferLength);
-			EntityGroup? group;
-
-			componentBits.CopyTo(buffer);
-
-			if (componentBits.Length < bufferLength)
-			{
-				Array.Clear(buffer, componentBits.Length, bufferLength - componentBits.Length);
-			}
-
-			buffer[componentType.Id >> 5] |= 1u << componentType.Id;
-
-			lock (m_componentBitsToEntityGroups)
-			{
-				if (!m_componentBitsToEntityGroups.TryGetValue(new ReadOnlyMemory<uint>(buffer, 0, bufferLength), out group))
-				{
-					archetype = archetype.Add(componentType, m_componentBitsToEntityGroups.Count);
-					group = new EntityGroup(archetype);
-					m_componentBitsToEntityGroups.Add(archetype.ComponentBits.AsMemory(), group);
-
-					if (m_componentBitsToEntityGroups.Count > m_entityGroups.Length)
-					{
-						GrowEntityGroupArray(m_componentBitsToEntityGroups.Count);
-					}
-
-					m_entityGroups[archetype.Id] = group;
-				}
-			}
-
-			ArrayPool<uint>.Shared.Return(buffer);
-			return group;
-		}
-
-		private EntityGroup GetOrCreateEntityGroupSubset(EntityArchetype archetype, ComponentType componentType)
-		{
-			ImmutableArray<ComponentType> componentTypes = archetype.ComponentTypes;
-
-			if (componentTypes.Length <= 1)
-			{
-				return m_entityGroups[0];
-			}
-
-			ImmutableArray<uint> componentBits = archetype.ComponentBits;
-			int bufferLength = componentBits.Length;
-			uint[] buffer = ArrayPool<uint>.Shared.Rent(bufferLength);
-			EntityGroup? group;
-
-			componentBits.CopyTo(buffer);
-			buffer[componentType.Id >> 5] &= ~(1u << componentType.Id);
-
-			if (componentTypes[^1] == componentType)
-			{
-				bufferLength = componentTypes[^2].Id + 32 >> 5;
-			}
-
-			lock (m_componentBitsToEntityGroups)
-			{
-				if (!m_componentBitsToEntityGroups.TryGetValue(new ReadOnlyMemory<uint>(buffer, 0, bufferLength), out group))
-				{
-					archetype = archetype.Add(componentType, m_componentBitsToEntityGroups.Count);
-					group = new EntityGroup(archetype);
-					m_componentBitsToEntityGroups.Add(archetype.ComponentBits.AsMemory(), group);
-
-					if (m_componentBitsToEntityGroups.Count > m_entityGroups.Length)
-					{
-						GrowEntityGroupArray(m_componentBitsToEntityGroups.Count);
-					}
-
-					m_entityGroups[archetype.Id] = group;
-				}
-			}
-
-			ArrayPool<uint>.Shared.Return(buffer);
-			return group;
-		}
-
-		private void MoveEntity(ref EntityRecord record, EntityGroup groupToMoveTo)
-		{
-			EntityGroup groupToMoveFrom = m_entityGroups[record.Chunk.Archetype.Id];
-			EntityArchetypeChunk? chunkToMoveTo = groupToMoveTo.LastChunk;
-
-			if (chunkToMoveTo == null || !chunkToMoveTo.TryPushRange(record.Chunk, record.Index, 1))
-			{
-				chunkToMoveTo = groupToMoveTo.Allocate();
-				chunkToMoveTo.PushRange(record.Chunk, record.Index, 1);
-			}
-
-			EntityArchetypeChunk lastChunkInGroup = groupToMoveFrom.LastChunk!;
-			ref EntityRecord lastRecordInGroup = ref m_entityRecords[lastChunkInGroup[^1].Id];
-
-			lastChunkInGroup.PopRange(record.Chunk, record.Index, 1);
-
-			if (lastChunkInGroup.Count == 0)
-			{
-				groupToMoveFrom.Deallocate();
-			}
-
-			lastRecordInGroup.Chunk = record.Chunk;
-			lastRecordInGroup.Index = record.Index;
-			record.Chunk = chunkToMoveTo;
-			record.Index = chunkToMoveTo.Count - 1;
-		}
-
-		private sealed class EntityGroup
-		{
-			private readonly EntityArchetype m_archetype;
-			private EntityArchetypeChunk? m_lastChunk;
-			private int m_count;
-			private int m_version;
-
-			public EntityGroup(EntityArchetype archetype)
-			{
-				m_archetype = archetype;
-			}
-
-			public EntityArchetype Archetype
-			{
-				get => m_archetype;
-			}
-
-			public EntityArchetypeChunk? LastChunk
-			{
-				get => m_lastChunk;
-			}
-
-			public int Count
-			{
-				get => m_count;
-			}
-
-			public int Version
-			{
-				get => m_version;
-			}
-
-			public EntityArchetypeChunk Allocate()
-			{
-				EntityArchetypeChunk result = m_lastChunk == null ? new(m_archetype) : new(m_lastChunk);
-				m_lastChunk = result;
-				m_count++;
-				m_version++;
-				return result;
-			}
-
-			public bool Deallocate()
-			{
-				if (m_lastChunk == null)
-				{
-					return false;
-				}
-
-				m_lastChunk = m_lastChunk.Next;
-				m_count--;
-				m_version++;
-				return true;
-			}
-		}
-
-		private struct EntityRecord
-		{
-			public EntityArchetypeChunk Chunk;
+			public EntityRegistryChunk Chunk;
 			public int Index;
 			public int Version;
+		}
+
+		private sealed class EntityRegistryChunk : EntityArchetypeChunk
+		{
+			public EntityRegistryChunk(EntityArchetype archetype) : base(archetype)
+			{
+			}
+
+			public void Push(Entity entity)
+			{
+				base.InsertEntity(Count, entity);
+			}
+
+			public void Pop()
+			{
+				base.RemoveEntity(Count - 1);
+			}
+
+			public void SetRange(int index, EntityArchetypeChunk chunk, int length)
+			{
+				base.SetEntities(index, chunk, chunk.Count - length, length);
+			}
+
+			protected override void ClearEntities()
+			{
+				ThrowNotSupportedException();
+			}
+
+			protected override void InsertEntities(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+			{
+				ThrowNotSupportedException();
+			}
+
+			protected override void InsertEntity(int index, Entity entity)
+			{
+				ThrowNotSupportedException();
+			}
+
+			protected override void RemoveEntity(int index)
+			{
+				ThrowNotSupportedException();
+			}
+
+			protected override void SetEntities(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+			{
+				ThrowNotSupportedException();
+			}
+
+			protected override void SetEntity(int index, Entity entity)
+			{
+				ThrowNotSupportedException();
+			}
+
+			private static void ThrowNotSupportedException()
+			{
+				throw new NotSupportedException(
+					"EntityArchetypeChunks created by an EntityRegistry cannot be modified directly.");
+			}
 		}
 	}
 }

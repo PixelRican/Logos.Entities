@@ -2,47 +2,34 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Monophyll.Entities
 {
-	public sealed class EntityArchetypeChunk : IReadOnlyList<Entity>, ICollection
+	public class EntityArchetypeChunk : IList<Entity>, IReadOnlyList<Entity>, IList
 	{
-		private readonly EntityArchetypeChunk? m_next;
 		private readonly EntityArchetype m_archetype;
 		private readonly byte[] m_data;
 		private int m_count;
 		private int m_version;
 
+		public EntityArchetypeChunk() : this(EntityArchetype.Base)
+		{
+		}
+
 		public EntityArchetypeChunk(EntityArchetype archetype)
 		{
 			ArgumentNullException.ThrowIfNull(archetype);
 			m_archetype = archetype;
-			m_data = new byte[archetype.ChunkByteSize];
-		}
-
-		public EntityArchetypeChunk(EntityArchetypeChunk chunk)
-		{
-			ArgumentNullException.ThrowIfNull(chunk);
-			m_next = chunk;
-			m_archetype = chunk.m_archetype;
-			m_data = new byte[chunk.m_data.Length];
-		}
-
-		public EntityArchetypeChunk? Next
-		{
-			get => m_next;
+			m_data = GC.AllocateUninitializedArray<byte>(archetype.ChunkByteSize);
 		}
 
 		public EntityArchetype Archetype
 		{
 			get => m_archetype;
-		}
-
-		public int ByteSize
-		{
-			get => m_data.Length;
 		}
 
 		public int Count
@@ -55,6 +42,21 @@ namespace Monophyll.Entities
 			get => m_version;
 		}
 
+		public bool IsEmpty
+		{
+			get => m_count == 0;
+		}
+
+		public bool IsFull
+		{
+			get => m_count == m_archetype.ChunkCapacity;
+		}
+
+		bool ICollection<Entity>.IsReadOnly
+		{
+			get => false;
+		}
+
 		bool ICollection.IsSynchronized
 		{
 			get => false;
@@ -65,50 +67,125 @@ namespace Monophyll.Entities
 			get => this;
 		}
 
+		bool IList.IsFixedSize
+		{
+			get => true;
+		}
+
+		bool IList.IsReadOnly
+		{
+			get => false;
+		}
+
 		public Entity this[int index]
 		{
 			get
 			{
 				if ((uint)index >= (uint)m_count)
 				{
-					throw new ArgumentOutOfRangeException(nameof(index), index,
-						"Index is less than zero or index is greater than or equal to Count.");
+					throw new ArgumentOutOfRangeException(nameof(index), index, string.Empty);
 				}
 
-				return Unsafe.Add(ref Unsafe.As<byte, Entity>(ref m_data[0]), index);
+				return Unsafe.As<byte, Entity>(ref MemoryMarshal.GetReference(new Span<byte>(
+					m_data, index * Unsafe.SizeOf<Entity>(), Unsafe.SizeOf<Entity>())));
 			}
+			set => SetEntity(index, value);
+		}
+
+		object? IList.this[int index]
+		{
+			get => this[index];
 			set
 			{
-				if ((uint)index >= (uint)m_count)
+				if (value is not Entity entity)
 				{
-					throw new ArgumentOutOfRangeException(nameof(index), index,
-						"Index is less than zero or index is greater than or equal to Count.");
+					throw new ArgumentException("Value is not of type Entity.", nameof(value));
 				}
 
-				Unsafe.Add(ref Unsafe.As<byte, Entity>(ref m_data[0]), index) = value;
-				m_version++;
+				SetEntity(index, entity);
 			}
+		}
+
+		public void Add(Entity entity)
+		{
+			InsertEntity(m_count, entity);
+		}
+
+		int IList.Add(object? value)
+		{
+			if (value is not Entity entity)
+			{
+				throw new ArgumentException("Value is not of type Entity.");
+			}
+
+			int count = m_count;
+
+			if ((uint)count < (uint)m_archetype.ChunkCapacity)
+			{
+				InsertEntity(count, entity);
+				return count;
+			}
+
+			return -1;
+		}
+
+		public void AddRange(EntityArchetypeChunk chunk)
+		{
+			ArgumentNullException.ThrowIfNull(chunk);
+			InsertEntities(m_count, chunk, 0, chunk.m_count);
+		}
+
+		public void AddRange(EntityArchetypeChunk chunk, int chunkIndex, int length)
+		{
+			InsertEntities(m_count, chunk, chunkIndex, length);
+		}
+
+		public void Clear()
+		{
+			ClearEntities();
+		}
+
+		public bool Contains(Entity entity)
+		{
+			return GetEntities().Contains(entity);
+		}
+
+		bool IList.Contains(object? value)
+		{
+			return value is Entity entity && GetEntities().Contains(entity);
+		}
+
+		public void CopyTo(Entity[] array)
+		{
+			ArgumentNullException.ThrowIfNull(array);
+			GetEntities().CopyTo(array);
 		}
 
 		public void CopyTo(Entity[] array, int arrayIndex)
 		{
-			ArgumentNullException.ThrowIfNull(array, nameof(array));
+			ArgumentNullException.ThrowIfNull(array);
 			GetEntities().CopyTo(array.AsSpan(arrayIndex));
+		}
+
+		public void CopyTo(int index, Entity[] array, int arrayIndex, int length)
+		{
+			ArgumentNullException.ThrowIfNull(array);
+			GetEntities()[..index].CopyTo(array.AsSpan(arrayIndex, length));
 		}
 
 		void ICollection.CopyTo(Array array, int index)
 		{
-            ArgumentNullException.ThrowIfNull(array, nameof(array));
+			ArgumentNullException.ThrowIfNull(array);
 
-            if (array.Rank != 1)
+			if (array.Rank != 1)
 			{
-				throw new ArgumentException("Multi-dimensional arrays are not supported.");
+				throw new ArgumentException("Multi-dimensional arrays are not supported.", nameof(array));
 			}
 
 			try
-            {
+			{
 				GetEntities().CopyTo(((Entity[])array).AsSpan(index));
-            }
+			}
 			catch (InvalidCastException)
 			{
 				throw new ArgumentException("Array is not of type Entity[].", nameof(array));
@@ -118,76 +195,44 @@ namespace Monophyll.Entities
 		public Span<T> GetComponents<T>() where T : unmanaged
 		{
 			ComponentType componentType = ComponentType.TypeOf<T>();
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			int offset;
+			int count = m_count;
+			int index;
 
-			if (componentType.ByteSize == 0 ||
-				componentType.Id >= componentOffsets.Length ||
-				(offset = componentOffsets[componentType.Id]) == 0)
-			{
-				throw new ArgumentException(
-					$"The EntityArchetypeChunk does not store components of type {typeof(T).Name}.");
-			}
-
-			return MemoryMarshal.CreateSpan(ref Unsafe.As<byte, T>(ref m_data[offset]), m_count);
-		}
-
-		public bool TryGetComponents<T>(out Span<T> result) where T : unmanaged
-		{
-			ComponentType componentType = ComponentType.TypeOf<T>();
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			int offset;
-
-			if (componentType.ByteSize == 0 ||
-				componentType.Id >= componentOffsets.Length ||
-				(offset = componentOffsets[componentType.Id]) == 0)
-			{
-				result = default;
-				return false;
-			}
-
-			result = MemoryMarshal.CreateSpan(ref Unsafe.As<byte, T>(ref m_data[offset]), m_count);
-			return true;
-		}
-
-		public Span<byte> GetComponentData(ComponentType componentType)
-		{
-			ArgumentNullException.ThrowIfNull(componentType);
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			int offset;
-
-			if (componentType.ByteSize == 0 ||
-				componentType.Id >= componentOffsets.Length ||
-				(offset = componentOffsets[componentType.Id]) == 0)
+			if (componentType.ByteSize == 0 || (index = m_archetype.ComponentTypes.BinarySearch(componentType)) < 0)
 			{
 				throw new ArgumentException(
 					$"The EntityArchetypeChunk does not store components of type {componentType.Type.Name}.");
 			}
 
-			return MemoryMarshal.CreateSpan(ref m_data[offset], m_count * componentType.ByteSize);
+			ref T reference = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(new Span<byte>(
+				m_data, m_archetype.ComponentOffsets[index], count * Unsafe.SizeOf<T>())));
+			return MemoryMarshal.CreateSpan(ref reference, count);
 		}
 
-		public bool TryGetComponentData(ComponentType componentType, out Span<byte> result)
+		public bool TryGetComponents<T>(out Span<T> components) where T : unmanaged
 		{
-			ArgumentNullException.ThrowIfNull(componentType);
-			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			int offset;
+			ComponentType componentType = ComponentType.TypeOf<T>();
+			int count = m_count;
+			int index;
 
-			if (componentType.ByteSize == 0 ||
-				componentType.Id >= componentOffsets.Length ||
-				(offset = componentOffsets[componentType.Id]) == 0)
+			if (componentType.ByteSize == 0 || (index = m_archetype.ComponentTypes.BinarySearch(componentType)) < 0)
 			{
-				result = default;
+				components = default;
 				return false;
 			}
 
-			result = MemoryMarshal.CreateSpan(ref m_data[offset], m_count * componentType.ByteSize);
+			ref T reference = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(new Span<byte>(
+				m_data, m_archetype.ComponentOffsets[index], count * componentType.ByteSize)));
+			components = MemoryMarshal.CreateSpan(ref reference, count);
 			return true;
 		}
 
 		public ReadOnlySpan<Entity> GetEntities()
 		{
-			return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, Entity>(ref m_data[0]), m_count);
+			int count = m_count;
+			ref Entity reference = ref Unsafe.As<byte, Entity>(ref MemoryMarshal.GetReference(
+				new Span<byte>(m_data, 0, count * Unsafe.SizeOf<Entity>())));
+			return MemoryMarshal.CreateReadOnlySpan(ref reference, count);
 		}
 
 		public Enumerator GetEnumerator()
@@ -205,159 +250,385 @@ namespace Monophyll.Entities
 			return new Enumerator(this);
 		}
 
-		public void Push(Entity item)
+		public int IndexOf(Entity entity)
 		{
-			if (m_count >= m_archetype.ChunkCapacity)
+			return GetEntities().IndexOf(entity);
+		}
+
+		int IList.IndexOf(object? value)
+		{
+			if (value is Entity entity)
+			{
+				return GetEntities().IndexOf(entity);
+			}
+
+			return -1;
+		}
+
+		public void Insert(int index, Entity entity)
+		{
+			InsertEntity(index, entity);
+		}
+
+		void IList.Insert(int index, object? value)
+		{
+			if (value is not Entity entity)
+			{
+				throw new ArgumentException("Value is not of type Entity.", nameof(value));
+			}
+
+			InsertEntity(index, entity);
+		}
+
+		public void InsertRange(int index, EntityArchetypeChunk chunk)
+		{
+			ArgumentNullException.ThrowIfNull(chunk);
+			InsertEntities(index, chunk, 0, chunk.m_count);
+		}
+
+		public void InsertRange(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+		{
+			InsertEntities(index, chunk, chunkIndex, length);
+		}
+
+		public bool Remove(Entity entity)
+		{
+			int index = GetEntities().IndexOf(entity);
+
+			if (index >= 0)
+			{
+				RemoveEntity(index);
+				return true;
+			}
+
+			return false;
+		}
+
+		void IList.Remove(object? value)
+		{
+			int index;
+
+			if (value is Entity entity && (index = GetEntities().IndexOf(entity)) >= 0)
+			{
+				RemoveEntity(index);
+			}
+		}
+
+		public void RemoveAt(int index)
+		{
+			RemoveEntity(index);
+		}
+
+		public void SetRange(int index, EntityArchetypeChunk chunk)
+		{
+			ArgumentNullException.ThrowIfNull(chunk);
+			SetEntities(index, chunk, 0, chunk.m_count);
+		}
+
+		public void SetRange(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+		{
+			SetEntities(index, chunk, chunkIndex, length);
+		}
+
+		protected virtual void ClearEntities()
+		{
+			m_count = 0;
+			m_version++;
+		}
+
+		protected virtual void InsertEntity(int index, Entity entity)
+		{
+			int count = m_count;
+			int capacity = m_archetype.ChunkCapacity;
+
+			if ((uint)index > (uint)count)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Index is less than zero or greater than Count.");
+			}
+
+			if ((uint)count >= (uint)capacity)
 			{
 				throw new InvalidOperationException("The EntityArchetypeChunk is full.");
 			}
 
-			UnsafePush(item);
-		}
-
-		public bool TryPush(Entity item)
-		{
-			if (m_count >= m_archetype.ChunkCapacity)
-			{
-				return false;
-			}
-
-			UnsafePush(item);
-			return true;
-		}
-
-		private void UnsafePush(Entity item)
-		{
 			ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
 			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
-			ref byte data = ref m_data[0];
+			Span<byte> data = m_data;
+			int byteSize = Unsafe.SizeOf<Entity>();
 
-			Unsafe.Add(ref Unsafe.As<byte, Entity>(ref data), m_count) = item;
-
-			for (int i = 0; i < componentTypes.Length; i++)
+			if (index == count)
 			{
-				ComponentType componentType = componentTypes[i];
-				int offset = componentOffsets[componentType.Id] + componentType.ByteSize * m_count;
-				Unsafe.InitBlock(ref Unsafe.Add(ref data, offset), 0, (uint)componentType.ByteSize);
+				Unsafe.As<byte, Entity>(ref MemoryMarshal.GetReference(data.Slice(index * byteSize, byteSize))) = entity;
+
+				for (int i = 0; i < componentTypes.Length; i++)
+				{
+					byteSize = componentTypes[i].ByteSize;
+					data.Slice(componentOffsets[i] + index * byteSize, byteSize).Clear();
+				}
+			}
+			else
+			{
+				int copyLength = count - index;
+				int byteLength = copyLength * byteSize;
+				int byteIndex = index * byteSize;
+
+				data.Slice(byteIndex, byteLength).CopyTo(data.Slice(byteIndex + byteSize, byteLength));
+				Unsafe.As<byte, Entity>(ref MemoryMarshal.GetReference(data.Slice(byteIndex, byteSize))) = entity;
+
+				for (int i = 0; i < componentTypes.Length; i++)
+				{
+					byteSize = componentTypes[i].ByteSize;
+					byteLength = copyLength * byteSize;
+					byteIndex = componentOffsets[i] + index * byteSize;
+
+					data.Slice(byteIndex, byteLength).CopyTo(data.Slice(byteIndex + byteSize, byteLength));
+					data.Slice(byteIndex, byteSize).Clear();
+				}
 			}
 
-			m_count++;
+			m_count = count + 1;
 			m_version++;
 		}
 
-		public void PushRange(EntityArchetypeChunk chunk, int startIndex, int count)
+		protected virtual void InsertEntities(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
 		{
 			ArgumentNullException.ThrowIfNull(chunk);
-			ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-			ArgumentOutOfRangeException.ThrowIfNegative(count);
-			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, chunk.m_count - startIndex);
-			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, m_archetype.ChunkCapacity - m_count);
+			ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-			UnsafeCopy(chunk, startIndex, this, m_count, count);
-			m_count += count;
-			m_version++;
-		}
+			int count = m_count;
+			int chunkCount = chunk.m_count;
 
-		public bool TryPushRange(EntityArchetypeChunk chunk, int startIndex, int count)
-		{
-			if (chunk == null || startIndex < 0 || count < 0 ||
-				count >= chunk.m_count - startIndex ||
-				count >= m_archetype.ChunkCapacity - m_count)
+			if ((uint)index > (uint)count)
 			{
-				return false;
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Index is less than zero or greater than Count.");
 			}
 
-			UnsafeCopy(chunk, startIndex, this, m_count, count);
-			m_count += count;
-			m_version++;
-			return true;
-		}
-
-		public Entity Pop()
-		{
-			if (m_count <= 0)
+			if ((uint)chunkIndex >= (uint)chunkCount)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is empty.");
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Chunk index is less than zero or greater than or equal to the other EntityArchetypeChunk's Count.");
 			}
 
-			Entity result = Unsafe.Add(ref Unsafe.As<byte, Entity>(ref m_data[0]), --m_count);
-			m_version++;
-			return result;
-		}
-
-		public bool TryPop(out Entity result)
-		{
-			if (m_count <= 0)
+			if (m_archetype.ChunkCapacity - count < length)
 			{
-				result = default;
-				return false;
+				throw new ArgumentOutOfRangeException(nameof(length), length,
+					"Length exceeds the bounds of the EntityArchetypeChunk.");
 			}
 
-			result = Unsafe.Add(ref Unsafe.As<byte, Entity>(ref m_data[0]), --m_count);
+			if (chunkCount - chunkIndex < length)
+			{
+				throw new ArgumentOutOfRangeException(nameof(length), length,
+					"Length exceeds the bounds of the other EntityArchetypeChunk.");
+			}
+
+			if (chunkCount == 0)
+			{
+				return;
+			}
+
+			if (index == count)
+			{
+				CopyFromEntityArchetypeChunk(index, chunk, chunkIndex, length);
+			}
+			else
+			{
+				EntityArchetype otherArchetype = chunk.m_archetype;
+				ImmutableArray<ComponentType> otherComponentTypes = otherArchetype.ComponentTypes;
+				ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
+				ImmutableArray<int> otherComponentOffsets = otherArchetype.ComponentOffsets;
+				ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
+				ReadOnlySpan<byte> otherData = chunk.m_data;
+				Span<byte> data = m_data;
+				int byteSize = Unsafe.SizeOf<Entity>();
+				int byteLength = length * byteSize;
+				int otherTypeIndex = 0;
+				int typeIndex = 0;
+				int byteIndex = index * byteSize;
+				Span<byte> slice = data.Slice(byteIndex, byteLength);
+
+				slice.CopyTo(data.Slice(byteIndex + byteLength, byteLength));
+				otherData.Slice(chunkIndex * byteSize, byteLength).CopyTo(slice);
+
+				while (otherTypeIndex < otherComponentTypes.Length && typeIndex < componentTypes.Length)
+				{
+					ComponentType otherComponentType = otherComponentTypes[otherTypeIndex];
+					ComponentType componentType = componentTypes[typeIndex];
+
+					switch (ComponentType.Compare(otherComponentType, componentType))
+					{
+						case -1:
+							otherTypeIndex++;
+							continue;
+						case 1:
+							byteSize = componentType.ByteSize;
+							byteLength = length * byteSize;
+							byteIndex = componentOffsets[typeIndex++] + index * byteSize;
+							slice = data.Slice(byteIndex, byteLength);
+							slice.CopyTo(data.Slice(byteIndex + byteLength, byteLength));
+							slice.Clear();
+							continue;
+						default:
+							Debug.Assert(otherComponentType == componentType);
+							byteSize = componentType.ByteSize;
+							byteLength = length * byteSize;
+							byteIndex = componentOffsets[typeIndex++] + index * byteSize;
+							slice = data.Slice(byteIndex, byteLength);
+							slice.CopyTo(data.Slice(byteIndex + byteLength, byteLength));
+							otherData.Slice(otherComponentOffsets[otherTypeIndex++] + chunkIndex * byteSize, byteLength)
+								.CopyTo(slice);
+							continue;
+					}
+				}
+
+				while (typeIndex < componentTypes.Length)
+				{
+					byteSize = componentTypes[typeIndex].ByteSize;
+					byteLength = length * byteSize;
+					byteIndex = componentOffsets[typeIndex++] + index * byteSize;
+					slice = data.Slice(byteIndex, byteLength);
+					slice.CopyTo(data.Slice(byteIndex + byteLength, byteLength));
+					slice.Clear();
+				}
+			}
+
+			m_count = count + length;
 			m_version++;
-			return true;
 		}
 
-		public void PopRange(EntityArchetypeChunk chunk, int startIndex, int count)
+		protected virtual void RemoveEntity(int index)
+		{
+			int count = m_count - 1;
+
+			if ((uint)index > (uint)count)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Index is less than zero or greater than or equal to Count.");
+			}
+
+			if (index < count)
+			{
+				ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
+				ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
+				Span<byte> data = m_data;
+				int byteSize = Unsafe.SizeOf<Entity>();
+				int copyLength = count - index;
+				int byteLength = copyLength * byteSize;
+				int byteIndex = index * byteSize;
+
+				data.Slice(byteIndex + byteSize, byteLength).CopyTo(data.Slice(byteIndex, byteLength));
+
+				for (int i = 0; i < componentTypes.Length; i++)
+				{
+					byteSize = componentTypes[i].ByteSize;
+					byteLength = copyLength * byteSize;
+					byteIndex = componentOffsets[i] + index * byteSize;
+
+					data.Slice(byteIndex + byteSize, byteLength).CopyTo(data.Slice(byteIndex, byteLength));
+				}
+			}
+
+			m_count = count;
+			m_version++;
+		}
+
+		protected virtual void SetEntity(int index, Entity entity)
+		{
+			if ((uint)index >= (uint)m_count)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Index is less than zero or greater than or equal to Count.");
+			}
+
+			Unsafe.As<byte, Entity>(ref MemoryMarshal.GetReference(new Span<byte>(
+				m_data, index * Unsafe.SizeOf<Entity>(), Unsafe.SizeOf<Entity>()))) = entity;
+			m_version++;
+		}
+
+		protected virtual void SetEntities(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
 		{
 			ArgumentNullException.ThrowIfNull(chunk);
-			ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-			ArgumentOutOfRangeException.ThrowIfNegative(count);
-			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, chunk.m_count - startIndex);
-			ArgumentOutOfRangeException.ThrowIfGreaterThan(count, m_count);
+			ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-			int copyIndex = m_count - count;
-			UnsafeCopy(this, copyIndex, chunk, startIndex, count);
-			m_count = copyIndex;
-			m_version++;
-			chunk.m_version++;
-		}
+			int count = m_count;
+			int chunkCount = chunk.m_count;
 
-		public bool TryPopRange(EntityArchetypeChunk chunk, int startIndex, int count)
-		{
-			if (chunk == null || startIndex < 0 || count < 0 ||
-				count >= chunk.m_count - startIndex || count >= m_count)
+			if ((uint)index > (uint)count)
 			{
-				return false;
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Index is less than zero or greater than Count.");
 			}
 
-			int copyIndex = m_count - count;
-			UnsafeCopy(this, copyIndex, chunk, startIndex, count);
-			m_count = copyIndex;
-			m_version++;
-			chunk.m_version++;
-			return true;
+			if ((uint)chunkIndex >= (uint)chunkCount)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index), index,
+					"Chunk index is less than zero or greater than or equal to the other EntityArchetypeChunk's Count.");
+			}
+
+			if (count - index < length)
+			{
+				throw new ArgumentOutOfRangeException(nameof(length), length,
+					"Length exceeds the bounds of the EntityArchetypeChunk.");
+			}
+
+			if (chunkCount - chunkIndex < length)
+			{
+				throw new ArgumentOutOfRangeException(nameof(length), length,
+					"Length exceeds the bounds of the other EntityArchetypeChunk.");
+			}
+
+			if (chunkCount > 0)
+			{
+				CopyFromEntityArchetypeChunk(index, chunk, chunkIndex, length);
+				m_version++;
+			}
 		}
 
-		private static void UnsafeCopy(EntityArchetypeChunk sourceChunk, int sourceIndex, EntityArchetypeChunk destinationChunk, int destinationIndex, int count)
+		private void CopyFromEntityArchetypeChunk(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
 		{
-			ImmutableArray<ComponentType> destinationComponentTypes = destinationChunk.m_archetype.ComponentTypes;
-			ImmutableArray<int> destinationComponentOffsets = destinationChunk.m_archetype.ComponentOffsets;
-			ImmutableArray<int> sourceComponentOffsets = sourceChunk.m_archetype.ComponentOffsets;
-			ref byte destinationData = ref destinationChunk.m_data[0];
-			ref byte sourceData = ref sourceChunk.m_data[0];
+			EntityArchetype otherArchetype = chunk.m_archetype;
+			ImmutableArray<ComponentType> otherComponentTypes = otherArchetype.ComponentTypes;
+			ImmutableArray<ComponentType> componentTypes = m_archetype.ComponentTypes;
+			ImmutableArray<int> otherComponentOffsets = otherArchetype.ComponentOffsets;
+			ImmutableArray<int> componentOffsets = m_archetype.ComponentOffsets;
+			ReadOnlySpan<byte> otherData = chunk.m_data;
+			Span<byte> data = m_data;
+			int byteSize = Unsafe.SizeOf<Entity>();
+			int byteLength = length * byteSize;
+			int otherTypeIndex = 0;
+			int typeIndex = 0;
 
-			Unsafe.CopyBlock(ref Unsafe.Add(ref destinationData, destinationIndex * Unsafe.SizeOf<Entity>()),
-				ref Unsafe.Add(ref sourceData, sourceIndex * Unsafe.SizeOf<Entity>()),
-				(uint)(count * Unsafe.SizeOf<Entity>()));
+			otherData.Slice(chunkIndex * byteSize, byteLength).CopyTo(data.Slice(index * byteSize, byteLength));
 
-			for (int i = 0; i < destinationComponentTypes.Length; i++)
+			while (otherTypeIndex < otherComponentTypes.Length && typeIndex < componentTypes.Length)
 			{
-				ComponentType componentType = destinationComponentTypes[i];
-				int destinationOffset = destinationComponentOffsets[componentType.Id] + destinationIndex * componentType.ByteSize;
-				int sourceOffset;
+				ComponentType otherComponentType = otherComponentTypes[otherTypeIndex];
+				ComponentType componentType = componentTypes[typeIndex];
 
-				if (componentType.Id < sourceComponentOffsets.Length &&
-					(sourceOffset = sourceComponentOffsets[componentType.Id]) != 0)
+				switch (ComponentType.Compare(otherComponentType, componentType))
 				{
-					Unsafe.CopyBlock(ref Unsafe.Add(ref destinationData, destinationOffset),
-						ref Unsafe.Add(ref sourceData, sourceOffset + sourceIndex * componentType.ByteSize),
-						(uint)(count * componentType.ByteSize));
+					case -1:
+						otherTypeIndex++;
+						continue;
+					case 1:
+						byteSize = componentType.ByteSize;
+						data.Slice(componentOffsets[typeIndex++] + index * byteSize, length * byteSize).Clear();
+						continue;
+					default:
+						Debug.Assert(otherComponentType == componentType);
+						byteSize = componentType.ByteSize;
+						byteLength = length * byteSize;
+						otherData.Slice(otherComponentOffsets[otherTypeIndex++] + chunkIndex * byteSize, byteLength)
+							.CopyTo(data.Slice(componentOffsets[typeIndex++] + index * byteSize, byteLength));
+						continue;
 				}
-				else
-				{
-					Unsafe.InitBlock(ref Unsafe.Add(ref destinationData, destinationOffset), 0, (uint)(count * componentType.ByteSize));
-				}
+			}
+
+			while (typeIndex < componentTypes.Length)
+			{
+				byteSize = componentTypes[typeIndex].ByteSize;
+				data.Slice(componentOffsets[typeIndex++] + index * byteSize, length * byteSize).Clear();
 			}
 		}
 
@@ -383,7 +654,16 @@ namespace Monophyll.Entities
 
 			readonly object IEnumerator.Current
 			{
-				get => m_current;
+				get
+				{
+					if (m_index == 0 || m_index == m_chunk.m_count + 1)
+					{
+						throw new InvalidOperationException(
+							"Enumeration has not yet started or has already been completed.");
+					}
+
+					return m_current;
+				}
 			}
 
 			public readonly void Dispose()
@@ -396,7 +676,8 @@ namespace Monophyll.Entities
 
 				if (m_index < localChunk.m_count && m_version == localChunk.m_version)
 				{
-					m_current = Unsafe.Add(ref Unsafe.As<byte, Entity>(ref localChunk.m_data[0]), m_index++);
+					m_current = Unsafe.As<byte, Entity>(ref MemoryMarshal.GetReference(new Span<byte>(
+						localChunk.m_data, m_index++ * Unsafe.SizeOf<Entity>(), Unsafe.SizeOf<Entity>())));
 					return true;
 				}
 

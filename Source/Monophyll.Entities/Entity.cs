@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Monophyll.Entities
 {
@@ -49,7 +50,7 @@ namespace Monophyll.Entities
 				&& m_version == other.m_version;
 		}
 
-		public override bool Equals(object? obj)
+		public override bool Equals([NotNullWhen(true)] object? obj)
 		{
 			return obj is Entity other && Equals(other);
 		}
@@ -66,12 +67,14 @@ namespace Monophyll.Entities
 
 		public static bool operator ==(Entity left, Entity right)
 		{
-			return left.Equals(right);
+			return left.m_id == right.m_id
+				&& left.m_version == right.m_version;
 		}
 
 		public static bool operator !=(Entity left, Entity right)
 		{
-			return !left.Equals(right);
+			return left.m_id != right.m_id
+				|| left.m_version != right.m_version;
 		}
 	}
 }

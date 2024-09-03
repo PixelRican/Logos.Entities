@@ -1,30 +1,30 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
+	public abstract class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
 	{
-		private const BindingFlags FieldBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
 		private static int s_nextComponentTypeId = -1;
 
 		private readonly Type m_type;
 		private readonly int m_byteSize;
 		private readonly int m_id;
 
-		private ComponentType(Type type, int byteSize, int id)
+		private ComponentType(Type type, int byteSize)
 		{
-			if (byteSize == 1 && type.GetFields(FieldBindingFlags).Length == 0)
+			if (byteSize == 1 &&
+				type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Length == 0)
 			{
 				byteSize = 0;
 			}
 
 			m_type = type;
 			m_byteSize = byteSize;
-			m_id = id;
+			m_id = Interlocked.Increment(ref s_nextComponentTypeId);
 		}
 
 		public Type Type
@@ -44,12 +44,47 @@ namespace Monophyll.Entities
 
 		public static ComponentType TypeOf<T>() where T : unmanaged
 		{
-			return TypeLookup<T>.Value;
+			return RuntimeComponentType<T>.Instance;
+		}
+
+		public static int Compare(ComponentType? a, ComponentType? b)
+		{
+			if (a == b)
+			{
+				return 0;
+			}
+
+			if (a == null)
+			{
+				return -1;
+			}
+
+			if (b == null)
+			{
+				return 1;
+			}
+
+			return a.m_id.CompareTo(b.m_id);
+		}
+
+		public static bool Equals(ComponentType? a, ComponentType? b)
+		{
+			return a == b
+				|| a != null
+				&& b != null
+				&& a.m_id == b.m_id
+				&& a.m_byteSize == b.m_byteSize
+				&& a.m_type == b.m_type;
 		}
 
 		public int CompareTo(ComponentType? other)
 		{
-			if (other is null)
+			if (other == this)
+			{
+				return 0;
+			}
+
+			if (other == null)
 			{
 				return 1;
 			}
@@ -59,6 +94,11 @@ namespace Monophyll.Entities
 
 		public int CompareTo(object? obj)
 		{
+			if (obj == this)
+			{
+				return 0;
+			}
+
 			if (obj == null)
 			{
 				return 1;
@@ -72,16 +112,16 @@ namespace Monophyll.Entities
 			return m_id.CompareTo(other.m_id);
 		}
 
-		public bool Equals(ComponentType? other)
+		public bool Equals([NotNullWhen(true)] ComponentType? other)
 		{
-			return ReferenceEquals(this, other)
-				|| other is not null
+			return other == this
+				|| other != null
 				&& m_id == other.m_id
 				&& m_byteSize == other.m_byteSize
 				&& m_type == other.m_type;
 		}
 
-		public override bool Equals(object? obj)
+		public override bool Equals([NotNullWhen(true)] object? obj)
 		{
 			return Equals(obj as ComponentType);
 		}
@@ -96,10 +136,13 @@ namespace Monophyll.Entities
 			return $"ComponentType {{ Type = {m_type.Name} ByteSize = {m_byteSize} Id = {m_id} }}";
 		}
 
-		private static class TypeLookup<T> where T : unmanaged
+		private sealed class RuntimeComponentType<T> : ComponentType where T : unmanaged
 		{
-			public static readonly ComponentType Value =
-				new(typeof(T), Unsafe.SizeOf<T>(), Interlocked.Increment(ref s_nextComponentTypeId));
+			public static readonly RuntimeComponentType<T> Instance = new RuntimeComponentType<T>();
+
+			private RuntimeComponentType() : base(typeof(T), Unsafe.SizeOf<T>())
+			{
+			}
 		}
 	}
 }

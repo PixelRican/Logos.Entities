@@ -2,14 +2,6 @@
 
 namespace Monophyll.Entities.Tests
 {
-	internal record struct Color(byte R, byte G, byte B, byte A)
-	{
-		public byte R = R;
-		public byte G = G;
-		public byte B = B;
-		public byte A = A;
-	}
-
 	internal record struct Position2D(Vector2 Value)
 	{
 		public Vector2 Value = Value;

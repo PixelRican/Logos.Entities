@@ -8,29 +8,29 @@ namespace Monophyll.Entities.Tests
 		public static void Main()
 		{
 			Stopwatch stopwatch = new();
-			ReadOnlySpan<IUnitTest> unitTests =
+			IUnitTest[] tests =
 			[
-				new ComponentTypeFactoryTest(),
-				new EntityArchetypeConstructorTest(),
-				new EntityArchetypeAddRemoveTest(),
-				new EntityArchetypeChunkPushPopTest(),
-				new EntityArchetypeChunkPushPopRangeTest(),
-				new EntityFilterConstructorTest(),
+				new ComponentTypeCreationTest(),
+				new EntityArchetypeCreationTest(),
+				new EntityArchetypeMutationTest(),
+				new EntityArchetypeChunkCreationTest(),
+				new EntityArchetypeChunkMutationTest(),
+				new EntityArchetypeChunkRangedMutationTest(),
+				new EntityArchetypeChunkGroupingMutationTest(),
+				new EntityArchetypeChunkLookupMutationTest(),
+				new EntityFilterCreationTest(),
 				new EntityFilterMatchTest(),
-				new ComponentBitEqualityComparerTest(),
-				new EntityRegistryCreateEntityArchetypeTest(),
-				new EntityRegistryCreateDestroyEntityTest(),
-				new EntityRegistryAddRemoveSetComponentTest(),
+				new EntityRegistryEntityManagementTest()
 			];
 
-			Console.WriteLine($"Running {unitTests.Length} test cases...\n");
+			Console.WriteLine($"Running {tests.Length} test cases...\n");
 
-			foreach (IUnitTest testCase in unitTests)
+			foreach (IUnitTest test in tests)
 			{
 				stopwatch.Restart();
-				testCase.Run();
+				test.Run();
 				stopwatch.Stop();
-				Console.WriteLine($"{testCase.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
+				Console.WriteLine($"{test.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
 			}
 
 			Console.WriteLine("\nNo errors detected.");

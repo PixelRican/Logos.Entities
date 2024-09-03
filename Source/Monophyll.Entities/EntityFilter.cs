@@ -8,7 +8,7 @@ namespace Monophyll.Entities
 {
     public sealed class EntityFilter : IEquatable<EntityFilter>
     {
-        private static readonly EntityFilter s_universal = new();
+        private static readonly EntityFilter s_universal = new EntityFilter();
 
         private readonly ComponentType[] m_requiredComponentTypes;
         private readonly ComponentType[] m_includedComponentTypes;
@@ -17,152 +17,26 @@ namespace Monophyll.Entities
         private readonly uint[] m_includedComponentBits;
         private readonly uint[] m_excludedComponentBits;
 
-        public EntityFilter()
+        private EntityFilter()
         {
-            m_requiredComponentTypes = [];
-            m_includedComponentTypes = [];
-            m_excludedComponentTypes = [];
-            m_requiredComponentBits = [];
-            m_includedComponentBits = [];
-            m_excludedComponentBits = [];
+            m_requiredComponentTypes = Array.Empty<ComponentType>();
+            m_includedComponentTypes = Array.Empty<ComponentType>();
+            m_excludedComponentTypes = Array.Empty<ComponentType>();
+            m_requiredComponentBits = Array.Empty<uint>();
+            m_includedComponentBits = Array.Empty<uint>();
+            m_excludedComponentBits = Array.Empty<uint>();
         }
 
-        public EntityFilter(EntityFilter other)
-        {
-            ArgumentNullException.ThrowIfNull(other);
-            m_requiredComponentTypes = other.m_requiredComponentTypes;
-            m_includedComponentTypes = other.m_includedComponentTypes;
-            m_excludedComponentTypes = other.m_excludedComponentTypes;
-            m_requiredComponentBits = other.m_requiredComponentBits;
-            m_includedComponentBits = other.m_includedComponentBits;
-            m_excludedComponentBits = other.m_excludedComponentBits;
-        }
-
-        public EntityFilter(params ComponentType[] requiredComponentTypes)
-        {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
-			ComponentType[] args = requiredComponentTypes.Length == 0 ? [] : new ComponentType[requiredComponentTypes.Length];
-			Array.Copy(requiredComponentTypes, args, args.Length);
-            Array.Sort(args);
-            Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-            m_includedComponentTypes = [];
-            m_excludedComponentTypes = [];
-            m_includedComponentBits = [];
-            m_excludedComponentBits = [];
-        }
-
-        public EntityFilter(IEnumerable<ComponentType> requiredComponentTypes)
-        {
-			ComponentType[] args = requiredComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-			m_includedComponentTypes = [];
-			m_excludedComponentTypes = [];
-			m_includedComponentBits = [];
-			m_excludedComponentBits = [];
-		}
-
-        public EntityFilter(ReadOnlySpan<ComponentType> requiredComponentTypes)
+		private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBits,
+							 ComponentType[] includedComponentTypes, uint[] includedComponentBits,
+							 ComponentType[] excludedComponentTypes, uint[] excludedComponentBits)
 		{
-			ComponentType[] args = requiredComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-			m_includedComponentTypes = [];
-			m_excludedComponentTypes = [];
-			m_includedComponentBits = [];
-			m_excludedComponentBits = [];
-		}
-
-		public EntityFilter(Span<ComponentType> requiredComponentTypes)
-		{
-			ComponentType[] args = requiredComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-			m_includedComponentTypes = [];
-			m_excludedComponentTypes = [];
-			m_includedComponentBits = [];
-			m_excludedComponentBits = [];
-		}
-
-		public EntityFilter(ComponentType[] requiredComponentTypes, ComponentType[] includedComponentTypes, ComponentType[] excludedComponentTypes)
-        {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
-			ArgumentNullException.ThrowIfNull(includedComponentTypes);
-			ArgumentNullException.ThrowIfNull(excludedComponentTypes);
-
-			ComponentType[] args = requiredComponentTypes.Length == 0 ? [] : new ComponentType[requiredComponentTypes.Length];
-			Array.Copy(requiredComponentTypes, args, args.Length);
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-
-			args = includedComponentTypes.Length == 0 ? [] : new ComponentType[includedComponentTypes.Length];
-			Array.Copy(includedComponentTypes, args, args.Length);
-			Array.Sort(args);
-			Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
-
-			args = excludedComponentTypes.Length == 0 ? [] : new ComponentType[excludedComponentTypes.Length];
-			Array.Copy(excludedComponentTypes, args, args.Length);
-			Array.Sort(args);
-			Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
-		}
-
-		public EntityFilter(IEnumerable<ComponentType> requiredComponentTypes, IEnumerable<ComponentType> includedComponentTypes, IEnumerable<ComponentType> excludedComponentTypes)
-		{
-			ArgumentNullException.ThrowIfNull(requiredComponentTypes);
-			ArgumentNullException.ThrowIfNull(includedComponentTypes);
-			ArgumentNullException.ThrowIfNull(excludedComponentTypes);
-
-			ComponentType[] args = requiredComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-
-			args = includedComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
-
-			args = excludedComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
-		}
-
-		public EntityFilter(ReadOnlySpan<ComponentType> requiredComponentTypes, ReadOnlySpan<ComponentType> includedComponentTypes, ReadOnlySpan<ComponentType> excludedComponentTypes)
-		{
-			ComponentType[] args = requiredComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-
-			args = includedComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
-
-			args = excludedComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
-		}
-
-		public EntityFilter(Span<ComponentType> requiredComponentTypes, Span<ComponentType> includedComponentTypes, Span<ComponentType> excludedComponentTypes)
-		{
-			ComponentType[] args = requiredComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-
-			args = includedComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
-
-			args = excludedComponentTypes.ToArray();
-			Array.Sort(args);
-			Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
-		}
-
-        private EntityFilter(Builder builder)
-        {
-            m_requiredComponentTypes = ImmutableCollectionsMarshal.AsArray(builder.RequiredComponentTypes)!;
-			m_includedComponentTypes = ImmutableCollectionsMarshal.AsArray(builder.IncludedComponentTypes)!;
-			m_excludedComponentTypes = ImmutableCollectionsMarshal.AsArray(builder.ExcludedComponentTypes)!;
-            m_requiredComponentBits = ImmutableCollectionsMarshal.AsArray(builder.RequiredComponentBits)!;
-            m_includedComponentBits = ImmutableCollectionsMarshal.AsArray(builder.IncludedComponentBits)!;
-            m_excludedComponentBits = ImmutableCollectionsMarshal.AsArray(builder.ExcludedComponentBits)!;
+			m_requiredComponentTypes = requiredComponentTypes;
+			m_includedComponentTypes = includedComponentTypes;
+			m_excludedComponentTypes = excludedComponentTypes;
+			m_requiredComponentBits = requiredComponentBits;
+			m_includedComponentBits = includedComponentBits;
+			m_excludedComponentBits = excludedComponentBits;
 		}
 
 		public static EntityFilter Universal
@@ -200,35 +74,116 @@ namespace Monophyll.Entities
             get => ImmutableCollectionsMarshal.AsImmutableArray(m_excludedComponentBits);
         }
 
-        private static void Initialize(ComponentType[] args, out ComponentType[] componentTypes, out uint[] componentBits)
+		public static EntityFilter Create(ComponentType[] requiredComponentTypes, ComponentType[] includedComponentTypes, ComponentType[] excludedComponentTypes)
+		{
+			ArgumentNullException.ThrowIfNull(requiredComponentTypes);
+			ArgumentNullException.ThrowIfNull(includedComponentTypes);
+			ArgumentNullException.ThrowIfNull(excludedComponentTypes);
+
+			ComponentType[] requiredComponentTypeArray = requiredComponentTypes.Length == 0 ?
+														 Array.Empty<ComponentType>() :
+														 new ComponentType[requiredComponentTypes.Length];
+			Array.Copy(requiredComponentTypes, requiredComponentTypeArray, requiredComponentTypeArray.Length);
+
+			ComponentType[] includedComponentTypeArray = includedComponentTypes.Length == 0 ?
+														 Array.Empty<ComponentType>() :
+														 new ComponentType[includedComponentTypes.Length];
+			Array.Copy(includedComponentTypes, includedComponentTypeArray, includedComponentTypeArray.Length);
+
+			ComponentType[] excludedComponentTypeArray = excludedComponentTypes.Length == 0 ?
+														 Array.Empty<ComponentType>() :
+														 new ComponentType[excludedComponentTypes.Length];
+			Array.Copy(excludedComponentTypes, excludedComponentTypeArray, excludedComponentTypeArray.Length);
+
+			Initialize(ref requiredComponentTypeArray, out uint[] requiredComponentBitArray);
+			Initialize(ref includedComponentTypeArray, out uint[] includedComponentBitArray);
+			Initialize(ref excludedComponentTypeArray, out uint[] excludedComponentBitArray);
+
+			if (requiredComponentTypeArray.Length > 0 ||
+				includedComponentTypeArray.Length > 0 ||
+				excludedComponentTypeArray.Length > 0)
+			{
+				return new EntityFilter(requiredComponentTypeArray, requiredComponentBitArray,
+										includedComponentTypeArray, includedComponentBitArray,
+										excludedComponentTypeArray, excludedComponentBitArray);
+			}
+
+			return s_universal;
+		}
+
+		public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes, IEnumerable<ComponentType> includedComponentTypes, IEnumerable<ComponentType> excludedComponentTypes)
+		{
+			ComponentType[] requiredComponentTypeArray = requiredComponentTypes.ToArray();
+			ComponentType[] includedComponentTypeArray = includedComponentTypes.ToArray();
+			ComponentType[] excludedComponentTypeArray = excludedComponentTypes.ToArray();
+
+			Initialize(ref requiredComponentTypeArray, out uint[] requiredComponentBitArray);
+			Initialize(ref includedComponentTypeArray, out uint[] includedComponentBitArray);
+			Initialize(ref excludedComponentTypeArray, out uint[] excludedComponentBitArray);
+
+			if (requiredComponentTypeArray.Length > 0 ||
+				includedComponentTypeArray.Length > 0 ||
+				excludedComponentTypeArray.Length > 0)
+			{
+				return new EntityFilter(requiredComponentTypeArray, requiredComponentBitArray,
+										includedComponentTypeArray, includedComponentBitArray,
+										excludedComponentTypeArray, excludedComponentBitArray);
+			}
+
+			return s_universal;
+		}
+
+		public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes, ReadOnlySpan<ComponentType> includedComponentTypes, ReadOnlySpan<ComponentType> excludedComponentTypes)
+		{
+			ComponentType[] requiredComponentTypeArray = requiredComponentTypes.ToArray();
+			ComponentType[] includedComponentTypeArray = includedComponentTypes.ToArray();
+			ComponentType[] excludedComponentTypeArray = excludedComponentTypes.ToArray();
+
+			Initialize(ref requiredComponentTypeArray, out uint[] requiredComponentBitArray);
+			Initialize(ref includedComponentTypeArray, out uint[] includedComponentBitArray);
+			Initialize(ref excludedComponentTypeArray, out uint[] excludedComponentBitArray);
+
+			if (requiredComponentTypeArray.Length > 0 ||
+				includedComponentTypeArray.Length > 0 ||
+				excludedComponentTypeArray.Length > 0)
+			{
+				return new EntityFilter(requiredComponentTypeArray, requiredComponentBitArray,
+										includedComponentTypeArray, includedComponentBitArray,
+										excludedComponentTypeArray, excludedComponentBitArray);
+			}
+
+			return s_universal;
+		}
+
+		private static void Initialize(ref ComponentType[] componentTypes, out uint[] componentBits)
         {
-			ComponentType? componentTypeToCompare;
+			Array.Sort(componentTypes);
+			ComponentType? componentType;
 
-			if (args.Length == 0 || (componentTypeToCompare = args[^1]) == null)
+			if (componentTypes.Length > 0 && (componentType = componentTypes[^1]) != null)
 			{
-				componentTypes = [];
-				componentBits = [];
-				return;
-			}
+				int freeIndex = 0;
+				componentBits = new uint[componentType.Id + 32 >> 5];
+				componentType = null;
 
-			componentTypes = args;
-			componentBits = new uint[componentTypeToCompare.Id + 32 >> 5];
-			componentTypeToCompare = null;
-
-			int freeIndex = 0;
-
-			for (int i = 0; i < componentTypes.Length; i++)
-			{
-				ComponentType currentComponentType = componentTypes[i];
-
-				if (currentComponentType != componentTypeToCompare)
+				for (int i = 0; i < componentTypes.Length; i++)
 				{
-					componentTypes[freeIndex++] = componentTypeToCompare = currentComponentType;
-					componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
-				}
-			}
+					ComponentType componentTypeToCompare = componentTypes[i];
 
-			Array.Resize(ref componentTypes, freeIndex);
+					if (componentTypeToCompare != componentType)
+					{
+						componentTypes[freeIndex++] = componentType = componentTypeToCompare;
+						componentBits[componentTypeToCompare.Id >> 5] |= 1u << componentTypeToCompare.Id;
+					}
+				}
+
+				Array.Resize(ref componentTypes, freeIndex);
+			}
+			else
+			{
+				componentTypes = Array.Empty<ComponentType>();
+				componentBits = Array.Empty<uint>();
+			}
 		}
 
 		public static Builder CreateBuilder()
@@ -251,11 +206,6 @@ namespace Monophyll.Entities
 			return new Builder().Require(componentTypes);
 		}
 
-		public static Builder Require(Span<ComponentType> componentTypes)
-		{
-			return new Builder().Require(componentTypes);
-		}
-
 		public static Builder Include(params ComponentType[] componentTypes)
 		{
 			return new Builder().Include(componentTypes);
@@ -271,11 +221,6 @@ namespace Monophyll.Entities
 			return new Builder().Include(componentTypes);
 		}
 
-		public static Builder Include(Span<ComponentType> componentTypes)
-		{
-			return new Builder().Include(componentTypes);
-		}
-
 		public static Builder Exclude(params ComponentType[] componentTypes)
 		{
 			return new Builder().Exclude(componentTypes);
@@ -287,11 +232,6 @@ namespace Monophyll.Entities
 		}
 
 		public static Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
-		{
-			return new Builder().Exclude(componentTypes);
-		}
-
-		public static Builder Exclude(Span<ComponentType> componentTypes)
 		{
 			return new Builder().Exclude(componentTypes);
 		}
@@ -420,14 +360,14 @@ namespace Monophyll.Entities
 			private uint[] m_excludedComponentBits;
 
             internal Builder()
-            {
-                m_requiredComponentTypes = [];
-                m_includedComponentTypes = [];
-                m_excludedComponentTypes = [];
-                m_requiredComponentBits = [];
-                m_includedComponentBits = [];
-                m_excludedComponentBits = [];
-            }
+			{
+				m_requiredComponentTypes = Array.Empty<ComponentType>();
+				m_includedComponentTypes = Array.Empty<ComponentType>();
+				m_excludedComponentTypes = Array.Empty<ComponentType>();
+				m_requiredComponentBits = Array.Empty<uint>();
+				m_includedComponentBits = Array.Empty<uint>();
+				m_excludedComponentBits = Array.Empty<uint>();
+			}
 
 			internal Builder(EntityFilter filter)
 			{
@@ -471,126 +411,101 @@ namespace Monophyll.Entities
 
 			public void Reset()
 			{
-				m_requiredComponentTypes = [];
-				m_includedComponentTypes = [];
-				m_excludedComponentTypes = [];
-				m_requiredComponentBits = [];
-				m_includedComponentBits = [];
-				m_excludedComponentBits = [];
+				m_requiredComponentTypes = Array.Empty<ComponentType>();
+				m_includedComponentTypes = Array.Empty<ComponentType>();
+				m_excludedComponentTypes = Array.Empty<ComponentType>();
+				m_requiredComponentBits = Array.Empty<uint>();
+				m_includedComponentBits = Array.Empty<uint>();
+				m_excludedComponentBits = Array.Empty<uint>();
 			}
 
             public Builder Require(params ComponentType[] componentTypes)
             {
 				ArgumentNullException.ThrowIfNull(componentTypes);
-				ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
-				Array.Copy(componentTypes, args, args.Length);
-				Array.Sort(args);
-				Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
+				m_requiredComponentTypes = componentTypes.Length == 0 ?
+										   Array.Empty<ComponentType>() :
+										   new ComponentType[componentTypes.Length];
+				Array.Copy(componentTypes, m_requiredComponentTypes, m_requiredComponentTypes.Length);
+				Initialize(ref m_requiredComponentTypes, out m_requiredComponentBits);
                 return this;
 			}
 
             public Builder Require(IEnumerable<ComponentType> componentTypes)
             {
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
+				m_requiredComponentTypes = componentTypes.ToArray();
+				Initialize(ref m_requiredComponentTypes, out m_requiredComponentBits);
                 return this;
 			}
 
             public Builder Require(ReadOnlySpan<ComponentType> componentTypes)
-            {
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
-				return this;
-			}
-
-			public Builder Require(Span<ComponentType> componentTypes)
 			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_requiredComponentTypes, out m_requiredComponentBits);
+				m_requiredComponentTypes = componentTypes.ToArray();
+				Initialize(ref m_requiredComponentTypes, out m_requiredComponentBits);
 				return this;
 			}
 
 			public Builder Include(params ComponentType[] componentTypes)
 			{
 				ArgumentNullException.ThrowIfNull(componentTypes);
-				ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
-				Array.Copy(componentTypes, args, args.Length);
-				Array.Sort(args);
-				Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
+				m_includedComponentTypes = componentTypes.Length == 0 ?
+										   Array.Empty<ComponentType>() :
+										   new ComponentType[componentTypes.Length];
+				Array.Copy(componentTypes, m_includedComponentTypes, m_includedComponentTypes.Length);
+				Initialize(ref m_includedComponentTypes, out m_includedComponentBits);
 				return this;
 			}
 
 			public Builder Include(IEnumerable<ComponentType> componentTypes)
 			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
+				m_includedComponentTypes = componentTypes.ToArray();
+				Initialize(ref m_includedComponentTypes, out m_includedComponentBits);
 				return this;
 			}
 
 			public Builder Include(ReadOnlySpan<ComponentType> componentTypes)
 			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
-				return this;
-			}
-
-			public Builder Include(Span<ComponentType> componentTypes)
-			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_includedComponentTypes, out m_includedComponentBits);
+				m_includedComponentTypes = componentTypes.ToArray();
+				Initialize(ref m_includedComponentTypes, out m_includedComponentBits);
 				return this;
 			}
 
 			public Builder Exclude(params ComponentType[] componentTypes)
 			{
 				ArgumentNullException.ThrowIfNull(componentTypes);
-				ComponentType[] args = componentTypes.Length == 0 ? [] : new ComponentType[componentTypes.Length];
-				Array.Copy(componentTypes, args, args.Length);
-				Array.Sort(args);
-				Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
+				m_excludedComponentTypes = componentTypes.Length == 0 ?
+										   Array.Empty<ComponentType>() :
+										   new ComponentType[componentTypes.Length];
+				Array.Copy(componentTypes, m_excludedComponentTypes, m_excludedComponentTypes.Length);
+				Initialize(ref m_excludedComponentTypes, out m_excludedComponentBits);
 				return this;
 			}
 
 			public Builder Exclude(IEnumerable<ComponentType> componentTypes)
 			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
+				m_excludedComponentTypes = componentTypes.ToArray();
+				Initialize(ref m_excludedComponentTypes, out m_excludedComponentBits);
 				return this;
 			}
 
 			public Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
 			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
-				return this;
-			}
-
-			public Builder Exclude(Span<ComponentType> componentTypes)
-			{
-				ComponentType[] args = componentTypes.ToArray();
-				Array.Sort(args);
-				Initialize(args, out m_excludedComponentTypes, out m_excludedComponentBits);
+				m_excludedComponentTypes = componentTypes.ToArray();
+				Initialize(ref m_excludedComponentTypes, out m_excludedComponentBits);
 				return this;
 			}
 
 			public EntityFilter Build()
 			{
-				if (m_requiredComponentTypes.Length == 0 &&
-					m_includedComponentTypes.Length == 0 &&
-					m_excludedComponentTypes.Length == 0)
+				if (m_requiredComponentTypes.Length > 0 ||
+					m_includedComponentTypes.Length > 0 ||
+					m_excludedComponentTypes.Length > 0)
 				{
-					return s_universal;
+					return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBits,
+											m_includedComponentTypes, m_includedComponentBits,
+											m_excludedComponentTypes, m_excludedComponentBits);
 				}
 
-				return new EntityFilter(this);
+				return s_universal;
 			}
 		}
     }

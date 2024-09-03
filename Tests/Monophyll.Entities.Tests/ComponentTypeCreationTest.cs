@@ -4,7 +4,7 @@ using static Monophyll.Entities.ComponentType;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class ComponentTypeFactoryTest : IUnitTest
+	internal sealed class ComponentTypeCreationTest : IUnitTest
 	{
 		public void Run()
 		{
