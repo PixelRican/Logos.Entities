@@ -15,21 +15,21 @@ namespace Monophyll.Entities.Tests
 				.Build();
 
 			Debug.Assert(filter.Matches(EntityArchetype.Create(
-				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Matrix4x4>(), TypeOf<Tag>()])));
+				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Matrix4x4>(), TypeOf<Tag>()], 0, 0)));
 
 			Debug.Assert(!filter.Matches(EntityArchetype.Create(
-				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Tag>()])));
+				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Tag>()], 0, 0)));
 
 			Debug.Assert(!filter.Matches(EntityArchetype.Create(
-				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Matrix4x4>(), TypeOf<Matrix3x2>(), TypeOf<Tag>()])));
+				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Matrix4x4>(), TypeOf<Matrix3x2>(), TypeOf<Tag>()], 0, 0)));
 			
 			Debug.Assert(!filter.Matches(EntityArchetype.Create(
-				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Tag>()])));
+				[TypeOf<Position3D>(), TypeOf<Rotation3D>(), TypeOf<Scale3D>(), TypeOf<Tag>()], 0, 0)));
 			
 			Debug.Assert(!filter.Matches(EntityArchetype.Create(
-				[TypeOf<Position2D>(), TypeOf<Rotation2D>(), TypeOf<Scale2D>(), TypeOf<Matrix3x2>(), TypeOf<Tag>()])));
+				[TypeOf<Position2D>(), TypeOf<Rotation2D>(), TypeOf<Scale2D>(), TypeOf<Matrix3x2>(), TypeOf<Tag>()], 0, 0)));
 			
-			Debug.Assert(!filter.Matches(EntityArchetype.Base));
+			Debug.Assert(!filter.Matches(EntityArchetype.Create(0, 0)));
 		}
 	}
 }

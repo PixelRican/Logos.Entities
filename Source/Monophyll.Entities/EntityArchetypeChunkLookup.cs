@@ -3,28 +3,35 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities
 {
-	public class EntityArchetypeChunkLookup : ILookup<EntityArchetype, EntityArchetypeChunk>, IReadOnlyCollection<EntityArchetypeChunkGrouping>, ICollection
+	public class EntityArchetypeChunkLookup : ILookup<EntityArchetype, EntityArchetypeChunk>, IReadOnlyList<EntityArchetypeChunkGrouping>, ICollection
 	{
 		private const int DefaultCapacity = 16;
+		private const int DefaultChunkSize = 16 * 1024;
 		private const int StackAllocUInt32BufferSizeLimit = 8;
 
-		private readonly object m_syncLock;
+		private readonly object m_lock;
 		private EntityArchetype[] m_keys;
 		private EntityArchetypeChunkGrouping[] m_groupings;
+		private readonly int m_targetChunkSize;
 		private int m_size;
 
-		public EntityArchetypeChunkLookup()
+		public EntityArchetypeChunkLookup() : this(DefaultChunkSize)
 		{
-			m_syncLock = new object();
-			m_keys = [];
-			m_groupings = [];
+		}
+
+		public EntityArchetypeChunkLookup(int targetChunkSize)
+		{
+			ArgumentOutOfRangeException.ThrowIfNegative(targetChunkSize);
+
+			m_lock = new object();
+			m_keys = Array.Empty<EntityArchetype>();
+			m_groupings = Array.Empty<EntityArchetypeChunkGrouping>();
+			m_targetChunkSize = targetChunkSize;
 		}
 
 		public int Capacity
@@ -45,6 +52,20 @@ namespace Monophyll.Entities
 		object ICollection.SyncRoot
 		{
 			get => this;
+		}
+
+		public EntityArchetypeChunkGrouping this[int index]
+		{
+			get
+			{
+				if ((uint)index >= (uint)m_size)
+				{
+					throw new ArgumentOutOfRangeException(nameof(index), index,
+						"Index is less than zero or greater than or equal to count.");
+				}
+
+				return m_groupings[index];
+			}
 		}
 
 		public EntityArchetypeChunkGrouping this[EntityArchetype key]
@@ -78,9 +99,9 @@ namespace Monophyll.Entities
 				&& EntityArchetype.Equals(key, m_groupings[index].Key);
 		}
 
-		public void CopyTo(EntityArchetypeChunkGrouping[] array, int arrayIndex)
+		public void CopyTo(EntityArchetypeChunkGrouping[] array, int index)
 		{
-			Array.Copy(m_groupings, 0, array, arrayIndex, m_size);
+			Array.Copy(m_groupings, 0, array, index, m_size);
 		}
 
 		void ICollection.CopyTo(Array array, int index)
@@ -132,7 +153,7 @@ namespace Monophyll.Entities
 				return grouping;
 			}
 
-			lock (m_syncLock)
+			lock (m_lock)
 			{
 				index = BinarySearch(archetype.ComponentBits.AsSpan());
 
@@ -141,35 +162,36 @@ namespace Monophyll.Entities
 					return m_groupings[m_keys[index].Id];
 				}
 
-				return CreateGrouping(archetype.Clone(m_size), ~index);
+				return CreateGrouping(archetype.Clone(m_targetChunkSize, m_size), ~index);
 			}
 		}
 
-		public EntityArchetypeChunkGrouping GetOrCreate(params ComponentType[] componentTypes)
+		public EntityArchetypeChunkGrouping GetOrCreate(ComponentType[] componentTypes)
 		{
 			ArgumentNullException.ThrowIfNull(componentTypes);
 
-			using ValueBitSet componentBits = new ValueBitSet(stackalloc uint[StackAllocUInt32BufferSizeLimit]);
+			ValueBitArray buffer = new ValueBitArray(stackalloc uint[StackAllocUInt32BufferSizeLimit]);
 
 			foreach (ComponentType componentType in componentTypes)
 			{
 				if (componentType != null)
 				{
-					componentBits.Set(componentType.Id);
+					buffer.Set(componentType.Id);
 				}
 			}
 
-			lock (m_syncLock)
+			EntityArchetypeChunkGrouping grouping;
+
+			lock (m_lock)
 			{
-				int index = BinarySearch(componentBits.AsSpan());
-
-				if (index >= 0)
-				{
-					return m_groupings[m_keys[index].Id];
-				}
-
-				return CreateGrouping(EntityArchetype.Create(componentTypes, m_size), ~index);
+				int index = BinarySearch(buffer.AsSpan());
+				grouping = index >= 0 ?
+						   m_groupings[m_keys[index].Id] :
+						   CreateGrouping(EntityArchetype.Create(componentTypes, m_targetChunkSize, m_size), ~index);
 			}
+
+			buffer.Dispose();
+			return grouping;
 		}
 
 		public EntityArchetypeChunkGrouping GetOrCreate(IEnumerable<ComponentType> componentTypes)
@@ -177,7 +199,8 @@ namespace Monophyll.Entities
 			_ = componentTypes.TryGetNonEnumeratedCount(out int count);
 			ArrayPool<ComponentType> pool = ArrayPool<ComponentType>.Shared;
 			ComponentType[] array = pool.Rent(count);
-			using ValueBitSet componentBits = new ValueBitSet(stackalloc uint[StackAllocUInt32BufferSizeLimit]);
+			ValueBitArray buffer = new ValueBitArray(stackalloc uint[StackAllocUInt32BufferSizeLimit]);
+			count = 0;
 
 			foreach (ComponentType componentType in componentTypes)
 			{
@@ -192,26 +215,28 @@ namespace Monophyll.Entities
 					}
 
 					array[count++] = componentType;
-					componentBits.Set(componentType.Id);
+					buffer.Set(componentType.Id);
 				}
 			}
 
 			EntityArchetypeChunkGrouping grouping;
 
-			lock (m_syncLock)
+			lock (m_lock)
 			{
-				int index = BinarySearch(componentBits.AsSpan());
-				grouping = index >= 0 ? m_groupings[m_keys[index].Id] : CreateGrouping(
-					EntityArchetype.Create(new ReadOnlySpan<ComponentType>(array, 0, count), m_size), ~index);
+				int index = BinarySearch(buffer.AsSpan());
+				grouping = index >= 0 ?
+						   m_groupings[m_keys[index].Id] :
+						   CreateGrouping(EntityArchetype.Create(new ReadOnlySpan<ComponentType>(array, 0, count), m_targetChunkSize, m_size), ~index);
 			}
 
+			buffer.Dispose();
 			pool.Return(array);
 			return grouping;
 		}
 
 		public EntityArchetypeChunkGrouping GetOrCreate(ReadOnlySpan<ComponentType> componentTypes)
 		{
-			using ValueBitSet componentBits = new ValueBitSet(stackalloc uint[StackAllocUInt32BufferSizeLimit]);
+			ValueBitArray buffer = new ValueBitArray(stackalloc uint[StackAllocUInt32BufferSizeLimit]);
 
 			for (int i = 0; i < componentTypes.Length; i++)
 			{
@@ -219,31 +244,87 @@ namespace Monophyll.Entities
 
 				if (componentType != null)
 				{
-					componentBits.Set(componentType.Id);
+					buffer.Set(componentType.Id);
 				}
 			}
 
-			lock (m_syncLock)
+			EntityArchetypeChunkGrouping grouping;
+
+			lock (m_lock)
 			{
-				int index = BinarySearch(componentBits.AsSpan());
-
-				if (index >= 0)
-				{
-					return m_groupings[m_keys[index].Id];
-				}
-
-				return CreateGrouping(EntityArchetype.Create(componentTypes, m_size), ~index);
+				int index = BinarySearch(buffer.AsSpan());
+				grouping = index >= 0 ?
+						   m_groupings[m_keys[index].Id] :
+						   CreateGrouping(EntityArchetype.Create(componentTypes, m_targetChunkSize, m_size), ~index);
 			}
+
+			buffer.Dispose();
+			return grouping;
 		}
 
 		public EntityArchetypeChunkGrouping GetOrCreateSubset(EntityArchetype archetype, ComponentType componentType)
 		{
-			throw new NotImplementedException();
+			ArgumentNullException.ThrowIfNull(archetype);
+			ArgumentNullException.ThrowIfNull(componentType);
+
+			ImmutableArray<uint> componentBits = archetype.ComponentBits;
+			int index = componentType.Id;
+			int bufferIndex = index >> 5;
+			uint[]? array = null;
+			Span<uint> buffer = componentBits.Length <= StackAllocUInt32BufferSizeLimit ?
+								stackalloc uint[componentBits.Length] :
+								array = ArrayPool<uint>.Shared.Rent(componentBits.Length);
+
+			componentBits.AsSpan().CopyTo(buffer);
+
+			if (bufferIndex < buffer.Length && (buffer[bufferIndex] &= ~(1u << index)) == 0 && ++bufferIndex == buffer.Length)
+			{
+				buffer = buffer[..bufferIndex];
+			}
+
+			EntityArchetypeChunkGrouping grouping;
+
+			lock (m_lock)
+			{
+				index = BinarySearch(buffer);
+				grouping = index >= 0 ?
+						   m_groupings[m_keys[index].Id] :
+						   CreateGrouping(archetype.CloneWithout(componentType, m_targetChunkSize, m_size), ~index);
+			}
+
+			if (array != null)
+			{
+				ArrayPool<uint>.Shared.Return(array);
+			}
+
+			return grouping;
 		}
 
 		public EntityArchetypeChunkGrouping GetOrCreateSuperset(EntityArchetype archetype, ComponentType componentType)
 		{
-			throw new NotImplementedException();
+			ArgumentNullException.ThrowIfNull(archetype);
+			ArgumentNullException.ThrowIfNull(componentType);
+
+			ImmutableArray<uint> componentBits = archetype.ComponentBits;
+			ValueBitArray buffer = componentBits.Length <= StackAllocUInt32BufferSizeLimit ?
+								   new ValueBitArray(stackalloc uint[componentBits.Length]) :
+								   new ValueBitArray(componentBits.Length);
+
+			componentBits.AsSpan().CopyTo(buffer.RawBits);
+			buffer.Set(componentType.Id);
+
+			EntityArchetypeChunkGrouping grouping;
+
+			lock (m_lock)
+			{
+				int index = BinarySearch(buffer.AsSpan());
+				grouping = index >= 0 ?
+						   m_groupings[m_keys[index].Id] :
+						   CreateGrouping(archetype.CloneWith(componentType, m_targetChunkSize, m_size), ~index);
+			}
+
+			buffer.Dispose();
+			return grouping;
 		}
 
 		private int BinarySearch(ReadOnlySpan<uint> componentBits)
@@ -376,85 +457,6 @@ namespace Monophyll.Entities
 			{
 				m_index = 0;
 				m_current = null;
-			}
-		}
-
-		private ref struct ValueBitSet
-		{
-			private Span<uint> m_span;
-			private int m_length;
-			private uint[]? m_array;
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			public ValueBitSet(Span<uint> span)
-			{
-				m_span = span;
-				m_length = 0;
-				m_array = null;
-			}
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			public ValueBitSet(uint[] array)
-			{
-				m_span = m_array = array;
-				m_length = 0;
-			}
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			public void Dispose()
-			{
-				if (m_array != null)
-				{
-					ArrayPool<uint>.Shared.Return(m_array, true);
-					m_span = default;
-					m_length = 0;
-					m_array = null;
-				}
-			}
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			public void Set(int index)
-			{
-				int spanIndex = index >> 5;
-
-				if (spanIndex >= m_length)
-				{
-					Grow(spanIndex + 1);
-				}
-
-				m_span[spanIndex] |= 1u << index;
-			}
-
-			[MethodImpl(MethodImplOptions.NoInlining)]
-			private void Grow(int length)
-			{
-				Debug.Assert(length > m_length);
-
-				if (length > m_span.Length)
-				{
-					ArrayPool<uint> pool = ArrayPool<uint>.Shared;
-					uint[] newArray = pool.Rent(length);
-					Span<uint> newSpan = newArray;
-
-					m_span.CopyTo(newSpan);
-
-					if (m_array != null)
-					{
-						pool.Return(m_array);
-					}
-
-					m_span = newSpan;
-					m_array = newArray;
-				}
-
-				m_span[m_length..length].Clear();
-				m_length = length;
-			}
-
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			public readonly ReadOnlySpan<uint> AsSpan()
-			{
-				return m_span[..m_length];
 			}
 		}
 	}

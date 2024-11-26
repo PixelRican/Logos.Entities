@@ -8,8 +8,8 @@ namespace Monophyll.Entities.Tests
 	{
 		public void Run()
 		{
-			EntityArchetypeChunkGrouping grouping = new EntityArchetypeChunkGrouping();
-			EntityArchetypeChunk chunk = new EntityArchetypeChunk();
+			EntityArchetypeChunkGrouping grouping = new EntityArchetypeChunkGrouping(EntityArchetype.Create(0, 0));
+			EntityArchetypeChunk chunk = new EntityArchetypeChunk(grouping.Key);
 			int count = 1024;
 
             for (int i = Environment.ProcessorCount; i > 0; i--)

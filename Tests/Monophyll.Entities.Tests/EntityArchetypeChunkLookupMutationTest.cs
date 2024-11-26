@@ -41,7 +41,7 @@ namespace Monophyll.Entities.Tests
 				EntityArchetype key = grouping.Key;
 
 				Debug.Assert(grouping == lookup[key]);
-				Debug.Assert(grouping == lookup.GetOrCreate(key.Clone(-1)));
+				Debug.Assert(grouping == lookup.GetOrCreate(key.Clone(key.ChunkSize, key.Id)));
 				Debug.Assert(grouping == lookup.GetOrCreate(componentTypes));
 				Debug.Assert(grouping == lookup.GetOrCreate((IEnumerable<ComponentType>)componentTypes));
 				Debug.Assert(grouping == lookup.GetOrCreate((ReadOnlySpan<ComponentType>)componentTypes));

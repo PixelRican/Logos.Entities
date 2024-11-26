@@ -36,12 +36,12 @@ namespace Monophyll.Entities
 				return 1;
 			}
 
-			if (obj is not Entity other)
+			if (obj is Entity other)
 			{
-				throw new ArgumentException("obj is not the same type as this instance.");
+				return m_id.CompareTo(other.m_id);
 			}
 
-			return m_id.CompareTo(other.m_id);
+			throw new ArgumentException("obj is not the same type as this instance.");
 		}
 
 		public bool Equals(Entity other)

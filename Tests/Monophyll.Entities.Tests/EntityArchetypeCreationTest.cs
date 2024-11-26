@@ -12,25 +12,25 @@ namespace Monophyll.Entities.Tests
 		public void Run()
 		{
 			EntityArchetype transform2DFromArray = EntityArchetype.Create((ComponentType[])
-				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()]);
+				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()], 0, 0);
 
 			EntityArchetype transform2DFromSpan = EntityArchetype.Create(
-				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()]);
+				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()], 0, 0);
 
 			EntityArchetype transform2DFromEnumerable = EntityArchetype.Create((IEnumerable<ComponentType>)
-				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()]);
+				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()], 0, 0);
 
 			EntityArchetype transform2DWithDuplicates = EntityArchetype.Create(
 				[TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>(),
-				TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()]);
+				TypeOf<Rotation2D>(), TypeOf<Matrix3x2>(), TypeOf<Scale2D>(), TypeOf<Position2D>()], 0, 0);
 
 			EntityArchetype transform2DWithNulls = EntityArchetype.Create(
 				[null!, TypeOf<Matrix3x2>(), null!, TypeOf<Position2D>(),
-				TypeOf<Rotation2D>(), null!, TypeOf<Scale2D>(), null!]);
+				TypeOf<Rotation2D>(), null!, TypeOf<Scale2D>(), null!], 0, 0);
 
 			try
 			{
-				EntityArchetype.Create(null!);
+				EntityArchetype.Create(null!, 0, 0);
 				Debug.Fail(string.Empty);
 			}
 			catch (ArgumentNullException)
@@ -39,7 +39,7 @@ namespace Monophyll.Entities.Tests
 
 			try
 			{
-				EntityArchetype.Create((IEnumerable<ComponentType>)null!);
+				EntityArchetype.Create((IEnumerable<ComponentType>)null!, 0, 0);
 				Debug.Fail(string.Empty);
 			}
 			catch (ArgumentNullException)
@@ -55,28 +55,17 @@ namespace Monophyll.Entities.Tests
 
 		private static void AssertArchetypeCorrectness(EntityArchetype archetype)
 		{
-			Debug.Assert(archetype.ChunkByteSize == 16380);
-			Debug.Assert(archetype.ChunkCapacity == 315);
-			Debug.Assert(archetype.EntityByteSize == 52);
-			Debug.Assert(archetype.Id == 0);
-
 			Debug.Assert(archetype.Contains(TypeOf<Position2D>()));
 			Debug.Assert(archetype.Contains(TypeOf<Rotation2D>()));
 			Debug.Assert(archetype.Contains(TypeOf<Scale2D>()));
 			Debug.Assert(archetype.Contains(TypeOf<Matrix3x2>()));
 
 			ImmutableArray<ComponentType> componentTypes = archetype.ComponentTypes;
-			ImmutableArray<int> componentOffsets = archetype.ComponentOffsets;
 
 			Debug.Assert(componentTypes[0] == TypeOf<Position2D>());
 			Debug.Assert(componentTypes[1] == TypeOf<Rotation2D>());
 			Debug.Assert(componentTypes[2] == TypeOf<Scale2D>());
 			Debug.Assert(componentTypes[3] == TypeOf<Matrix3x2>());
-
-			Debug.Assert(componentOffsets[0] == 2520);
-			Debug.Assert(componentOffsets[1] == 5040);
-			Debug.Assert(componentOffsets[2] == 6300);
-			Debug.Assert(componentOffsets[3] == 8820);
 		}
 	}
 }

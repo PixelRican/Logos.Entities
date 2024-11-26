@@ -4,29 +4,27 @@ using static Monophyll.Entities.ComponentType;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class EntityArchetypeMutationTest : IUnitTest
+	internal sealed class EntityArchetypeCloneTest : IUnitTest
 	{
 		public void Run()
 		{
-			EntityArchetype archetype = EntityArchetype.Base.Add(TypeOf<Position2D>());
+			EntityArchetype archetype = EntityArchetype.Create([TypeOf<Position2D>()], 0, 0);
 
 			Debug.Assert(archetype.Contains(TypeOf<Position2D>()));
 
-			archetype = archetype.Add(TypeOf<Rotation2D>());
+			archetype = archetype.CloneWith(TypeOf<Rotation2D>(), 0, 0);
 
 			Debug.Assert(archetype.Contains(TypeOf<Position2D>()));
 			Debug.Assert(archetype.Contains(TypeOf<Rotation2D>()));
 
-			archetype = archetype.Remove(TypeOf<Position2D>());
+			archetype = archetype.CloneWithout(TypeOf<Position2D>(), 0, 0);
 
 			Debug.Assert(!archetype.Contains(TypeOf<Position2D>()));
 			Debug.Assert(archetype.Contains(TypeOf<Rotation2D>()));
-			Debug.Assert(archetype == archetype.Add(TypeOf<Rotation2D>()));
-			Debug.Assert(archetype == archetype.Remove(TypeOf<Position2D>()));
 
 			try
 			{
-				archetype.Add(null!);
+				archetype.CloneWith(null!, 0, 0);
 				Debug.Fail(string.Empty);
 			}
 			catch (ArgumentNullException)
@@ -35,7 +33,7 @@ namespace Monophyll.Entities.Tests
 
 			try
 			{
-				archetype.Remove(null!);
+				archetype.CloneWithout(null!, 0, 0);
 				Debug.Fail(string.Empty);
 			}
 			catch (ArgumentNullException)

@@ -6,35 +6,30 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public abstract class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
+	public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
 	{
-		private static int s_nextComponentTypeId = -1;
+		private const BindingFlags FieldBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-		private readonly Type m_type;
-		private readonly int m_byteSize;
+		private static int s_nextTypeId = -1;
+
+		private readonly Type m_systemType;
 		private readonly int m_id;
+		private readonly int m_size;
 
-		private ComponentType(Type type, int byteSize)
+		private ComponentType(Type systemType, int id, int size, bool isManaged)
 		{
-			if (byteSize == 1 &&
-				type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Length == 0)
+			m_systemType = systemType;
+			m_id = id;
+
+			if (size > 1 || systemType.GetFields(FieldBindingFlags).Length > 0)
 			{
-				byteSize = 0;
+				m_size = isManaged ? size | int.MinValue : size;
 			}
-
-			m_type = type;
-			m_byteSize = byteSize;
-			m_id = Interlocked.Increment(ref s_nextComponentTypeId);
 		}
 
-		public Type Type
+		public Type SystemType
 		{
-			get => m_type;
-		}
-
-		public int ByteSize
-		{
-			get => m_byteSize;
+			get => m_systemType;
 		}
 
 		public int Id
@@ -42,9 +37,40 @@ namespace Monophyll.Entities
 			get => m_id;
 		}
 
-		public static ComponentType TypeOf<T>() where T : unmanaged
+		public int Size
 		{
-			return RuntimeComponentType<T>.Instance;
+			get => m_size & int.MaxValue;
+		}
+
+		public bool IsEmpty
+		{
+			get => m_size == 0;
+		}
+
+		public bool IsUnmanaged
+		{
+			get => m_size > 0;
+		}
+
+		public bool IsManaged
+		{
+			get => m_size < 0;
+		}
+
+		public ComponentTypeCode TypeCode
+		{
+			get
+			{
+				switch (m_size)
+				{
+					case < 0:
+						return ComponentTypeCode.Managed;
+					case > 0:
+						return ComponentTypeCode.Unmanaged;
+					default:
+						return ComponentTypeCode.Empty;
+				}
+			}
 		}
 
 		public static int Compare(ComponentType? a, ComponentType? b)
@@ -64,6 +90,30 @@ namespace Monophyll.Entities
 				return 1;
 			}
 
+			// Determines which kind of comparison to use.
+			int comparisonFlag = a.m_size ^ b.m_size;
+
+			// Managed component types will always precede unmanaged component types.
+			if (comparisonFlag < 0)
+			{
+				return a.m_size < 0 ? -1 : 1;
+			}
+
+			// Non-tag component types will always precede tag component types.
+			if (comparisonFlag > 0)
+			{
+				if (a.m_size == 0)
+				{
+					return 1;
+				}
+
+				if (b.m_size == 0)
+				{
+					return -1;
+				}
+			}
+
+			// Fall back to comparing Ids.
 			return a.m_id.CompareTo(b.m_id);
 		}
 
@@ -73,23 +123,18 @@ namespace Monophyll.Entities
 				|| a != null
 				&& b != null
 				&& a.m_id == b.m_id
-				&& a.m_byteSize == b.m_byteSize
-				&& a.m_type == b.m_type;
+				&& a.m_size == b.m_size
+				&& a.m_systemType == b.m_systemType;
+		}
+
+		public static ComponentType TypeOf<T>()
+		{
+			return ComponentTypeLookup<T>.Value;
 		}
 
 		public int CompareTo(ComponentType? other)
 		{
-			if (other == this)
-			{
-				return 0;
-			}
-
-			if (other == null)
-			{
-				return 1;
-			}
-
-			return m_id.CompareTo(other.m_id);
+			return Compare(this, other);
 		}
 
 		public int CompareTo(object? obj)
@@ -104,45 +149,37 @@ namespace Monophyll.Entities
 				return 1;
 			}
 
-			if (obj is not ComponentType other)
+			if (obj is ComponentType other)
 			{
-				throw new ArgumentException("obj is not the same type as this instance.");
+				return m_id.CompareTo(other.m_id);
 			}
 
-			return m_id.CompareTo(other.m_id);
+			throw new ArgumentException("obj is not the same type as this instance.");
 		}
 
 		public bool Equals([NotNullWhen(true)] ComponentType? other)
 		{
-			return other == this
-				|| other != null
-				&& m_id == other.m_id
-				&& m_byteSize == other.m_byteSize
-				&& m_type == other.m_type;
+			return Equals(this, other);
 		}
 
 		public override bool Equals([NotNullWhen(true)] object? obj)
 		{
-			return Equals(obj as ComponentType);
+			return Equals(this, obj as ComponentType);
 		}
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(m_type, m_byteSize, m_id);
+			return HashCode.Combine(m_systemType, m_id, m_size);
 		}
 
 		public override string ToString()
 		{
-			return $"ComponentType {{ Type = {m_type.Name} ByteSize = {m_byteSize} Id = {m_id} }}";
+			return $"ComponentType {{ Type = {m_systemType.FullName} Id = {m_id} }}";
 		}
 
-		private sealed class RuntimeComponentType<T> : ComponentType where T : unmanaged
+		private static class ComponentTypeLookup<T>
 		{
-			public static readonly RuntimeComponentType<T> Instance = new RuntimeComponentType<T>();
-
-			private RuntimeComponentType() : base(typeof(T), Unsafe.SizeOf<T>())
-			{
-			}
+			public static readonly ComponentType Value = new ComponentType(typeof(T), Interlocked.Increment(ref s_nextTypeId), Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		}
 	}
 }

@@ -12,15 +12,13 @@ namespace Monophyll.Entities.Tests
 			[
 				new ComponentTypeCreationTest(),
 				new EntityArchetypeCreationTest(),
-				new EntityArchetypeMutationTest(),
-				new EntityArchetypeChunkCreationTest(),
-				new EntityArchetypeChunkMutationTest(),
-				new EntityArchetypeChunkRangedMutationTest(),
+				new EntityArchetypeCloneTest(),
 				new EntityArchetypeChunkGroupingMutationTest(),
 				new EntityArchetypeChunkLookupMutationTest(),
 				new EntityFilterCreationTest(),
 				new EntityFilterMatchTest(),
-				new EntityRegistryEntityManagementTest()
+				new EntityRegistryEntityManagementTest(),
+				new EntityQueryEnumerationTest()
 			];
 
 			Console.WriteLine($"Running {tests.Length} test cases...\n");

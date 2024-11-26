@@ -18,7 +18,6 @@ namespace Monophyll.Entities
 		public EntityRegistry()
 		{
 			m_chunks = new EntityArchetypeChunkLookup();
-			m_chunks.GetOrCreate(EntityArchetype.Base);
 			m_entries = Array.Empty<Entry>();
 			m_freeEntityIds = Array.Empty<int>();
 		}
@@ -35,7 +34,7 @@ namespace Monophyll.Entities
 
 		public Entity CreateEntity()
 		{
-			return CreateEntity(EntityArchetype.Base);
+			return CreateEntity(m_chunks.GetOrCreate(ReadOnlySpan<ComponentType>.Empty));
 		}
 
 		public Entity CreateEntity(EntityArchetype archetype)
@@ -43,7 +42,7 @@ namespace Monophyll.Entities
 			return CreateEntity(m_chunks.GetOrCreate(archetype));
 		}
 
-		public Entity CreateEntity(params ComponentType[] componentTypes)
+		public Entity CreateEntity(ComponentType[] componentTypes)
 		{
 			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
 		}
@@ -88,12 +87,12 @@ namespace Monophyll.Entities
 
 				if (!grouping.TryPeek(out EntityArchetypeChunk? chunk) || chunk.IsFull)
 				{
-					grouping.TryAdd(chunk = new EntityRegistryChunk(grouping.Key));
+					grouping.TryAdd(chunk = new EntityArchetypeChunk(grouping.Key));
 				}
 
-				entry.Chunk = (EntityRegistryChunk)chunk;
+				entry.Chunk = chunk;
 				entry.Index = chunk.Count;
-				entry.Chunk.Push(entity);
+				chunk.Push(entity);
 				return entity;
 			}
 		}
@@ -109,13 +108,19 @@ namespace Monophyll.Entities
 					return false;
 				}
 
-				m_chunks[entry.Chunk.Archetype].TryPeek(out EntityArchetypeChunk? chunkToPop);
-				entry.Chunk.SetRange(entry.Index, chunkToPop!, 1);
+				EntityArchetypeChunkGrouping grouping = m_chunks[entry.Chunk.Archetype.Id];
+				grouping.TryPeek(out EntityArchetypeChunk? lastChunk);
+				entry.Chunk.SetRange(entry.Index, lastChunk!, lastChunk!.Count - 1, 1);
 
-				ref Entry entryToPop = ref m_entries[chunkToPop![^1].Id];
-				entryToPop.Chunk.Pop();
-				entryToPop.Chunk = entry.Chunk;
-				entryToPop.Index = entry.Index;
+				ref Entry lastEntry = ref m_entries[lastChunk!.GetEntities()[^1].Id];
+				lastEntry.Chunk.Pop();
+				lastEntry.Chunk = entry.Chunk;
+				lastEntry.Index = entry.Index;
+
+				if (lastChunk.IsEmpty)
+				{
+					grouping.TryTake(out _);
+				}
 
 				entry.Chunk = null!;
 				entry.Index = 0;
@@ -132,9 +137,9 @@ namespace Monophyll.Entities
 						newCapacity = Array.MaxLength;
 					}
 
-					if (newCapacity < m_count)
+					if (newCapacity <= freeIndex)
 					{
-						newCapacity = m_count;
+						newCapacity = freeIndex + 1;
 					}
 
 					Array.Resize(ref m_freeEntityIds, newCapacity);
@@ -150,7 +155,12 @@ namespace Monophyll.Entities
 			return !Unsafe.IsNullRef(ref FindEntry(entity));
 		}
 
-		public EntityArchetype GetEntityArchetype(params ComponentType[] componentTypes)
+		public EntityQuery CreateEntityQuery(EntityFilter filter)
+		{
+			return new EntityQuery(m_chunks, filter);
+		}
+
+		public EntityArchetype GetEntityArchetype(ComponentType[] componentTypes)
 		{
 			return m_chunks.GetOrCreate(componentTypes).Key;
 		}
@@ -194,99 +204,11 @@ namespace Monophyll.Entities
 			return ref Unsafe.NullRef<Entry>();
 		}
 
-		public bool AddComponent(Entity entity, ComponentType componentType)
-		{
-			throw new NotImplementedException();
-		}
-
-		public bool AddComponent<T>(Entity entity, T component) where T : unmanaged
-		{
-			throw new NotImplementedException();
-		}
-
-		public bool RemoveComponent(Entity entity, ComponentType componentType)
-		{
-			throw new NotImplementedException();
-		}
-
-		public bool RemoveComponent<T>(Entity entity, out T component) where T : unmanaged
-		{
-			throw new NotImplementedException();
-		}
-
-		public ref T GetComponent<T>(Entity entity) where T : unmanaged
-		{
-			throw new NotImplementedException();
-		}
-
-		public bool TryGetComponent<T>(Entity entity, out T component) where T : unmanaged
-		{
-			throw new NotImplementedException();
-		}
-
 		private struct Entry
 		{
-			public EntityRegistryChunk Chunk;
+			public EntityArchetypeChunk Chunk;
 			public int Index;
 			public int Version;
-		}
-
-		private sealed class EntityRegistryChunk : EntityArchetypeChunk
-		{
-			public EntityRegistryChunk(EntityArchetype archetype) : base(archetype)
-			{
-			}
-
-			public void Push(Entity entity)
-			{
-				base.InsertEntity(Count, entity);
-			}
-
-			public void Pop()
-			{
-				base.RemoveEntity(Count - 1);
-			}
-
-			public void SetRange(int index, EntityArchetypeChunk chunk, int length)
-			{
-				base.SetEntities(index, chunk, chunk.Count - length, length);
-			}
-
-			protected override void ClearEntities()
-			{
-				ThrowNotSupportedException();
-			}
-
-			protected override void InsertEntities(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
-			{
-				ThrowNotSupportedException();
-			}
-
-			protected override void InsertEntity(int index, Entity entity)
-			{
-				ThrowNotSupportedException();
-			}
-
-			protected override void RemoveEntity(int index)
-			{
-				ThrowNotSupportedException();
-			}
-
-			protected override void SetEntities(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
-			{
-				ThrowNotSupportedException();
-			}
-
-			protected override void SetEntity(int index, Entity entity)
-			{
-				ThrowNotSupportedException();
-			}
-
-			private static void ThrowNotSupportedException()
-			{
-				throw new NotSupportedException(
-					"EntityArchetypeChunks created by an EntityRegistry cannot be modified directly.");
-			}
 		}
 	}
 }

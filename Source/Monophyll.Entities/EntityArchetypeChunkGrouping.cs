@@ -13,11 +13,6 @@ namespace Monophyll.Entities
 		private readonly EntityArchetype m_key;
 		private volatile Node? m_head;
 
-		public EntityArchetypeChunkGrouping()
-		{
-			m_key = EntityArchetype.Base;
-		}
-
 		public EntityArchetypeChunkGrouping(EntityArchetype key)
 		{
 			ArgumentNullException.ThrowIfNull(key);
@@ -64,13 +59,13 @@ namespace Monophyll.Entities
 			m_head = null;
 		}
 
-		public void CopyTo(EntityArchetypeChunk[] array, int arrayIndex)
+		public void CopyTo(EntityArchetypeChunk[] array, int index)
 		{
 			ArgumentNullException.ThrowIfNull(array);
 
-			if ((uint)arrayIndex >= (uint)array.Length)
+			if ((uint)index >= (uint)array.Length)
 			{
-				throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex,
+				throw new ArgumentOutOfRangeException(nameof(index), index,
 					"Array index is less than zero or greater than or equal to array length.");
 			}
 
@@ -82,15 +77,15 @@ namespace Monophyll.Entities
 				count++;
 			}
 
-			if (array.Length - arrayIndex < count)
+			if (array.Length - index < count)
 			{
 				throw new ArgumentException(
-					"The array does not have enough space to fit the items within the EntityArchetypeChunkStack.", nameof(array));
+					"The array does not have enough space to fit the items within the EntityArchetypeChunkGrouping.", nameof(array));
 			}
 
 			for (Node? current = head; current != null; current = current.Next)
 			{
-				array[arrayIndex++] = current.Chunk;
+				array[index++] = current.Chunk;
 			}
 		}
 
@@ -125,17 +120,10 @@ namespace Monophyll.Entities
 			if (array.Length - index < count)
 			{
 				throw new ArgumentException(
-					"The array does not have enough space to fit the items within the EntityArchetypeChunkStack.", nameof(array));
+					"The array does not have enough space to fit the items within the EntityArchetypeChunkGrouping.", nameof(array));
 			}
 
-			if (array is EntityArchetypeChunk[] chunks)
-			{
-				for (Node? current = head; current != null; current = current.Next)
-				{
-					chunks[index++] = current.Chunk;
-				}
-			}
-			else if (array is object[] objects)
+			if (array is object[] objects)
 			{
 				try
 				{
@@ -170,32 +158,32 @@ namespace Monophyll.Entities
 			return new Enumerator(this);
 		}
 
-		public bool TryAdd(EntityArchetypeChunk chunk)
+		public bool TryAdd(EntityArchetypeChunk item)
 		{
-			if (chunk == null || !EntityArchetype.Equals(m_key, chunk.Archetype))
+			if (item == null || !EntityArchetype.Equals(m_key, item.Archetype))
 			{
 				return false;
 			}
 
-			_ = new Node(this, chunk);
+			_ = new Node(this, item);
 			return true;
 		}
 
-		public bool TryPeek([MaybeNullWhen(false)] out EntityArchetypeChunk chunk)
+		public bool TryPeek([MaybeNullWhen(false)] out EntityArchetypeChunk item)
 		{
 			Node? head = m_head;
 
 			if (head == null)
 			{
-				chunk = null;
+				item = null;
 				return false;
 			}
 
-			chunk = head.Chunk;
+			item = head.Chunk;
 			return true;
 		}
 
-		public bool TryTake([MaybeNullWhen(false)] out EntityArchetypeChunk chunk)
+		public bool TryTake([MaybeNullWhen(false)] out EntityArchetypeChunk item)
 		{
 			Node? head = m_head;
 			Node? node;
@@ -204,7 +192,7 @@ namespace Monophyll.Entities
 			{
 				if (head == null)
 				{
-					chunk = null;
+					item = null;
 					return false;
 				}
 
@@ -213,7 +201,7 @@ namespace Monophyll.Entities
 			}
 			while (head != node);
 
-			chunk = node.Chunk;
+			item = node.Chunk;
 			return true;
 		}
 
@@ -229,7 +217,7 @@ namespace Monophyll.Entities
 
 			if (count == 0)
 			{
-				return [];
+				return Array.Empty<EntityArchetypeChunk>();
 			}
 
 			EntityArchetypeChunk[] array = new EntityArchetypeChunk[count];
