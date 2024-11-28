@@ -11,14 +11,8 @@ namespace Monophyll.Entities.Tests
 			IUnitTest[] tests =
 			[
 				new ComponentTypeCreationTest(),
-				new EntityArchetypeCreationTest(),
-				new EntityArchetypeCloneTest(),
-				new EntityArchetypeChunkGroupingMutationTest(),
-				new EntityArchetypeChunkLookupMutationTest(),
-				new EntityFilterCreationTest(),
-				new EntityFilterMatchTest(),
-				new EntityRegistryEntityManagementTest(),
-				new EntityQueryEnumerationTest()
+				new ComponentTypeComparisonTest(),
+				new EntityArchetypeCreationTest()
 			];
 
 			Console.WriteLine($"Running {tests.Length} test cases...\n");

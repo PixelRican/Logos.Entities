@@ -60,7 +60,7 @@ namespace Monophyll.Entities
 					m_componentTypes[freeIndex++] = componentTypeToCompare = componentType;
 					m_componentBits[componentType.Id >> 5] |= 1u << componentType.Id;
 
-					if (!componentType.IsEmpty)
+					if (!componentType.IsTag)
 					{
 						m_entitySize += componentType.Size;
 						m_storedComponentTypeCount++;
@@ -118,7 +118,7 @@ namespace Monophyll.Entities
 			get => m_storedComponentTypeCount - m_managedComponentTypeCount;
 		}
 
-		public int TaggedComponentTypeCount
+		public int TagComponentTypeCount
 		{
 			get => m_componentTypes.Length - m_storedComponentTypeCount;
 		}

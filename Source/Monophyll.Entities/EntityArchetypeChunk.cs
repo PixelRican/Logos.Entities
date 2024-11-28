@@ -26,7 +26,7 @@ namespace Monophyll.Entities
 
 				for (int i = 0; i < archetype.StoredComponentTypeCount; i++)
 				{
-					m_components[i] = Array.CreateInstance(componentTypes[i].SystemType, archetype.ChunkCapacity);
+					m_components[i] = Array.CreateInstance(componentTypes[i].Type, archetype.ChunkCapacity);
 				}
 			}
 			else
@@ -78,7 +78,7 @@ namespace Monophyll.Entities
 
 			if ((uint)index >= (uint)m_components.Length)
 			{
-				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {componentType.SystemType.Name}.");
+				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {componentType.Type.Name}.");
 			}
 
 			return m_components[index];

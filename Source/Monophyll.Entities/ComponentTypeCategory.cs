@@ -1,8 +1,8 @@
 ﻿namespace Monophyll.Entities
 {
-	public enum ComponentTypeCode
+	public enum ComponentTypeCategory
 	{
-		Empty = 0,
+		Tag = 0,
 		Unmanaged = 1,
 		Managed = 2
 	}

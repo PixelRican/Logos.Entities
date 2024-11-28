@@ -236,9 +236,9 @@ namespace Monophyll.Entities
 			private Node? m_node;
 			private EntityArchetypeChunk? m_current;
 
-			internal Enumerator(EntityArchetypeChunkGrouping stack)
+			internal Enumerator(EntityArchetypeChunkGrouping grouping)
 			{
-				m_node = stack.m_head;
+				m_node = grouping.m_head;
 				m_current = null;
 			}
 
@@ -282,15 +282,15 @@ namespace Monophyll.Entities
 			public readonly EntityArchetypeChunk Chunk;
 			public readonly Node? Next;
 
-			public Node(EntityArchetypeChunkGrouping stack, EntityArchetypeChunk chunk)
+			public Node(EntityArchetypeChunkGrouping grouping, EntityArchetypeChunk chunk)
 			{
-				Node? head = stack.m_head;
+				Node? head = grouping.m_head;
 				Chunk = chunk;
 
 				do
 				{
 					Next = head;
-					head = Interlocked.CompareExchange(ref stack.m_head, this, head);
+					head = Interlocked.CompareExchange(ref grouping.m_head, this, head);
 				}
 				while (Next != head);
 			}

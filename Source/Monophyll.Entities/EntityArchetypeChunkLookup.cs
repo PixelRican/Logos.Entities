@@ -413,6 +413,81 @@ namespace Monophyll.Entities
 			return false;
 		}
 
+		private ref struct ValueBitArray
+		{
+			private uint[]? m_rentedArray;
+			private Span<uint> m_bits;
+			private int m_size;
+
+			public ValueBitArray(Span<uint> span)
+			{
+				m_rentedArray = null;
+				m_bits = span;
+				m_size = 0;
+			}
+
+			public ValueBitArray(int capacity)
+			{
+				m_rentedArray = ArrayPool<uint>.Shared.Rent(capacity);
+				m_bits = new Span<uint>(m_rentedArray);
+				m_size = 0;
+			}
+
+			public readonly Span<uint> RawBits
+			{
+				get => m_bits;
+			}
+
+			public void Dispose()
+			{
+				uint[]? arrayToReturn = m_rentedArray;
+
+				if (arrayToReturn != null)
+				{
+					this = default;
+					ArrayPool<uint>.Shared.Return(arrayToReturn);
+				}
+			}
+
+			public void Set(int index)
+			{
+				int spanIndex = index >> 5;
+
+				if (spanIndex >= m_size)
+				{
+					Grow(spanIndex + 1);
+				}
+
+				m_bits[spanIndex] |= 1u << index;
+			}
+
+			private void Grow(int capacity)
+			{
+				if (capacity > m_bits.Length)
+				{
+					uint[]? rentedArray = m_rentedArray;
+					uint[] array = ArrayPool<uint>.Shared.Rent(capacity);
+
+					m_bits.CopyTo(array);
+
+					if (rentedArray != null)
+					{
+						ArrayPool<uint>.Shared.Return(rentedArray);
+					}
+
+					m_bits = new Span<uint>(m_rentedArray = array);
+				}
+
+				m_bits.Slice(m_size, capacity).Clear();
+				m_size = capacity;
+			}
+
+			public readonly ReadOnlySpan<uint> AsSpan()
+			{
+				return m_bits.Slice(0, m_size);
+			}
+		}
+
 		public struct Enumerator : IEnumerator<EntityArchetypeChunkGrouping>
 		{
 			private readonly EntityArchetypeChunkLookup m_lookup;

@@ -12,24 +12,24 @@ namespace Monophyll.Entities
 
 		private static int s_nextTypeId = -1;
 
-		private readonly Type m_systemType;
+		private readonly Type m_type;
 		private readonly int m_id;
 		private readonly int m_size;
 
-		private ComponentType(Type systemType, int id, int size, bool isManaged)
+		private ComponentType(Type type, int id, int size, bool isManaged)
 		{
-			m_systemType = systemType;
+			m_type = type;
 			m_id = id;
 
-			if (size > 1 || systemType.GetFields(FieldBindingFlags).Length > 0)
+			if (size > 1 || type.GetFields(FieldBindingFlags).Length > 0)
 			{
 				m_size = isManaged ? size | int.MinValue : size;
 			}
 		}
 
-		public Type SystemType
+		public Type Type
 		{
-			get => m_systemType;
+			get => m_type;
 		}
 
 		public int Id
@@ -42,7 +42,7 @@ namespace Monophyll.Entities
 			get => m_size & int.MaxValue;
 		}
 
-		public bool IsEmpty
+		public bool IsTag
 		{
 			get => m_size == 0;
 		}
@@ -57,18 +57,18 @@ namespace Monophyll.Entities
 			get => m_size < 0;
 		}
 
-		public ComponentTypeCode TypeCode
+		public ComponentTypeCategory Category
 		{
 			get
 			{
 				switch (m_size)
 				{
 					case < 0:
-						return ComponentTypeCode.Managed;
+						return ComponentTypeCategory.Managed;
 					case > 0:
-						return ComponentTypeCode.Unmanaged;
+						return ComponentTypeCategory.Unmanaged;
 					default:
-						return ComponentTypeCode.Empty;
+						return ComponentTypeCategory.Tag;
 				}
 			}
 		}
@@ -124,7 +124,7 @@ namespace Monophyll.Entities
 				&& b != null
 				&& a.m_id == b.m_id
 				&& a.m_size == b.m_size
-				&& a.m_systemType == b.m_systemType;
+				&& a.m_type == b.m_type;
 		}
 
 		public static ComponentType TypeOf<T>()
@@ -169,12 +169,12 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(m_systemType, m_id, m_size);
+			return HashCode.Combine(m_type, m_id, m_size);
 		}
 
 		public override string ToString()
 		{
-			return $"ComponentType {{ Type = {m_systemType.FullName} Id = {m_id} }}";
+			return $"ComponentType {{ Type = {m_type.Name} Id = {m_id} }}";
 		}
 
 		private static class ComponentTypeLookup<T>
