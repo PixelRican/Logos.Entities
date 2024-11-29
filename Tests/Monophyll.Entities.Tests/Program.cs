@@ -12,7 +12,8 @@ namespace Monophyll.Entities.Tests
 			[
 				new ComponentTypeCreationTest(),
 				new ComponentTypeComparisonTest(),
-				new EntityArchetypeCreationTest()
+				new EntityArchetypeCreationTest(),
+				new EntityArchetypeCloningTest()
 			];
 
 			Console.WriteLine($"Running {tests.Length} test cases...\n");
