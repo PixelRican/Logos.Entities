@@ -6,31 +6,21 @@ using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class EntityArchetypeCreationTest : IUnitTest
+	internal sealed class EntityArchetypeCreationTest : ITestCase
 	{
-		private const int ChunkSize0KiB = 0;
-		private const int ChunkSize4KiB = 4096;
-		private const int ChunkSize8KiB = 8192;
-		private const int ChunkSize16KiB = 16384;
-		private const int MinChunkCapacity = 16;
-
-		public void Run()
+		public void Execute()
 		{
 			ComponentType[] argumentTypes = new ComponentType[10];
 			ComponentType[] expectedTypes = new ComponentType[10];
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, default, 512, 1024, 2048);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(ChunkSize0KiB, 0), default, MinChunkCapacity);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(ChunkSize4KiB, 0), default, 512);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(ChunkSize8KiB, 0), default, 1024);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(ChunkSize16KiB, 0), default, 2048);
+			AssertEntityArchetypeCreateConsistency(argumentTypes, default);
 
 			argumentTypes[0] = argumentTypes[4] = expectedTypes[0] = ComponentType.TypeOf<Position2D>();
 			argumentTypes[1] = argumentTypes[5] = expectedTypes[1] = ComponentType.TypeOf<Rotation2D>();
 			argumentTypes[2] = argumentTypes[6] = expectedTypes[2] = ComponentType.TypeOf<Scale2D>();
 			argumentTypes[3] = argumentTypes[7] = expectedTypes[3] = ComponentType.TypeOf<Matrix3x2>();
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 4), 78, 157, 315);
+			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 4));
 
 			Array.Clear(argumentTypes);
 			Array.Clear(expectedTypes);
@@ -41,7 +31,7 @@ namespace Monophyll.Entities.Tests
 			argumentTypes[7] = expectedTypes[3] = ComponentType.TypeOf<Matrix4x4>();
 			argumentTypes[0] = expectedTypes[4] = ComponentType.TypeOf<Tag>();
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 5), 36, 73, 146);
+			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 5));
 
 			Array.Clear(argumentTypes);
 			Array.Clear(expectedTypes);
@@ -53,7 +43,7 @@ namespace Monophyll.Entities.Tests
 			argumentTypes[5] = expectedTypes[4] = ComponentType.TypeOf<Matrix3x2>();
 			argumentTypes[4] = expectedTypes[5] = ComponentType.TypeOf<Tag>();
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 6), 68, 136, 273);
+			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 6));
 
 			Array.Clear(argumentTypes);
 			Array.Clear(expectedTypes);
@@ -69,30 +59,19 @@ namespace Monophyll.Entities.Tests
 			argumentTypes[7] = expectedTypes[8] = ComponentType.TypeOf<Matrix4x4>();
 			argumentTypes[9] = expectedTypes[9] = ComponentType.TypeOf<Tag>();
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes, 24, 49, 99);
+			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes);
 		}
 
-		private static void AssertEntityArchetypeCreateConsistency(ComponentType[] argumentTypes, ReadOnlySpan<ComponentType> expectedTypes, int expectedChunkCapacity4KiB, int expectedChunkCapacity8KiB, int expectedChunkCapacity16KiB)
+		private static void AssertEntityArchetypeCreateConsistency(ComponentType[] argumentTypes, ReadOnlySpan<ComponentType> expectedTypes)
 		{
-
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable(), ChunkSize0KiB, 0), expectedTypes, MinChunkCapacity);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable(), ChunkSize4KiB, 0), expectedTypes, expectedChunkCapacity4KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable(), ChunkSize8KiB, 0), expectedTypes, expectedChunkCapacity8KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable(), ChunkSize16KiB, 0), expectedTypes, expectedChunkCapacity16KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan(), ChunkSize0KiB, 0), expectedTypes, MinChunkCapacity);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan(), ChunkSize4KiB, 0), expectedTypes, expectedChunkCapacity4KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan(), ChunkSize8KiB, 0), expectedTypes, expectedChunkCapacity8KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan(), ChunkSize16KiB, 0), expectedTypes, expectedChunkCapacity16KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes, ChunkSize0KiB, 0), expectedTypes, MinChunkCapacity);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes, ChunkSize4KiB, 0), expectedTypes, expectedChunkCapacity4KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes, ChunkSize8KiB, 0), expectedTypes, expectedChunkCapacity8KiB);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes, ChunkSize16KiB, 0), expectedTypes, expectedChunkCapacity16KiB);
+			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable(), 0), expectedTypes);
+			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan(), 0), expectedTypes);
+			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes, 0), expectedTypes);
 		}
 
-		private static void AssertEntityArchetypeIntegrity(EntityArchetype archetype, ReadOnlySpan<ComponentType> expectedTypes, int expectedChunkCapacity)
+		private static void AssertEntityArchetypeIntegrity(EntityArchetype archetype, ReadOnlySpan<ComponentType> expectedTypes)
 		{
 			Debug.Assert(archetype.ComponentTypes.Length == expectedTypes.Length);
-			Debug.Assert(archetype.ChunkCapacity == expectedChunkCapacity);
 
 			int expectedEntitySize = Unsafe.SizeOf<Entity>();
 			int expectedTagComponentTypeCount = 0;
@@ -130,7 +109,6 @@ namespace Monophyll.Entities.Tests
 			}
 
 			Debug.Assert(archetype.EntitySize == expectedEntitySize);
-			Debug.Assert(archetype.ChunkSize == expectedEntitySize * expectedChunkCapacity);
 			Debug.Assert(archetype.TagComponentTypeCount == expectedTagComponentTypeCount);
 			Debug.Assert(archetype.UnmanagedComponentTypeCount == expectedUnmanagedComponentTypeCount);
 			Debug.Assert(archetype.ManagedComponentTypeCount == expectedManagedComponentTypeCount);

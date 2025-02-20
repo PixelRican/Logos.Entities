@@ -95,9 +95,9 @@ namespace Monophyll.Entities
 														 new ComponentType[excludedComponentTypes.Length];
 			Array.Copy(excludedComponentTypes, excludedComponentTypeArray, excludedComponentTypeArray.Length);
 
-			Initialize(ref requiredComponentTypeArray, out uint[] requiredComponentBitArray);
-			Initialize(ref includedComponentTypeArray, out uint[] includedComponentBitArray);
-			Initialize(ref excludedComponentTypeArray, out uint[] excludedComponentBitArray);
+			uint[] requiredComponentBitArray = Initialize(ref requiredComponentTypeArray);
+			uint[] includedComponentBitArray = Initialize(ref includedComponentTypeArray);
+			uint[] excludedComponentBitArray = Initialize(ref excludedComponentTypeArray);
 
 			if (requiredComponentTypeArray.Length > 0 ||
 				includedComponentTypeArray.Length > 0 ||
@@ -117,9 +117,9 @@ namespace Monophyll.Entities
 			ComponentType[] includedComponentTypeArray = includedComponentTypes.ToArray();
 			ComponentType[] excludedComponentTypeArray = excludedComponentTypes.ToArray();
 
-			Initialize(ref requiredComponentTypeArray, out uint[] requiredComponentBitArray);
-			Initialize(ref includedComponentTypeArray, out uint[] includedComponentBitArray);
-			Initialize(ref excludedComponentTypeArray, out uint[] excludedComponentBitArray);
+			uint[] requiredComponentBitArray = Initialize(ref requiredComponentTypeArray);
+			uint[] includedComponentBitArray = Initialize(ref includedComponentTypeArray);
+			uint[] excludedComponentBitArray = Initialize(ref excludedComponentTypeArray);
 
 			if (requiredComponentTypeArray.Length > 0 ||
 				includedComponentTypeArray.Length > 0 ||
@@ -139,9 +139,9 @@ namespace Monophyll.Entities
 			ComponentType[] includedComponentTypeArray = includedComponentTypes.ToArray();
 			ComponentType[] excludedComponentTypeArray = excludedComponentTypes.ToArray();
 
-			Initialize(ref requiredComponentTypeArray, out uint[] requiredComponentBitArray);
-			Initialize(ref includedComponentTypeArray, out uint[] includedComponentBitArray);
-			Initialize(ref excludedComponentTypeArray, out uint[] excludedComponentBitArray);
+			uint[] requiredComponentBitArray = Initialize(ref requiredComponentTypeArray);
+			uint[] includedComponentBitArray = Initialize(ref includedComponentTypeArray);
+			uint[] excludedComponentBitArray = Initialize(ref excludedComponentTypeArray);
 
 			if (requiredComponentTypeArray.Length > 0 ||
 				includedComponentTypeArray.Length > 0 ||
@@ -155,35 +155,31 @@ namespace Monophyll.Entities
 			return s_universal;
 		}
 
-		private static void Initialize(ref ComponentType[] componentTypes, out uint[] componentBits)
+		private static uint[] Initialize(ref ComponentType[] componentTypes)
         {
 			Array.Sort(componentTypes);
-			ComponentType? componentType;
 
-			if (componentTypes.Length > 0 && (componentType = componentTypes[^1]) != null)
-			{
-				int freeIndex = 0;
-				componentBits = new uint[componentType.Id + 32 >> 5];
-				componentType = null;
-
-				for (int i = 0; i < componentTypes.Length; i++)
-				{
-					ComponentType componentTypeToCompare = componentTypes[i];
-
-					if (componentTypeToCompare != componentType)
-					{
-						componentTypes[freeIndex++] = componentType = componentTypeToCompare;
-						componentBits[componentTypeToCompare.Id >> 5] |= 1u << componentTypeToCompare.Id;
-					}
-				}
-
-				Array.Resize(ref componentTypes, freeIndex);
-			}
-			else
+			if (componentTypes.Length == 0 || componentTypes[^1] == null)
 			{
 				componentTypes = Array.Empty<ComponentType>();
-				componentBits = Array.Empty<uint>();
+				return Array.Empty<uint>();
 			}
+
+			uint[] componentBits = new uint[componentTypes[^1].Id + 32 >> 5];
+			int freeIndex = 0;
+			ComponentType? previousComponentType = null;
+
+			foreach (ComponentType currentComponentType in componentTypes)
+			{
+				if (!ComponentType.Equals(previousComponentType, currentComponentType))
+				{
+					componentTypes[freeIndex++] = previousComponentType = currentComponentType;
+					componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
+				}
+			}
+
+			Array.Resize(ref componentTypes, freeIndex);
+			return componentBits;
 		}
 
 		public static Builder CreateBuilder()
@@ -191,7 +187,7 @@ namespace Monophyll.Entities
 			return new Builder();
 		}
 
-		public static Builder Require(params ComponentType[] componentTypes)
+		public static Builder Require(ComponentType[] componentTypes)
 		{
 			return new Builder().Require(componentTypes);
 		}
@@ -206,7 +202,7 @@ namespace Monophyll.Entities
 			return new Builder().Require(componentTypes);
 		}
 
-		public static Builder Include(params ComponentType[] componentTypes)
+		public static Builder Include(ComponentType[] componentTypes)
 		{
 			return new Builder().Include(componentTypes);
 		}
@@ -221,7 +217,7 @@ namespace Monophyll.Entities
 			return new Builder().Include(componentTypes);
 		}
 
-		public static Builder Exclude(params ComponentType[] componentTypes)
+		public static Builder Exclude(ComponentType[] componentTypes)
 		{
 			return new Builder().Exclude(componentTypes);
 		}
@@ -254,22 +250,22 @@ namespace Monophyll.Entities
         {
             HashCode hashCode = default;
 
-            for (int i = 0; i < m_requiredComponentBits.Length; i++)
-            {
-                hashCode.Add(m_requiredComponentBits[i]);
-            }
+            foreach (uint value in m_requiredComponentBits)
+			{
+				hashCode.Add(value);
+			}
 
-            for (int i = 0; i < m_includedComponentBits.Length; i++)
-            {
-                hashCode.Add(m_includedComponentBits[i]);
-            }
+			foreach (uint value in m_includedComponentBits)
+			{
+				hashCode.Add(value);
+			}
 
-            for (int i = 0; i < m_excludedComponentBits.Length; i++)
-            {
-                hashCode.Add(m_excludedComponentBits[i]);
-            }
+			foreach (uint value in m_excludedComponentBits)
+			{
+				hashCode.Add(value);
+			}
 
-            return hashCode.ToHashCode();
+			return hashCode.ToHashCode();
         }
 
 		public bool Requires(ComponentType componentType)
@@ -419,78 +415,78 @@ namespace Monophyll.Entities
 				m_excludedComponentBits = Array.Empty<uint>();
 			}
 
-            public Builder Require(params ComponentType[] componentTypes)
+            public Builder Require(ComponentType[] componentTypes)
             {
 				ArgumentNullException.ThrowIfNull(componentTypes);
 				m_requiredComponentTypes = componentTypes.Length == 0 ?
 										   Array.Empty<ComponentType>() :
 										   new ComponentType[componentTypes.Length];
 				Array.Copy(componentTypes, m_requiredComponentTypes, m_requiredComponentTypes.Length);
-				Initialize(ref m_requiredComponentTypes, out m_requiredComponentBits);
+				m_requiredComponentBits = Initialize(ref m_requiredComponentTypes);
                 return this;
 			}
 
             public Builder Require(IEnumerable<ComponentType> componentTypes)
             {
 				m_requiredComponentTypes = componentTypes.ToArray();
-				Initialize(ref m_requiredComponentTypes, out m_requiredComponentBits);
+				m_requiredComponentBits = Initialize(ref m_requiredComponentTypes);
                 return this;
 			}
 
             public Builder Require(ReadOnlySpan<ComponentType> componentTypes)
 			{
 				m_requiredComponentTypes = componentTypes.ToArray();
-				Initialize(ref m_requiredComponentTypes, out m_requiredComponentBits);
+				m_requiredComponentBits = Initialize(ref m_requiredComponentTypes);
 				return this;
 			}
 
-			public Builder Include(params ComponentType[] componentTypes)
+			public Builder Include(ComponentType[] componentTypes)
 			{
 				ArgumentNullException.ThrowIfNull(componentTypes);
 				m_includedComponentTypes = componentTypes.Length == 0 ?
 										   Array.Empty<ComponentType>() :
 										   new ComponentType[componentTypes.Length];
 				Array.Copy(componentTypes, m_includedComponentTypes, m_includedComponentTypes.Length);
-				Initialize(ref m_includedComponentTypes, out m_includedComponentBits);
+				m_includedComponentBits = Initialize(ref m_includedComponentTypes);
 				return this;
 			}
 
 			public Builder Include(IEnumerable<ComponentType> componentTypes)
 			{
 				m_includedComponentTypes = componentTypes.ToArray();
-				Initialize(ref m_includedComponentTypes, out m_includedComponentBits);
+				m_includedComponentBits = Initialize(ref m_includedComponentTypes);
 				return this;
 			}
 
 			public Builder Include(ReadOnlySpan<ComponentType> componentTypes)
 			{
 				m_includedComponentTypes = componentTypes.ToArray();
-				Initialize(ref m_includedComponentTypes, out m_includedComponentBits);
+				m_includedComponentBits = Initialize(ref m_includedComponentTypes);
 				return this;
 			}
 
-			public Builder Exclude(params ComponentType[] componentTypes)
+			public Builder Exclude(ComponentType[] componentTypes)
 			{
 				ArgumentNullException.ThrowIfNull(componentTypes);
 				m_excludedComponentTypes = componentTypes.Length == 0 ?
 										   Array.Empty<ComponentType>() :
 										   new ComponentType[componentTypes.Length];
 				Array.Copy(componentTypes, m_excludedComponentTypes, m_excludedComponentTypes.Length);
-				Initialize(ref m_excludedComponentTypes, out m_excludedComponentBits);
+				m_excludedComponentBits = Initialize(ref m_excludedComponentTypes);
 				return this;
 			}
 
 			public Builder Exclude(IEnumerable<ComponentType> componentTypes)
 			{
 				m_excludedComponentTypes = componentTypes.ToArray();
-				Initialize(ref m_excludedComponentTypes, out m_excludedComponentBits);
+				m_excludedComponentBits = Initialize(ref m_excludedComponentTypes);
 				return this;
 			}
 
 			public Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
 			{
 				m_excludedComponentTypes = componentTypes.ToArray();
-				Initialize(ref m_excludedComponentTypes, out m_excludedComponentBits);
+				m_excludedComponentBits = Initialize(ref m_excludedComponentTypes);
 				return this;
 			}
 

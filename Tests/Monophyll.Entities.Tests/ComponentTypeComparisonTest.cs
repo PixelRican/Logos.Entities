@@ -3,9 +3,9 @@ using System.Numerics;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class ComponentTypeComparisonTest : IUnitTest
+	internal sealed class ComponentTypeComparisonTest : ITestCase
 	{
-		public void Run()
+		public void Execute()
 		{
 			ComponentType[] types =
 			[

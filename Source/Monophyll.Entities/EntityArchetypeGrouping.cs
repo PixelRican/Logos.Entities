@@ -8,12 +8,12 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public class EntityArchetypeChunkGrouping : IGrouping<EntityArchetype, EntityArchetypeChunk>, IProducerConsumerCollection<EntityArchetypeChunk>, IReadOnlyCollection<EntityArchetypeChunk>
+	public class EntityArchetypeGrouping : IGrouping<EntityArchetype, EntityArchetypeChunk>, IProducerConsumerCollection<EntityArchetypeChunk>, IReadOnlyCollection<EntityArchetypeChunk>
 	{
 		private readonly EntityArchetype m_key;
 		private volatile Node? m_head;
 
-		public EntityArchetypeChunkGrouping(EntityArchetype key)
+		public EntityArchetypeGrouping(EntityArchetype key)
 		{
 			ArgumentNullException.ThrowIfNull(key);
 			m_key = key;
@@ -208,25 +208,28 @@ namespace Monophyll.Entities
 		public EntityArchetypeChunk[] ToArray()
 		{
 			Node? head = m_head;
-			int count = 0;
 
-			for (Node? current = head; current != null; current = current.Next)
-			{
-				count++;
-			}
-
-			if (count == 0)
+			if (head == null)
 			{
 				return Array.Empty<EntityArchetypeChunk>();
+			}
+
+			int count = 0;
+
+			for (Node? node = head; node != null; node = node.Next)
+			{
+				count++;
 			}
 
 			EntityArchetypeChunk[] array = new EntityArchetypeChunk[count];
 			count = 0;
 
-			for (Node? current = head; current != null; current = current.Next)
+			do
 			{
-				array[count++] = current.Chunk;
+				array[count++] = head.Chunk;
+				head = head.Next;
 			}
+			while (head != null);
 
 			return array;
 		}
@@ -236,10 +239,9 @@ namespace Monophyll.Entities
 			private Node? m_node;
 			private EntityArchetypeChunk? m_current;
 
-			internal Enumerator(EntityArchetypeChunkGrouping grouping)
+			internal Enumerator(EntityArchetypeGrouping grouping)
 			{
 				m_node = grouping.m_head;
-				m_current = null;
 			}
 
 			public readonly EntityArchetypeChunk Current
@@ -258,12 +260,12 @@ namespace Monophyll.Entities
 
 			public bool MoveNext()
 			{
-				Node? localNode = m_node;
+				Node? node = m_node;
 
-				if (localNode != null)
+				if (node != null)
 				{
-					m_current = localNode.Chunk;
-					m_node = localNode.Next!;
+					m_node = node.Next;
+					m_current = node.Chunk;
 					return true;
 				}
 
@@ -282,7 +284,7 @@ namespace Monophyll.Entities
 			public readonly EntityArchetypeChunk Chunk;
 			public readonly Node? Next;
 
-			public Node(EntityArchetypeChunkGrouping grouping, EntityArchetypeChunk chunk)
+			public Node(EntityArchetypeGrouping grouping, EntityArchetypeChunk chunk)
 			{
 				Node? head = grouping.m_head;
 				Chunk = chunk;

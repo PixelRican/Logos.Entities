@@ -1,207 +1,194 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities
 {
 	public class EntityRegistry
 	{
-		private const int DefaultCapacity = 128;
+		private const int DefaultCapacity = 8;
+		private const int TargetChunkSize = 16384;
 
-		private readonly EntityArchetypeChunkLookup m_chunks;
-		private Entry[] m_entries;
-		private int[] m_freeEntityIds;
-		private int m_nextEntityId;
-		private int m_count;
-
-		public EntityRegistry()
-		{
-			m_chunks = new EntityArchetypeChunkLookup();
-			m_entries = Array.Empty<Entry>();
-			m_freeEntityIds = Array.Empty<int>();
-		}
+		private readonly EntityArchetypeLookup m_lookup;
+		private volatile Container m_container;
+		private EntityQuery? m_universalQuery;
 
 		public int Capacity
 		{
-			get => m_entries.Length;
+			get => m_container.Entries.Length;
 		}
 
 		public int Count
 		{
-			get => m_count;
+			get => m_container.Count;
 		}
 
-		public Entity CreateEntity()
+		public EntityQuery UniversalQuery
 		{
-			return CreateEntity(m_chunks.GetOrCreate(ReadOnlySpan<ComponentType>.Empty));
+			get => m_universalQuery ??= new EntityQuery(m_lookup);
 		}
 
-		public Entity CreateEntity(EntityArchetype archetype)
+		public EntityRegistry()
 		{
-			return CreateEntity(m_chunks.GetOrCreate(archetype));
+			m_lookup = new EntityArchetypeLookup();
+			m_container = new Container(DefaultCapacity);
 		}
 
-		public Entity CreateEntity(ComponentType[] componentTypes)
+		public Entity CreateEntity(params ComponentType[] componentTypes)
 		{
-			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
+			return CreateEntity(m_lookup.GetGrouping(componentTypes));
 		}
 
 		public Entity CreateEntity(IEnumerable<ComponentType> componentTypes)
 		{
-			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
+			return CreateEntity(m_lookup.GetGrouping(componentTypes));
 		}
 
 		public Entity CreateEntity(ReadOnlySpan<ComponentType> componentTypes)
 		{
-			return CreateEntity(m_chunks.GetOrCreate(componentTypes));
+			return CreateEntity(m_lookup.GetGrouping(componentTypes));
 		}
 
-		private Entity CreateEntity(EntityArchetypeChunkGrouping grouping)
+		public Entity CreateEntity(EntityArchetype archetype)
 		{
-			lock (m_chunks)
-			{
-				int entityId = m_count++ < m_nextEntityId ?
-							   m_freeEntityIds[m_nextEntityId - m_count] :
-							   m_nextEntityId++;
+			return CreateEntity(m_lookup.GetGrouping(archetype));
+		}
 
-				if (entityId >= m_entries.Length)
+		private Entity CreateEntity(EntityArchetypeGrouping grouping)
+		{
+			lock (m_lookup)
+			{
+				Container container = m_container;
+
+				if (container.Count == container.Entries.Length)
 				{
-					int newCapacity = m_entries.Length == 0 ? DefaultCapacity : 2 * m_entries.Length;
+					int newCapacity = container.Count * 2;
 
 					if ((uint)newCapacity > (uint)Array.MaxLength)
 					{
 						newCapacity = Array.MaxLength;
 					}
 
-					if (newCapacity < m_count)
+					if (newCapacity <= container.Count)
 					{
-						newCapacity = m_count;
+						newCapacity = container.Count + 1;
 					}
 
-					Array.Resize(ref m_entries, newCapacity);
+					Container newContainer = new Container(newCapacity);
+
+					Array.Copy(container.Entries, newContainer.Entries, container.Count);
+					newContainer.NextId = newContainer.Count = container.Count;
+					m_container = container = newContainer;
 				}
 
-				ref Entry entry = ref m_entries[entityId];
-				Entity entity = new Entity(entityId, entry.Version);
+				int index = container.Count++ < container.NextId ?
+							container.FreeIds[container.NextId - container.Count] :
+							container.NextId++;
+				ref Entry entry = ref container.Entries[index];
+				Entity entity = new Entity(index, entry.Version);
 
 				if (!grouping.TryPeek(out EntityArchetypeChunk? chunk) || chunk.IsFull)
 				{
-					grouping.TryAdd(chunk = new EntityArchetypeChunk(grouping.Key));
+					grouping.TryAdd(chunk = new EntityArchetypeChunk(grouping.Key,
+						m_lookup, TargetChunkSize / grouping.Key.EntitySize));
 				}
 
-				entry.Chunk = chunk;
-				entry.Index = chunk.Count;
+				index = chunk.Count;
 				chunk.Push(entity);
+				entry.Chunk = chunk;
+				entry.Index = index;
+
 				return entity;
 			}
 		}
 
 		public bool DestroyEntity(Entity entity)
 		{
-			lock (m_chunks)
+			lock (m_lookup)
 			{
-				ref Entry entry = ref FindEntry(entity);
+				Container container = m_container;
+				ref Entry entryToDestroy = ref Unsafe.NullRef<Entry>();
 
-				if (Unsafe.IsNullRef(ref entry))
+				if ((uint)entity.Id >= (uint)container.NextId
+					|| entity.Version != (entryToDestroy = ref container.Entries[entity.Id]).Version
+					|| entryToDestroy.Chunk == null)
 				{
 					return false;
 				}
 
-				EntityArchetypeChunkGrouping grouping = m_chunks[entry.Chunk.Archetype.Id];
-				grouping.TryPeek(out EntityArchetypeChunk? lastChunk);
-				entry.Chunk.SetRange(entry.Index, lastChunk!, lastChunk!.Count - 1, 1);
+				EntityArchetypeGrouping grouping = m_lookup.GetGrouping(entryToDestroy.Chunk.Archetype);
+				grouping.TryPeek(out EntityArchetypeChunk? chunkToPop);
+				ref Entry entryToPop = ref container.Entries[chunkToPop!.GetEntities()[^1].Id];
 
-				ref Entry lastEntry = ref m_entries[lastChunk!.GetEntities()[^1].Id];
-				lastEntry.Chunk.Pop();
-				lastEntry.Chunk = entry.Chunk;
-				lastEntry.Index = entry.Index;
+				entryToDestroy.Chunk.SetRange(entryToDestroy.Index, chunkToPop, entryToPop.Index, 1);
+				chunkToPop.Pop();
 
-				if (lastChunk.IsEmpty)
+				entryToPop.Chunk = entryToDestroy.Chunk;
+				entryToPop.Index = entryToDestroy.Index;
+				entryToDestroy.Chunk = null!;
+				entryToDestroy.Index = -1;
+				entryToDestroy.Version++;
+				container.FreeIds[container.NextId - container.Count--] = entity.Id;
+
+				if (chunkToPop.IsEmpty)
 				{
 					grouping.TryTake(out _);
 				}
 
-				entry.Chunk = null!;
-				entry.Index = 0;
-				entry.Version++;
-
-				int freeIndex = m_nextEntityId - m_count--;
-
-				if (freeIndex >= m_freeEntityIds.Length)
-				{
-					int newCapacity = m_freeEntityIds.Length == 0 ? DefaultCapacity : 2 * m_freeEntityIds.Length;
-
-					if ((uint)newCapacity > (uint)Array.MaxLength)
-					{
-						newCapacity = Array.MaxLength;
-					}
-
-					if (newCapacity <= freeIndex)
-					{
-						newCapacity = freeIndex + 1;
-					}
-
-					Array.Resize(ref m_freeEntityIds, newCapacity);
-				}
-
-				m_freeEntityIds[freeIndex] = entity.Id;
 				return true;
 			}
 		}
 
 		public bool HasEntity(Entity entity)
 		{
-			return !Unsafe.IsNullRef(ref FindEntry(entity));
+			Container container = m_container;
+			ref Entry entry = ref Unsafe.NullRef<Entry>();
+
+			return (uint)entity.Id < (uint)container.NextId
+					&& (entry = ref container.Entries[entity.Id]).Chunk != null
+					&& entry.Index >= 0
+					&& entry.Version == entity.Version;
 		}
 
-		public EntityQuery CreateEntityQuery(EntityFilter filter)
+		public EntityArchetype GetArchetype(params ComponentType[] componentTypes)
 		{
-			return new EntityQuery(m_chunks, filter);
+			return m_lookup.GetGrouping(componentTypes).Key;
 		}
 
-		public EntityArchetype GetEntityArchetype(ComponentType[] componentTypes)
+		public EntityArchetype GetArchetype(IEnumerable<ComponentType> componentTypes)
 		{
-			return m_chunks.GetOrCreate(componentTypes).Key;
+			return m_lookup.GetGrouping(componentTypes).Key;
 		}
 
-		public EntityArchetype GetEntityArchetype(IEnumerable<ComponentType> componentTypes)
+		public EntityArchetype GetArchetype(ReadOnlySpan<ComponentType> componentTypes)
 		{
-			return m_chunks.GetOrCreate(componentTypes).Key;
+			return m_lookup.GetGrouping(componentTypes).Key;
 		}
 
-		public EntityArchetype GetEntityArchetype(ReadOnlySpan<ComponentType> componentTypes)
+		public EntityArchetype GetArchetype(EntityArchetype archetype)
 		{
-			return m_chunks.GetOrCreate(componentTypes).Key;
+			return m_lookup.GetGrouping(archetype).Key;
 		}
 
-		public bool TryGetEntityArchetypeChunk(Entity entity, [MaybeNullWhen(false)] out EntityArchetypeChunk chunk)
+		public EntityQuery GetQuery(params ComponentType[] componentTypes)
 		{
-			ref Entry entry = ref FindEntry(entity);
-
-			if (Unsafe.IsNullRef(ref entry))
-			{
-				chunk = null;
-				return false;
-			}
-
-			chunk = entry.Chunk;
-			return true;
+			return GetQuery(EntityFilter.Create(componentTypes, Array.Empty<ComponentType>(), Array.Empty<ComponentType>()));
 		}
 
-		private ref Entry FindEntry(Entity entity)
+		public EntityQuery GetQuery(IEnumerable<ComponentType> componentTypes)
 		{
-			if ((uint)entity.Id < (uint)m_nextEntityId)
-			{
-				ref Entry entry = ref m_entries[entity.Id];
+			return GetQuery(EntityFilter.Create(componentTypes, Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>()));
+		}
 
-				if (entry.Chunk != null && entry.Version == entity.Version)
-				{
-					return ref entry;
-				}
-			}
+		public EntityQuery GetQuery(ReadOnlySpan<ComponentType> componentTypes)
+		{
+			return GetQuery(EntityFilter.Create(componentTypes, ReadOnlySpan<ComponentType>.Empty, ReadOnlySpan<ComponentType>.Empty));
+		}
 
-			return ref Unsafe.NullRef<Entry>();
+		public EntityQuery GetQuery(EntityFilter filter)
+		{
+			return filter == EntityFilter.Universal ? UniversalQuery : new EntityQuery(m_lookup, filter);
 		}
 
 		private struct Entry
@@ -209,6 +196,20 @@ namespace Monophyll.Entities
 			public EntityArchetypeChunk Chunk;
 			public int Index;
 			public int Version;
+		}
+
+		private sealed class Container
+		{
+			public readonly Entry[] Entries;
+			public readonly int[] FreeIds;
+			public int Count;
+			public int NextId;
+
+			public Container(int capacity)
+			{
+				Entries = new Entry[capacity];
+				FreeIds = new int[capacity];
+			}
 		}
 	}
 }

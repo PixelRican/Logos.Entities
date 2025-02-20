@@ -8,20 +8,28 @@ namespace Monophyll.Entities.Tests
 		public static void Main()
 		{
 			Stopwatch stopwatch = new();
-			IUnitTest[] tests =
+			ITestCase[] tests =
 			[
 				new ComponentTypeCreationTest(),
 				new ComponentTypeComparisonTest(),
 				new EntityArchetypeCreationTest(),
-				new EntityArchetypeCloningTest()
+				new EntityArchetypeCloningTest(),
+				new EntityArchetypeChunkCreationTest(),
+				new EntityArchetypeChunkMutationTest(),
+				new EntityArchetypeChunkRangedMutationTest(),
+				new EntityFilterMatchingTest(),
+				new EntityArchetypeGroupingMutationTest(),
+				new EntityArchetypeLookupMutationTest(),
+				new EntityQueryEnumerationTest(),
+				new EntityRegistryCreateDestroyTest()
 			];
 
 			Console.WriteLine($"Running {tests.Length} test cases...\n");
 
-			foreach (IUnitTest test in tests)
+			foreach (ITestCase test in tests)
 			{
 				stopwatch.Restart();
-				test.Run();
+				test.Execute();
 				stopwatch.Stop();
 				Console.WriteLine($"{test.GetType().Name} completed in {stopwatch.ElapsedMilliseconds} ms.");
 			}

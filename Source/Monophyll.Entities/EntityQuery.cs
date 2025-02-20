@@ -1,149 +1,151 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public sealed class EntityQuery
+	public sealed class EntityQuery : IEnumerable<EntityArchetypeChunk>
 	{
-		private readonly Cache m_cache;
-		private EntityArchetypeChunkGrouping.Enumerator m_groupingEnumerator;
-		private int m_count;
-		private int m_index;
+		private const int DefaultCapacity = 4;
 
-		public EntityQuery(EntityArchetypeChunkLookup lookup, EntityFilter filter)
+		private readonly object m_lock;
+		private readonly EntityArchetypeLookup m_lookup;
+		private readonly EntityFilter m_filter;
+		private EntityArchetypeGrouping[] m_groupings;
+		private int m_count;
+		private int m_lookupIndex;
+
+		public EntityQuery(EntityArchetypeLookup lookup) : this(lookup, EntityFilter.Universal)
+		{
+		}
+
+		public EntityQuery(EntityArchetypeLookup lookup, EntityFilter filter)
 		{
 			ArgumentNullException.ThrowIfNull(lookup);
 			ArgumentNullException.ThrowIfNull(filter);
 
-			m_cache = new Cache(lookup, filter);
+			m_lock = new object();
+			m_lookup = lookup;
+			m_filter = filter;
+			m_groupings = Array.Empty<EntityArchetypeGrouping>();
 		}
 
-		public bool Matches(EntityArchetype archetype)
+		public Enumerator GetEnumerator()
 		{
-			return m_cache.Contains(archetype);
-		}
-
-		public bool MoveNext()
-		{
-			if (m_count == 0)
+			if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
 			{
-				m_count = m_cache.Refresh();
+				UpdateCache();
 			}
 
-			while (!m_groupingEnumerator.MoveNext())
+			return new Enumerator(this);
+		}
+
+		private void UpdateCache()
+		{
+			lock (m_lock)
 			{
-				if ((uint)m_index >= (uint)m_count)
+				if (m_lookupIndex < m_lookup.Count)
 				{
-					m_groupingEnumerator = default;
-					m_index = m_count = 0;
-					return false;
-				}
+					int lookupIndex = m_lookupIndex;
 
-				m_groupingEnumerator = m_cache.Items[m_index++].GetEnumerator();
-			}
-
-			return true;
-		}
-
-		public void Rematch()
-		{
-			m_count = m_cache.Refresh();
-		}
-
-		public void Reset()
-		{
-			m_groupingEnumerator = default;
-			m_index = m_count = 0;
-		}
-
-		public Span<T> GetComponents<T>()
-		{
-			return GetEntityArchetypeChunk().GetComponents<T>();
-		}
-
-		public ref T GetComponentReference<T>()
-		{
-			return ref GetEntityArchetypeChunk().GetComponentReference<T>();
-		}
-
-		public ReadOnlySpan<Entity> GetEntities()
-		{
-			return GetEntityArchetypeChunk().GetEntities();
-		}
-
-		private EntityArchetypeChunk GetEntityArchetypeChunk()
-		{
-			return m_groupingEnumerator.Current ?? throw new InvalidCastException("The EntityQuery has not yet begun iteration.");
-		}
-
-		private sealed class Cache
-		{
-			private const int DefaultCapacity = 16;
-
-			private readonly EntityArchetypeChunkLookup m_lookup;
-			private readonly EntityFilter m_filter;
-			private EntityArchetypeChunkGrouping[] m_items;
-			private int m_size;
-			private int m_lookupIndex;
-
-			public Cache(EntityArchetypeChunkLookup lookup, EntityFilter filter)
-			{
-				Debug.Assert(lookup != null);
-				Debug.Assert(filter != null);
-
-				m_lookup = lookup;
-				m_filter = filter;
-				m_items = Array.Empty<EntityArchetypeChunkGrouping>();
-			}
-
-			public EntityArchetypeChunkGrouping[] Items
-			{
-				get => m_items;
-			}
-
-			public bool Contains(EntityArchetype archetype)
-			{
-				return m_lookup.Contains(archetype) && m_filter.Matches(archetype);
-			}
-
-			public int Refresh()
-			{
-				if (m_lookupIndex == m_lookup.Count)
-				{
-					return m_size;
-				}
-
-				lock (this)
-				{
-					while (m_lookupIndex < m_lookup.Count)
+					do
 					{
-						if (m_size >= m_items.Length)
-						{
-							int newCapacity = m_items.Length == 0 ? DefaultCapacity : 2 * m_items.Length;
-
-							if ((uint)newCapacity > (uint)Array.MaxLength)
-							{
-								newCapacity = Array.MaxLength;
-							}
-
-							if (newCapacity <= m_size)
-							{
-								newCapacity = m_size + 1;
-							}
-
-							Array.Resize(ref m_items, newCapacity);
-						}
-
-						EntityArchetypeChunkGrouping grouping = m_lookup[m_lookupIndex++];
+						EntityArchetypeGrouping grouping = m_lookup[lookupIndex++];
 
 						if (m_filter.Matches(grouping.Key))
 						{
-							m_items[m_size++] = grouping;
+							if (m_count == m_groupings.Length)
+							{
+								int newCapacity = m_groupings.Length == 0 ? DefaultCapacity : m_groupings.Length * 2;
+
+								if ((uint)newCapacity > (uint)Array.MaxLength)
+								{
+									newCapacity = Array.MaxLength;
+								}
+
+								if (newCapacity >= m_count)
+								{
+									newCapacity = m_count + 1;
+								}
+
+								Array.Resize(ref m_groupings, newCapacity);
+							}
+
+							m_groupings[m_count++] = grouping;
 						}
 					}
+					while (lookupIndex < m_lookup.Count);
 
-					return m_size;
+					Volatile.Write(ref m_lookupIndex, lookupIndex);
 				}
+			}
+		}
+
+		IEnumerator<EntityArchetypeChunk> IEnumerable<EntityArchetypeChunk>.GetEnumerator()
+		{
+			return GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
+		}
+
+		public struct Enumerator : IEnumerator<EntityArchetypeChunk>
+		{
+			private readonly EntityQuery m_query;
+			private readonly int m_count;
+			private int m_index;
+			private EntityArchetypeGrouping.Enumerator m_enumerator;
+
+			internal Enumerator(EntityQuery query)
+			{
+				m_query = query;
+				m_count = query.m_count;
+				m_index = 0;
+				m_enumerator = default;
+			}
+
+			public readonly EntityArchetypeChunk Current
+			{
+				get => m_enumerator.Current;
+			}
+
+			readonly object IEnumerator.Current
+			{
+				get => m_enumerator.Current;
+			}
+
+			public readonly void Dispose()
+			{
+			}
+
+			public bool MoveNext()
+			{
+				return m_enumerator.MoveNext() || MoveNextRare();
+			}
+
+			private bool MoveNextRare()
+			{
+				while (m_index < m_count)
+				{
+					m_enumerator = m_query.m_groupings[m_index++].GetEnumerator();
+
+					if (m_enumerator.MoveNext())
+					{
+						return true;
+					}
+				}
+
+				m_enumerator = default;
+				return false;
+			}
+
+			void IEnumerator.Reset()
+			{
+				m_index = 0;
+				m_enumerator = default;
 			}
 		}
 	}

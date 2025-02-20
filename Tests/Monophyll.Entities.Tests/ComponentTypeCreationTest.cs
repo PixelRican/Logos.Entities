@@ -4,9 +4,9 @@ using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class ComponentTypeCreationTest : IUnitTest
+	internal sealed class ComponentTypeCreationTest : ITestCase
 	{
-		public void Run()
+		public void Execute()
 		{
 			AssertComponentTypeIntegrity<Tag>(0);
 			AssertComponentTypeIntegrity<Position2D>(1);
