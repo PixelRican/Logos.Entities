@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -149,6 +150,19 @@ namespace Monophyll.Entities
 			m_version++;
 		}
 
+		public void PushRange(EntityArchetypeChunk chunk, int chunkIndex, int length)
+		{
+			int index = m_size;
+
+			if ((uint)(index + length) > (uint)m_entities.Length)
+			{
+				throw new InvalidOperationException();
+			}
+
+			CopyRange(index, chunk, chunkIndex, length);
+			m_size = index + length;
+		}
+
 		public Entity Pop()
 		{
 			int size = m_size - 1;
@@ -190,15 +204,20 @@ namespace Monophyll.Entities
 
 		public void SetRange(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
 		{
-			ArgumentNullException.ThrowIfNull(chunk);
-			ArgumentOutOfRangeException.ThrowIfNegative(index);
-			ArgumentOutOfRangeException.ThrowIfNegative(chunkIndex);
-			ArgumentOutOfRangeException.ThrowIfNegative(length);
-
 			if ((uint)(index + length) > (uint)m_size)
 			{
 				throw new ArgumentOutOfRangeException();
 			}
+
+			CopyRange(index, chunk, chunkIndex, length);
+		}
+
+		private void CopyRange(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+		{
+			ArgumentNullException.ThrowIfNull(chunk);
+			ArgumentOutOfRangeException.ThrowIfNegative(index);
+			ArgumentOutOfRangeException.ThrowIfNegative(chunkIndex);
+			ArgumentOutOfRangeException.ThrowIfNegative(length);
 
 			if ((uint)(chunkIndex + length) > (uint)chunk.m_size)
 			{

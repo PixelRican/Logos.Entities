@@ -7,7 +7,7 @@ namespace Monophyll.Entities.Tests
 	{
 		public static void Main()
 		{
-			Stopwatch stopwatch = new();
+			Stopwatch stopwatch = new Stopwatch();
 			ITestCase[] tests =
 			[
 				new ComponentTypeCreationTest(),
@@ -21,7 +21,8 @@ namespace Monophyll.Entities.Tests
 				new EntityArchetypeGroupingMutationTest(),
 				new EntityArchetypeLookupMutationTest(),
 				new EntityQueryEnumerationTest(),
-				new EntityRegistryCreateDestroyTest()
+				new EntityRegistryCreateDestroyEntityTest(),
+				new EntityRegistryAddRemoveComponentTest()
 			];
 
 			Console.WriteLine($"Running {tests.Length} test cases...\n");

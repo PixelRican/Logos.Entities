@@ -140,15 +140,120 @@ namespace Monophyll.Entities
 			}
 		}
 
-		public bool HasEntity(Entity entity)
+		public bool ContainsEntity(Entity entity)
 		{
 			Container container = m_container;
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 			return (uint)entity.Id < (uint)container.NextId
-					&& (entry = ref container.Entries[entity.Id]).Chunk != null
-					&& entry.Index >= 0
-					&& entry.Version == entity.Version;
+					&& entity.Version == (entry = ref container.Entries[entity.Id]).Version
+					&& entry.Chunk != null
+					&& entry.Index >= 0;
+		}
+
+		public void AddComponent<T>(Entity entity)
+		{
+			SetComponent<T>(entity, default!);
+		}
+
+		public void RemoveComponent<T>(Entity entity)
+		{
+			lock (m_lookup)
+			{
+				Container container = m_container;
+				ref Entry entry = ref Unsafe.NullRef<Entry>();
+
+				if ((uint)entity.Id >= (uint)container.NextId
+					|| entity.Version != (entry = ref container.Entries[entity.Id]).Version
+					|| entry.Chunk == null)
+				{
+					throw new ArgumentException("The entity does not exist.", nameof(entity));
+				}
+
+				EntityArchetypeGrouping groupingToMoveTo = m_lookup.GetSubgrouping(entry.Chunk.Archetype, ComponentType.TypeOf<T>());
+
+				if (entry.Chunk.Archetype != groupingToMoveTo.Key)
+				{
+					MoveEntry(container, groupingToMoveTo, ref entry);
+				}
+			}
+		}
+
+		public void SetComponent<T>(Entity entity, T component)
+		{
+			lock (m_lookup)
+			{
+				Container container = m_container;
+				ref Entry entry = ref Unsafe.NullRef<Entry>();
+
+				if ((uint)entity.Id >= (uint)container.NextId
+					|| entity.Version != (entry = ref container.Entries[entity.Id]).Version
+					|| entry.Chunk == null)
+				{
+					throw new ArgumentException("The entity does not exist.", nameof(entity));
+				}
+
+				EntityArchetypeGrouping groupingToMoveTo = m_lookup.GetSupergrouping(entry.Chunk.Archetype, ComponentType.TypeOf<T>());
+
+				if (entry.Chunk.Archetype != groupingToMoveTo.Key)
+				{
+					MoveEntry(container, groupingToMoveTo, ref entry);
+				}
+
+				if (!ComponentType.TypeOf<T>().IsTag)
+				{
+					entry.Chunk.GetComponents<T>()[entry.Index] = component;
+				}
+			}
+		}
+
+		public bool TryGetComponent<T>(Entity entity, out T? component)
+		{
+			Container container = m_container;
+			ref Entry entry = ref Unsafe.NullRef<Entry>();
+			EntityArchetypeChunk chunk;
+			int index;
+
+			if ((uint)entity.Id < (uint)container.NextId
+				&& entity.Version != (entry = ref container.Entries[entity.Id]).Version
+				&& (chunk = entry.Chunk) != null
+				&& (index = entry.Index) >= 0)
+			{
+				component = chunk.GetComponents<T>()[index];
+				return true;
+			}
+
+			component = default;
+			return false;
+		}
+
+		private void MoveEntry(Container container, EntityArchetypeGrouping groupingToMoveTo, ref Entry entryToMove)
+		{
+			EntityArchetypeGrouping groupingToMoveFrom = m_lookup.GetGrouping(entryToMove.Chunk.Archetype);
+			groupingToMoveFrom.TryPeek(out EntityArchetypeChunk? chunkToPop);
+			ref Entry entryToPop = ref container.Entries[chunkToPop!.GetEntities()[^1].Id];
+
+			if (!groupingToMoveTo.TryPeek(out EntityArchetypeChunk? chunkToMoveTo) || chunkToMoveTo.IsFull)
+			{
+				groupingToMoveTo.TryAdd(chunkToMoveTo = new EntityArchetypeChunk(groupingToMoveTo.Key,
+					TargetChunkSize / groupingToMoveTo.Key.EntitySize));
+			}
+
+			int indexToMoveTo = chunkToMoveTo.Count;
+
+			chunkToMoveTo.PushRange(entryToMove.Chunk, entryToMove.Index, 1);
+			entryToMove.Chunk.SetRange(entryToMove.Index, chunkToPop, entryToPop.Index, 1);
+			chunkToPop.Pop();
+
+			if (chunkToPop.IsEmpty)
+			{
+				groupingToMoveFrom.TryTake(out _);
+			}
+
+			entryToPop.Chunk = entryToMove.Chunk;
+			entryToPop.Index = entryToMove.Index;
+			entryToMove.Chunk = chunkToMoveTo;
+			entryToMove.Index = indexToMoveTo;
 		}
 
 		public EntityArchetype GetArchetype(params ComponentType[] componentTypes)
@@ -169,6 +274,23 @@ namespace Monophyll.Entities
 		public EntityArchetype GetArchetype(EntityArchetype archetype)
 		{
 			return m_lookup.GetGrouping(archetype).Key;
+		}
+
+		public bool TryGetChunk(Entity entity, out EntityArchetypeChunk? chunk)
+		{
+			Container container = m_container;
+			ref Entry entry = ref Unsafe.NullRef<Entry>();
+
+			if ((uint)entity.Id < (uint)container.NextId
+				&& entity.Version == (entry = ref container.Entries[entity.Id]).Version
+				&& (chunk = entry.Chunk) != null
+				&& entry.Index >= 0)
+			{
+				return true;
+			}
+
+			chunk = null;
+			return false;
 		}
 
 		public EntityQuery GetQuery(params ComponentType[] componentTypes)

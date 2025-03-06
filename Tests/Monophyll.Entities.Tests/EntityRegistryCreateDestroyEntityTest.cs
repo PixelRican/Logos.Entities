@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class EntityRegistryCreateDestroyTest : ITestCase
+	internal sealed class EntityRegistryCreateDestroyEntityTest : ITestCase
 	{
 		public void Execute()
 		{
@@ -23,10 +23,18 @@ namespace Monophyll.Entities.Tests
 				Debug.Assert(registry.CreateEntity(types).Equals(new Entity(i * 4 + 1, 0)));
 				Debug.Assert(registry.CreateEntity((IEnumerable<ComponentType>)types).Equals(new Entity(i * 4 + 2, 0)));
 				Debug.Assert(registry.CreateEntity((ReadOnlySpan<ComponentType>)types).Equals(new Entity(i * 4 + 3, 0)));
-				Debug.Assert(registry.HasEntity(new Entity(i * 4, 0)));
-				Debug.Assert(registry.HasEntity(new Entity(i * 4 + 1, 0)));
-				Debug.Assert(registry.HasEntity(new Entity(i * 4 + 2, 0)));
-				Debug.Assert(registry.HasEntity(new Entity(i * 4 + 3, 0)));
+				Debug.Assert(registry.ContainsEntity(new Entity(i * 4, 0)));
+				Debug.Assert(registry.ContainsEntity(new Entity(i * 4 + 1, 0)));
+				Debug.Assert(registry.ContainsEntity(new Entity(i * 4 + 2, 0)));
+				Debug.Assert(registry.ContainsEntity(new Entity(i * 4 + 3, 0)));
+				Debug.Assert(registry.TryGetChunk(new Entity(i * 4, 0), out EntityArchetypeChunk? chunk));
+				Debug.Assert(chunk!.Archetype.Equals(archetype));
+				Debug.Assert(registry.TryGetChunk(new Entity(i * 4 + 1, 0), out chunk));
+				Debug.Assert(chunk!.Archetype.Equals(archetype));
+				Debug.Assert(registry.TryGetChunk(new Entity(i * 4 + 2, 0), out chunk));
+				Debug.Assert(chunk!.Archetype.Equals(archetype));
+				Debug.Assert(registry.TryGetChunk(new Entity(i * 4 + 3, 0), out chunk));
+				Debug.Assert(chunk!.Archetype.Equals(archetype));
 			}
 
 			Debug.Assert(registry.Count == 100);
@@ -46,7 +54,7 @@ namespace Monophyll.Entities.Tests
 			for (int i = 0; i < 50; i++)
 			{
 				Debug.Assert(registry.DestroyEntity(new Entity(i, 0)));
-				Debug.Assert(!registry.HasEntity(new Entity(i, 0)));
+				Debug.Assert(!registry.ContainsEntity(new Entity(i, 0)));
 			}
 
 			Debug.Assert(registry.Count == 50);
@@ -64,7 +72,7 @@ namespace Monophyll.Entities.Tests
 			for (int i = 49; i >= 0 ; i--)
 			{
 				Debug.Assert(registry.CreateEntity(archetype).Equals(new Entity(i, 1)));
-				Debug.Assert(registry.HasEntity(new Entity(i, 1)));
+				Debug.Assert(registry.ContainsEntity(new Entity(i, 1)));
 			}
 
 			Debug.Assert(registry.Count == 100);
