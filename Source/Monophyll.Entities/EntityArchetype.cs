@@ -1,46 +1,35 @@
-﻿using System;
+﻿using Monophyll.Entities.Utilities;
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Monophyll.Entities
 {
-	public sealed class EntityArchetype : IEquatable<EntityArchetype>, IComparable<EntityArchetype>, IComparable
+	public sealed class EntityArchetype : IEquatable<EntityArchetype>
 	{
+		private static readonly EntityArchetype s_base = new EntityArchetype();
+
 		private readonly ComponentType[] m_componentTypes;
 		private readonly uint[] m_componentBits;
-		private readonly int m_storedComponentTypeCount;
-		private readonly int m_managedComponentTypeCount;
+		private readonly int m_managedPartitionLength;
+		private readonly int m_unmanagedPartitionLength;
+		private readonly int m_tagPartitionLength;
 		private readonly int m_entitySize;
-		private readonly int m_id;
 
-		private EntityArchetype(int id)
+		private EntityArchetype()
 		{
 			m_componentTypes = Array.Empty<ComponentType>();
 			m_componentBits = Array.Empty<uint>();
 			m_entitySize = Unsafe.SizeOf<Entity>();
-			m_id = id;
 		}
 
-		private EntityArchetype(EntityArchetype other, int id)
-		{
-			m_componentTypes = other.m_componentTypes;
-			m_componentBits = other.m_componentBits;
-			m_storedComponentTypeCount = other.m_storedComponentTypeCount;
-			m_managedComponentTypeCount = other.m_managedComponentTypeCount;
-			m_entitySize = other.m_entitySize;
-			m_id = id;
-		}
-
-		private EntityArchetype(ComponentType[] componentTypes, int id)
+		private EntityArchetype(ComponentType[] componentTypes)
 		{
 			m_componentTypes = componentTypes;
 			m_componentBits = new uint[componentTypes[^1].Id + 32 >> 5];
 			m_entitySize = Unsafe.SizeOf<Entity>();
-			m_id = id;
 
 			int freeIndex = 0;
 			ComponentType? previousComponentType = null;
@@ -51,16 +40,19 @@ namespace Monophyll.Entities
 				{
 					m_componentTypes[freeIndex++] = previousComponentType = currentComponentType;
 					m_componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
+					m_entitySize += currentComponentType.Size;
 
-					if (!currentComponentType.IsTag)
+					switch (currentComponentType.Category)
 					{
-						m_entitySize += currentComponentType.Size;
-						m_storedComponentTypeCount++;
-
-						if (currentComponentType.IsManaged)
-						{
-							m_managedComponentTypeCount++;
-						}
+						case ComponentTypeCategory.Managed:
+							m_managedPartitionLength++;
+							continue;
+						case ComponentTypeCategory.Unmanaged:
+							m_unmanagedPartitionLength++;
+							continue;
+						default:
+							m_tagPartitionLength++;
+							continue;
 					}
 				}
 			}
@@ -68,34 +60,34 @@ namespace Monophyll.Entities
 			Array.Resize(ref m_componentTypes, freeIndex);
 		}
 
-		public ImmutableArray<ComponentType> ComponentTypes
+		public static EntityArchetype Base
 		{
-			get => ImmutableCollectionsMarshal.AsImmutableArray(m_componentTypes);
+			get => s_base;
 		}
 
-		public ImmutableArray<uint> ComponentBits
+		public ReadOnlySpan<ComponentType> ComponentTypes
 		{
-			get => ImmutableCollectionsMarshal.AsImmutableArray(m_componentBits);
+			get => new ReadOnlySpan<ComponentType>(m_componentTypes);
 		}
 
-		public int StoredComponentTypeCount
+		public ReadOnlySpan<uint> ComponentBits
 		{
-			get => m_storedComponentTypeCount;
+			get => new ReadOnlySpan<uint>(m_componentBits);
 		}
 
-		public int ManagedComponentTypeCount
+		public int ManagedPartitionLength
 		{
-			get => m_managedComponentTypeCount;
+			get => m_managedPartitionLength;
 		}
 
-		public int UnmanagedComponentTypeCount
+		public int UnmanagedPartitionLength
 		{
-			get => m_storedComponentTypeCount - m_managedComponentTypeCount;
+			get => m_unmanagedPartitionLength;
 		}
 
-		public int TagComponentTypeCount
+		public int TagPartitionLength
 		{
-			get => m_componentTypes.Length - m_storedComponentTypeCount;
+			get => m_tagPartitionLength;
 		}
 
 		public int EntitySize
@@ -103,19 +95,12 @@ namespace Monophyll.Entities
 			get => m_entitySize;
 		}
 
-		public int Id
+		public static EntityArchetype Create(ComponentType[] componentTypes)
 		{
-			get => m_id;
-		}
-
-		public static EntityArchetype Create(int id)
-		{
-			return new EntityArchetype(id);
-		}
-
-		public static EntityArchetype Create(ComponentType[] componentTypes, int id)
-		{
-			ArgumentNullException.ThrowIfNull(componentTypes);
+			if (componentTypes == null)
+			{
+				throw new ArgumentNullException(nameof(componentTypes));
+			}
 
 			if (componentTypes.Length > 0)
 			{
@@ -125,64 +110,37 @@ namespace Monophyll.Entities
 
 				if (array[^1] != null)
 				{
-					return new EntityArchetype(array, id);
+					return new EntityArchetype(array);
 				}
 			}
 
-			return new EntityArchetype(id);
+			return s_base;
 		}
 
-		public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes, int id)
+		public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
 		{
 			ComponentType[] array = componentTypes.ToArray();
 			Array.Sort(array);
 
 			if (array.Length > 0 && array[^1] != null)
 			{
-				return new EntityArchetype(array, id);
+				return new EntityArchetype(array);
 			}
 
-			return new EntityArchetype(id);
+			return s_base;
 		}
 
-		public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes, int id)
+		public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
 		{
 			ComponentType[] array = componentTypes.ToArray();
 			Array.Sort(array);
 
 			if (array.Length > 0 && array[^1] != null)
 			{
-				return new EntityArchetype(array, id);
+				return new EntityArchetype(array);
 			}
 
-			return new EntityArchetype(id);
-		}
-
-		public static int Compare(EntityArchetype? a, EntityArchetype? b)
-		{
-			if (a == b)
-			{
-				return 0;
-			}
-
-			if (a == null)
-			{
-				return -1;
-			}
-
-			if (b == null)
-			{
-				return 1;
-			}
-
-			int compareValue = a.m_id.CompareTo(b.m_id);
-
-			if (compareValue != 0)
-			{
-				return compareValue;
-			}
-
-			return ((ReadOnlySpan<uint>)a.m_componentBits).SequenceCompareTo(b.m_componentBits);
+			return s_base;
 		}
 
 		public static bool Equals(EntityArchetype? a, EntityArchetype? b)
@@ -190,20 +148,14 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& a.m_id == b.m_id
-				&& ((ReadOnlySpan<uint>)a.m_componentBits).SequenceEqual(b.m_componentBits);
+				&& MemoryExtensions.SequenceEqual<uint>(a.m_componentBits, b.m_componentBits);
 		}
 
-		public EntityArchetype Clone(int id)
-		{
-			return new EntityArchetype(this, id);
-		}
-
-		public EntityArchetype CloneWith(ComponentType componentType, int id)
+		public EntityArchetype Add(ComponentType componentType)
 		{
 			if (componentType == null || Contains(componentType))
 			{
-				return new EntityArchetype(this, id);
+				return this;
 			}
 
 			ComponentType[] destinationComponentTypes = new ComponentType[m_componentTypes.Length + 1];
@@ -212,7 +164,7 @@ namespace Monophyll.Entities
 
 			foreach (ComponentType sourceComponentType in m_componentTypes)
 			{
-				if (ComponentType.Compare(componentType, sourceComponentType) < 0)
+				if (ComponentType.Compare(sourceComponentType, componentType) >= 0)
 				{
 					destinationComponentTypes[destinationIndex++] = sourceComponentType;
 				}
@@ -224,20 +176,19 @@ namespace Monophyll.Entities
 			}
 
 			destinationComponentTypes[insertIndex] = componentType;
-
-			return new EntityArchetype(destinationComponentTypes, id);
+			return new EntityArchetype(destinationComponentTypes);
 		}
 
-		public EntityArchetype CloneWithout(ComponentType componentType, int id)
+		public EntityArchetype Remove(ComponentType componentType)
 		{
 			if (!Contains(componentType))
 			{
-				return new EntityArchetype(this, id);
+				return this;
 			}
 
 			if (m_componentTypes.Length == 1)
 			{
-				return new EntityArchetype(id);
+				return s_base;
 			}
 
 			ComponentType[] destinationComponentTypes = new ComponentType[m_componentTypes.Length - 1];
@@ -251,7 +202,7 @@ namespace Monophyll.Entities
 				}
 			}
 
-			return new EntityArchetype(destinationComponentTypes, id);
+			return new EntityArchetype(destinationComponentTypes);
 		}
 
 		public bool Contains(ComponentType componentType)
@@ -260,26 +211,6 @@ namespace Monophyll.Entities
 			return componentType != null
 				&& (index = componentType.Id >> 5) < m_componentBits.Length
 				&& (m_componentBits[index] & 1u << componentType.Id) != 0;
-		}
-
-		public int CompareTo(EntityArchetype? other)
-		{
-			return Compare(this, other);
-		}
-
-		public int CompareTo(object? obj)
-		{
-			if (obj == null)
-			{
-				return 1;
-			}
-
-			if (obj is EntityArchetype other)
-			{
-				return Compare(this, other);
-			}
-
-			throw new ArgumentException("obj is not the same type as this instance.");
 		}
 
 		public bool Equals([NotNullWhen(true)] EntityArchetype? other)
@@ -294,19 +225,12 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			int result = m_id;
-
-			for (int i = m_componentBits.Length > 8 ? m_componentBits.Length - 8 : 0; i < m_componentBits.Length; i++)
-			{
-				result = ((result << 5) + result) ^ (int)m_componentBits[i];
-			}
-
-			return result;
+			return BitSetOperations.GetHashCode(new ReadOnlySpan<uint>(m_componentBits));
 		}
 
 		public override string ToString()
 		{
-			return $"EntityArchetype {{ ComponentTypes = [{string.Join(", ", (object[])m_componentTypes)}] Id = {m_id} }}";
+			return $"EntityArchetype {{ ComponentTypes = [{string.Join(", ", (object[])m_componentTypes)}] }}";
 		}
 	}
 }

@@ -64,9 +64,9 @@ namespace Monophyll.Entities.Tests
 
 		private static void AssertEntityArchetypeCreateConsistency(ComponentType[] argumentTypes, ReadOnlySpan<ComponentType> expectedTypes)
 		{
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable(), 0), expectedTypes);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan(), 0), expectedTypes);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes, 0), expectedTypes);
+			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable()), expectedTypes);
+			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan()), expectedTypes);
+			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes), expectedTypes);
 		}
 
 		private static void AssertEntityArchetypeIntegrity(EntityArchetype archetype, ReadOnlySpan<ComponentType> expectedTypes)
@@ -74,9 +74,9 @@ namespace Monophyll.Entities.Tests
 			Debug.Assert(archetype.ComponentTypes.Length == expectedTypes.Length);
 
 			int expectedEntitySize = Unsafe.SizeOf<Entity>();
-			int expectedTagComponentTypeCount = 0;
-			int expectedUnmanagedComponentTypeCount = 0;
-			int expectedManagedComponentTypeCount = 0;
+			int expectedTagPartitionLength = 0;
+			int expectedUnmanagedPartitionLength = 0;
+			int expectedManagedPartitionLength = 0;
 
 			if (expectedTypes.Length > 0)
 			{
@@ -95,24 +95,23 @@ namespace Monophyll.Entities.Tests
 					switch (type.Category)
 					{
 						case ComponentTypeCategory.Tag:
-							expectedTagComponentTypeCount++;
+							expectedTagPartitionLength++;
 							continue;
 						case ComponentTypeCategory.Unmanaged:
-							expectedUnmanagedComponentTypeCount++;
+							expectedUnmanagedPartitionLength++;
 							continue;
 						case ComponentTypeCategory.Managed:
-							expectedManagedComponentTypeCount++;
+							expectedManagedPartitionLength++;
 							continue;
 					}
 				}
 				while (++i < expectedTypes.Length);
 			}
 
+			Debug.Assert(archetype.ManagedPartitionLength == expectedManagedPartitionLength);
+			Debug.Assert(archetype.UnmanagedPartitionLength == expectedUnmanagedPartitionLength);
+			Debug.Assert(archetype.TagPartitionLength == expectedTagPartitionLength);
 			Debug.Assert(archetype.EntitySize == expectedEntitySize);
-			Debug.Assert(archetype.TagComponentTypeCount == expectedTagComponentTypeCount);
-			Debug.Assert(archetype.UnmanagedComponentTypeCount == expectedUnmanagedComponentTypeCount);
-			Debug.Assert(archetype.ManagedComponentTypeCount == expectedManagedComponentTypeCount);
-			Debug.Assert(archetype.StoredComponentTypeCount == expectedManagedComponentTypeCount + expectedUnmanagedComponentTypeCount);
 		}
 	}
 }

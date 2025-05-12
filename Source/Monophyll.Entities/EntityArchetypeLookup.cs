@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Monophyll.Entities.Utilities;
+using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -49,12 +50,25 @@ namespace Monophyll.Entities
 
 		IEnumerable<EntityArchetypeChunk> ILookup<EntityArchetype, EntityArchetypeChunk>.this[EntityArchetype key]
 		{
-			get => m_table.FindGrouping(key) ?? Enumerable.Empty<EntityArchetypeChunk>();
+			get
+			{
+				if (key == null)
+				{
+					throw new ArgumentNullException(nameof(key));
+				}
+				
+				return m_table.FindGrouping(key.ComponentBits) ?? Enumerable.Empty<EntityArchetypeChunk>();
+			}
 		}
 
 		public bool Contains(EntityArchetype key)
 		{
-			return m_table.FindGrouping(key) != null;
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+
+			return m_table.FindGrouping(key.ComponentBits) != null;
 		}
 
 		public void CopyTo(EntityArchetypeGrouping[] array, int index)
@@ -89,7 +103,10 @@ namespace Monophyll.Entities
 
 		public EntityArchetypeGrouping GetGrouping(ComponentType[] componentTypes)
 		{
-			ArgumentNullException.ThrowIfNull(componentTypes);
+			if (componentTypes == null)
+			{
+				throw new ArgumentNullException(nameof(componentTypes));
+			}
 
 			ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
 
@@ -188,7 +205,7 @@ namespace Monophyll.Entities
 							m_table = table = table.Grow();
 						}
 
-						grouping = new EntityArchetypeGrouping(EntityArchetype.Create(componentTypes, table.Count));
+						grouping = new EntityArchetypeGrouping(EntityArchetype.Create(componentTypes));
 						table.AddGrouping(grouping);
 					}
 				}
@@ -199,7 +216,12 @@ namespace Monophyll.Entities
 
 		public EntityArchetypeGrouping GetGrouping(EntityArchetype archetype)
 		{
-			EntityArchetypeGrouping? grouping = m_table.FindGrouping(archetype);
+			if (archetype == null)
+			{
+				throw new ArgumentNullException(nameof(archetype));
+			}
+
+			EntityArchetypeGrouping? grouping = m_table.FindGrouping(archetype.ComponentBits);
 
 			if (grouping == null)
 			{
@@ -207,14 +229,14 @@ namespace Monophyll.Entities
 				{
 					Table table = m_table;
 
-					if ((grouping = table.FindGrouping(archetype)) == null)
+					if ((grouping = table.FindGrouping(archetype.ComponentBits)) == null)
 					{
 						if (table.Isfull)
 						{
 							m_table = table = table.Grow();
 						}
 
-						grouping = new EntityArchetypeGrouping(archetype.Clone(table.Count));
+						grouping = new EntityArchetypeGrouping(archetype);
 						table.AddGrouping(grouping);
 					}
 				}
@@ -225,10 +247,17 @@ namespace Monophyll.Entities
 
 		public EntityArchetypeGrouping GetSubgrouping(EntityArchetype archetype, ComponentType componentType)
 		{
-			ArgumentNullException.ThrowIfNull(archetype);
-			ArgumentNullException.ThrowIfNull(componentType);
+			if (componentType == null)
+			{
+				return GetGrouping(archetype);
+			}
 
-			ImmutableArray<uint> componentBits = archetype.ComponentBits;
+			if (archetype == null)
+			{
+				throw new ArgumentNullException(nameof(archetype));
+			}
+
+			ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
 			int index = componentType.Id >> 5;
 			uint bit = 1u << componentType.Id;
 
@@ -266,7 +295,7 @@ namespace Monophyll.Entities
 								m_table = table = table.Grow();
 							}
 
-							grouping = new EntityArchetypeGrouping(archetype.CloneWithout(componentType, table.Count));
+							grouping = new EntityArchetypeGrouping(archetype.Remove(componentType));
 							table.AddGrouping(grouping);
 						}
 					}
@@ -285,10 +314,17 @@ namespace Monophyll.Entities
 
 		public EntityArchetypeGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
 		{
-			ArgumentNullException.ThrowIfNull(archetype);
-			ArgumentNullException.ThrowIfNull(componentType);
+			if (componentType == null)
+			{
+				return GetGrouping(archetype);
+			}
 
-			ImmutableArray<uint> componentBits = archetype.ComponentBits;
+			if (archetype == null)
+			{
+				throw new ArgumentNullException(nameof(archetype));
+			}
+
+			ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
 			int index = componentType.Id >> 5;
 			uint bit = 1u << componentType.Id;
 
@@ -324,7 +360,7 @@ namespace Monophyll.Entities
 								m_table = table = table.Grow();
 							}
 
-							grouping = new EntityArchetypeGrouping(archetype.CloneWith(componentType, table.Count));
+							grouping = new EntityArchetypeGrouping(archetype.Add(componentType));
 							table.AddGrouping(grouping);
 						}
 					}
@@ -341,9 +377,14 @@ namespace Monophyll.Entities
 			}
 		}
 
-		public bool TryGetGrouping(EntityArchetype key, out EntityArchetypeGrouping? grouping)
+		public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityArchetypeGrouping? grouping)
 		{
-			return (grouping = m_table.FindGrouping(key)) != null;
+			if (key == null)
+			{
+				throw new ArgumentNullException(nameof(key));
+			}
+
+			return (grouping = m_table.FindGrouping(key.ComponentBits)) != null;
 		}
 
 		public struct Enumerator : IEnumerator<EntityArchetypeGrouping>
@@ -379,7 +420,7 @@ namespace Monophyll.Entities
 			{
 				Table table = m_table;
 
-				if ((uint)m_index < (uint)table.Count)
+				if ((uint)m_index < (uint)m_count)
 				{
 					m_current = table[m_index++];
 					return true;
@@ -506,21 +547,9 @@ namespace Monophyll.Entities
 				get => m_count == m_entries.Length;
 			}
 
-			private static int GetHashCode(ReadOnlySpan<uint> key)
-			{
-				int result = 0;
-
-				for (int i = key.Length > 8 ? key.Length - 8 : 0; i < key.Length; i++)
-				{
-					result = ((result << 5) + result) ^ (int)key[i];
-				}
-
-				return result & int.MaxValue;
-			}
-
 			public void AddGrouping(EntityArchetypeGrouping grouping)
 			{
-				int hashCode = GetHashCode(grouping.Key.ComponentBits.AsSpan());
+				int hashCode = BitSetOperations.GetHashCode(grouping.Key.ComponentBits) & int.MaxValue;
 				ref int bucket = ref m_buckets[hashCode & (m_buckets.Length - 1)];
 				ref Entry entry = ref m_entries[m_count];
 
@@ -533,7 +562,10 @@ namespace Monophyll.Entities
 
 			public void CopyTo(EntityArchetypeGrouping[] array, int index)
 			{
-				ArgumentNullException.ThrowIfNull(array);
+				if (array == null)
+				{
+					throw new ArgumentNullException(nameof(array));
+				}
 
 				if ((uint)index > (uint)array.Length)
 				{
@@ -603,31 +635,16 @@ namespace Monophyll.Entities
 				}
 			}
 
-			public EntityArchetypeGrouping? FindGrouping(EntityArchetype archetype)
-			{
-				ArgumentNullException.ThrowIfNull(archetype);
-
-				EntityArchetypeGrouping grouping;
-
-				if ((uint)archetype.Id < (uint)m_count
-					&& EntityArchetype.Equals((grouping = m_entries[archetype.Id].Grouping).Key, archetype))
-				{
-					return grouping;
-				}
-
-				return FindGrouping(archetype.ComponentBits.AsSpan());
-			}
-
 			public EntityArchetypeGrouping? FindGrouping(ReadOnlySpan<uint> key)
 			{
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
-				int hashCode = GetHashCode(key);
+				int hashCode = BitSetOperations.GetHashCode(key) & int.MaxValue;
 
 				for (int i = Volatile.Read(ref m_buckets[hashCode & (m_buckets.Length - 1)]); i < 0; i = entry.Next)
 				{
 					EntityArchetypeGrouping grouping = (entry = ref m_entries[~i]).Grouping;
 
-					if (entry.HashCode == hashCode && grouping.Key.ComponentBits.AsSpan().SequenceEqual(key))
+					if (entry.HashCode == hashCode && grouping.Key.ComponentBits.SequenceEqual(key))
 					{
 						return grouping;
 					}

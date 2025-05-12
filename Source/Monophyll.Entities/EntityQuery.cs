@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Monophyll.Entities.Utilities;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
@@ -97,14 +98,14 @@ namespace Monophyll.Entities
 			private readonly EntityQuery m_query;
 			private readonly int m_count;
 			private int m_index;
-			private EntityArchetypeGrouping.Enumerator m_enumerator;
+			private ArrayEnumerator<EntityArchetypeChunk> m_enumerator;
 
 			internal Enumerator(EntityQuery query)
 			{
 				m_query = query;
 				m_count = query.m_count;
 				m_index = 0;
-				m_enumerator = default;
+				m_enumerator = ArrayEnumerator<EntityArchetypeChunk>.Empty;
 			}
 
 			public readonly EntityArchetypeChunk Current
@@ -138,14 +139,14 @@ namespace Monophyll.Entities
 					}
 				}
 
-				m_enumerator = default;
+				m_enumerator = ArrayEnumerator<EntityArchetypeChunk>.Empty;
 				return false;
 			}
 
 			void IEnumerator.Reset()
 			{
 				m_index = 0;
-				m_enumerator = default;
+				m_enumerator = ArrayEnumerator<EntityArchetypeChunk>.Empty;
 			}
 		}
 	}

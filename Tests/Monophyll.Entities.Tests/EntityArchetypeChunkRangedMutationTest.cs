@@ -11,15 +11,15 @@ namespace Monophyll.Entities.Tests
 			EntityArchetypeChunk chunkA = new EntityArchetypeChunk(EntityArchetype.Create([
 				ComponentType.TypeOf<Position2D>(),
 				ComponentType.TypeOf<Rotation2D>(),
-				ComponentType.TypeOf<Scale2D>()], 0));
-			EntityArchetypeChunk chunkB = new EntityArchetypeChunk(chunkA.Archetype.CloneWith(ComponentType.TypeOf<Tag>(), 0));
-			EntityArchetypeChunk chunkC = new EntityArchetypeChunk(chunkA.Archetype.CloneWith(ComponentType.TypeOf<Matrix3x2>(), 0));
+				ComponentType.TypeOf<Scale2D>()]));
+			EntityArchetypeChunk chunkB = new EntityArchetypeChunk(chunkA.Archetype.Add(ComponentType.TypeOf<Tag>()));
+			EntityArchetypeChunk chunkC = new EntityArchetypeChunk(chunkA.Archetype.Add(ComponentType.TypeOf<Matrix3x2>()));
 
 			for (int i = 0; i < 5; i++)
 			{
-				chunkA.Push(new Entity(i, 0));
-				chunkB.Push(new Entity(i, 0));
-				chunkC.Push(new Entity(i, 0));
+				chunkA.Add(new Entity(i, 0));
+				chunkB.Add(new Entity(i, 0));
+				chunkC.Add(new Entity(i, 0));
 				chunkA.GetComponents<Position2D>()[i] = new Position2D(new Vector2(i * 10.0f));
 				chunkA.GetComponents<Rotation2D>()[i] = new Rotation2D(i * MathF.PI / 4.0f);
 				chunkA.GetComponents<Scale2D>()[i] = new Scale2D(new Vector2(i + 1.0f));

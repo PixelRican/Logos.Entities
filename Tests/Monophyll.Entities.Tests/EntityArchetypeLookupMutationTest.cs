@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Monophyll.Entities.Tests
@@ -33,11 +32,7 @@ namespace Monophyll.Entities.Tests
 
 			for (int i = 0; i < state.Lookup.Count; i++)
 			{
-				EntityArchetype archetype = state.Lookup[i].Key;
-
-				Debug.Assert(archetype.Id == i);
-
-				foreach (ComponentType type in archetype.ComponentTypes)
+				foreach (ComponentType type in state.Lookup[i].Key.ComponentTypes)
 				{
 					typeCounters[type.Id]--;
 				}
@@ -64,9 +59,9 @@ namespace Monophyll.Entities.Tests
 				EntityArchetypeGrouping superGrouping = state.Lookup.GetSupergrouping(subGrouping.Key, type);
 
 				Debug.Assert(superGrouping.Key.Contains(type));
-				Debug.Assert(superGrouping == state.Lookup.GetGrouping(ImmutableCollectionsMarshal.AsArray(superGrouping.Key.ComponentTypes)!));
-				Debug.Assert(superGrouping == state.Lookup.GetGrouping((IEnumerable<ComponentType>)ImmutableCollectionsMarshal.AsArray(superGrouping.Key.ComponentTypes)!));
-				Debug.Assert(superGrouping == state.Lookup.GetGrouping(superGrouping.Key.ComponentTypes.AsSpan()));
+				Debug.Assert(superGrouping == state.Lookup.GetGrouping(superGrouping.Key.ComponentTypes.ToArray()));
+				Debug.Assert(superGrouping == state.Lookup.GetGrouping((IEnumerable<ComponentType>)superGrouping.Key.ComponentTypes.ToArray()));
+				Debug.Assert(superGrouping == state.Lookup.GetGrouping(superGrouping.Key.ComponentTypes));
 				Debug.Assert(superGrouping == state.Lookup.GetGrouping(superGrouping.Key));
 				Debug.Assert(superGrouping == state.Lookup.GetSupergrouping(subGrouping.Key, type));
 				Debug.Assert(superGrouping == state.Lookup.GetSubgrouping(superGrouping.Key, ComponentType.TypeOf<object>()));

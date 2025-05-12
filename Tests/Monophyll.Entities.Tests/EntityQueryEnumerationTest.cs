@@ -21,7 +21,7 @@ namespace Monophyll.Entities.Tests
 
 			for (int i = 0; i < 5; i++)
 			{
-				grouping.TryAdd(new EntityArchetypeChunk(grouping.Key));
+				grouping.Add(new EntityArchetypeChunk(grouping.Key));
 			}
 
 			foreach (ComponentType type in grouping.Key.ComponentTypes)
@@ -30,7 +30,7 @@ namespace Monophyll.Entities.Tests
 
 				for (int i = 0; i < 5; i++)
 				{
-					grouping.TryAdd(new EntityArchetypeChunk(grouping.Key));
+					grouping.Add(new EntityArchetypeChunk(grouping.Key));
 				}
 			}
 

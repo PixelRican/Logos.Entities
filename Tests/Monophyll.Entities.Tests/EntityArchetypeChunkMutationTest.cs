@@ -11,9 +11,9 @@ namespace Monophyll.Entities.Tests
 			EntityArchetypeChunk chunk = new EntityArchetypeChunk(EntityArchetype.Create([
 				ComponentType.TypeOf<object>(),
 				ComponentType.TypeOf<Matrix4x4>(),
-				ComponentType.TypeOf<Tag>()], 0));
+				ComponentType.TypeOf<Tag>()]));
 
-			chunk.Push(new Entity(1, 0));
+			chunk.Add(new Entity(1, 0));
 
 			ReadOnlySpan<Entity> entities = chunk.GetEntities();
 			Span<Matrix4x4> matrices = chunk.GetComponents<Matrix4x4>();
@@ -30,8 +30,8 @@ namespace Monophyll.Entities.Tests
 
 			objects[0] = this;
 			matrices[0] = Matrix4x4.Identity;
+			chunk.RemoveAt(0);
 
-			Debug.Assert(entities[0].Equals(chunk.Pop()));
 			Debug.Assert(matrices[0].Equals(Matrix4x4.Identity));
 			Debug.Assert(objects[0] == null);
 			Debug.Assert(chunk.Version == 2);
@@ -41,7 +41,7 @@ namespace Monophyll.Entities.Tests
 			Debug.Assert(chunk.GetComponents<object>().Length == 0);
 
 			objects[0] = this;
-			chunk.Push(new Entity(1, 1));
+			chunk.Add(new Entity(1, 1));
 
 			Debug.Assert(entities[0].Equals(new Entity(1, 1)));
 			Debug.Assert(matrices[0].Equals(default));

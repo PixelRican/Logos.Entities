@@ -2,8 +2,9 @@
 {
 	public enum ComponentTypeCategory
 	{
-		Tag = 0,
-		Unmanaged = 1,
-		Managed = 2
+		None = 0,
+		Managed = 1,
+		Unmanaged = 2,
+		Tag = 3
 	}
 }

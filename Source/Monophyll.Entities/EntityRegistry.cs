@@ -63,44 +63,36 @@ namespace Monophyll.Entities
 
 				if (container.Count == container.Entries.Length)
 				{
-					int newCapacity = container.Count * 2;
-
-					if ((uint)newCapacity > (uint)Array.MaxLength)
-					{
-						newCapacity = Array.MaxLength;
-					}
-
-					if (newCapacity <= container.Count)
-					{
-						newCapacity = container.Count + 1;
-					}
-
-					Container newContainer = new Container(newCapacity);
-
-					Array.Copy(container.Entries, newContainer.Entries, container.Count);
-					newContainer.NextId = newContainer.Count = container.Count;
-					m_container = container = newContainer;
+					m_container = container = container.Grow();
 				}
 
-				int index = container.Count++ < container.NextId ?
-							container.FreeIds[container.NextId - container.Count] :
-							container.NextId++;
+				int index = container.Count++ < container.NextId
+					? container.FreeIds[container.NextId - container.Count]
+					: container.NextId++;
 				ref Entry entry = ref container.Entries[index];
 				Entity entity = new Entity(index, entry.Version);
 
-				if (!grouping.TryPeek(out EntityArchetypeChunk? chunk) || chunk.IsFull)
-				{
-					grouping.TryAdd(chunk = new EntityArchetypeChunk(grouping.Key,
-						m_lookup, TargetChunkSize / grouping.Key.EntitySize));
-				}
-
-				index = chunk.Count;
-				chunk.Push(entity);
-				entry.Chunk = chunk;
-				entry.Index = index;
-
+				entry.Chunk = GetNextAvailableChunk(grouping);
+				entry.Index = entry.Chunk.Count;
+				entry.Chunk.Add(entity);
 				return entity;
 			}
+		}
+
+		private EntityArchetypeChunk GetNextAvailableChunk(EntityArchetypeGrouping grouping)
+		{
+			foreach (EntityArchetypeChunk current in grouping)
+			{
+				if (!current.IsFull)
+				{
+					return current;
+				}
+			}
+
+			EntityArchetypeChunk chunk = new EntityArchetypeChunk(grouping.Key,
+				m_lookup, TargetChunkSize / grouping.Key.EntitySize);
+			grouping.Add(chunk);
+			return chunk;
 		}
 
 		public bool DestroyEntity(Entity entity)
@@ -108,34 +100,30 @@ namespace Monophyll.Entities
 			lock (m_lookup)
 			{
 				Container container = m_container;
-				ref Entry entryToDestroy = ref Unsafe.NullRef<Entry>();
+				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 				if ((uint)entity.Id >= (uint)container.NextId
-					|| entity.Version != (entryToDestroy = ref container.Entries[entity.Id]).Version
-					|| entryToDestroy.Chunk == null)
+					|| (entry = ref container.Entries[entity.Id]).Chunk == null
+					|| entry.Version != entity.Version)
 				{
 					return false;
 				}
 
-				EntityArchetypeGrouping grouping = m_lookup.GetGrouping(entryToDestroy.Chunk.Archetype);
-				grouping.TryPeek(out EntityArchetypeChunk? chunkToPop);
-				ref Entry entryToPop = ref container.Entries[chunkToPop!.GetEntities()[^1].Id];
+				entry.Chunk.RemoveAt(entry.Index);
 
-				entryToDestroy.Chunk.SetRange(entryToDestroy.Index, chunkToPop, entryToPop.Index, 1);
-				chunkToPop.Pop();
-
-				entryToPop.Chunk = entryToDestroy.Chunk;
-				entryToPop.Index = entryToDestroy.Index;
-				entryToDestroy.Chunk = null!;
-				entryToDestroy.Index = -1;
-				entryToDestroy.Version++;
-				container.FreeIds[container.NextId - container.Count--] = entity.Id;
-
-				if (chunkToPop.IsEmpty)
+				if (entry.Chunk.IsEmpty)
 				{
-					grouping.TryTake(out _);
+					m_lookup.GetGrouping(entry.Chunk.Archetype).Remove(entry.Chunk);
+				}
+				else
+				{
+					container.Entries[entry.Chunk.GetEntities()[entry.Index].Id].Index = entry.Index;
 				}
 
+				container.FreeIds[container.NextId - container.Count--] = entity.Id;
+				entry.Chunk = null!;
+				entry.Index = -1;
+				entry.Version++;
 				return true;
 			}
 		}
@@ -144,11 +132,10 @@ namespace Monophyll.Entities
 		{
 			Container container = m_container;
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
-
 			return (uint)entity.Id < (uint)container.NextId
-					&& entity.Version == (entry = ref container.Entries[entity.Id]).Version
-					&& entry.Chunk != null
-					&& entry.Index >= 0;
+				&& (entry = ref container.Entries[entity.Id]).Chunk != null
+				&& entry.Index >= 0
+				&& entity.Version == entity.Version;
 		}
 
 		public void AddComponent<T>(Entity entity)
@@ -164,17 +151,17 @@ namespace Monophyll.Entities
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 				if ((uint)entity.Id >= (uint)container.NextId
-					|| entity.Version != (entry = ref container.Entries[entity.Id]).Version
-					|| entry.Chunk == null)
+					|| (entry = ref container.Entries[entity.Id]).Chunk == null
+					|| entry.Version != entity.Version)
 				{
 					throw new ArgumentException("The entity does not exist.", nameof(entity));
 				}
 
 				EntityArchetypeGrouping groupingToMoveTo = m_lookup.GetSubgrouping(entry.Chunk.Archetype, ComponentType.TypeOf<T>());
 
-				if (entry.Chunk.Archetype != groupingToMoveTo.Key)
+				if (!EntityArchetype.Equals(entry.Chunk.Archetype, groupingToMoveTo.Key))
 				{
-					MoveEntry(container, groupingToMoveTo, ref entry);
+					MoveEntry(ref entry, container, GetNextAvailableChunk(groupingToMoveTo));
 				}
 			}
 		}
@@ -187,24 +174,42 @@ namespace Monophyll.Entities
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 				if ((uint)entity.Id >= (uint)container.NextId
-					|| entity.Version != (entry = ref container.Entries[entity.Id]).Version
-					|| entry.Chunk == null)
+					|| (entry = ref container.Entries[entity.Id]).Chunk == null
+					|| entry.Version != entity.Version)
 				{
 					throw new ArgumentException("The entity does not exist.", nameof(entity));
 				}
 
 				EntityArchetypeGrouping groupingToMoveTo = m_lookup.GetSupergrouping(entry.Chunk.Archetype, ComponentType.TypeOf<T>());
 
-				if (entry.Chunk.Archetype != groupingToMoveTo.Key)
+				if (!EntityArchetype.Equals(entry.Chunk.Archetype, groupingToMoveTo.Key))
 				{
-					MoveEntry(container, groupingToMoveTo, ref entry);
+					MoveEntry(ref entry, container, GetNextAvailableChunk(groupingToMoveTo));
 				}
 
-				if (!ComponentType.TypeOf<T>().IsTag)
+				if (entry.Chunk.TryGetComponents(out Span<T> components))
 				{
-					entry.Chunk.GetComponents<T>()[entry.Index] = component;
+					components[entry.Index] = component;
 				}
 			}
+		}
+
+		private void MoveEntry(ref Entry entry, Container container, EntityArchetypeChunk destination)
+		{
+			destination.AddRange(entry.Chunk, entry.Index, 1);
+			entry.Chunk.RemoveAt(entry.Index);
+
+			if (entry.Chunk.IsEmpty)
+			{
+				m_lookup.GetGrouping(entry.Chunk.Archetype).Remove(entry.Chunk);
+			}
+			else
+			{
+				container.Entries[entry.Chunk.GetEntities()[entry.Index].Id].Index = entry.Index;
+			}
+
+			entry.Chunk = destination;
+			entry.Index = destination.Count - 1;
 		}
 
 		public bool TryGetComponent<T>(Entity entity, out T? component)
@@ -215,45 +220,17 @@ namespace Monophyll.Entities
 			int index;
 
 			if ((uint)entity.Id < (uint)container.NextId
-				&& entity.Version != (entry = ref container.Entries[entity.Id]).Version
-				&& (chunk = entry.Chunk) != null
-				&& (index = entry.Index) >= 0)
+				&& (chunk = (entry = ref container.Entries[entity.Id]).Chunk) != null
+				&& chunk.TryGetComponents(out Span<T> components)
+				&& (uint)(index = entry.Index) < (uint)components.Length
+				&& entity.Version == entry.Version)
 			{
-				component = chunk.GetComponents<T>()[index];
+				component = components[index];
 				return true;
 			}
 
 			component = default;
 			return false;
-		}
-
-		private void MoveEntry(Container container, EntityArchetypeGrouping groupingToMoveTo, ref Entry entryToMove)
-		{
-			EntityArchetypeGrouping groupingToMoveFrom = m_lookup.GetGrouping(entryToMove.Chunk.Archetype);
-			groupingToMoveFrom.TryPeek(out EntityArchetypeChunk? chunkToPop);
-			ref Entry entryToPop = ref container.Entries[chunkToPop!.GetEntities()[^1].Id];
-
-			if (!groupingToMoveTo.TryPeek(out EntityArchetypeChunk? chunkToMoveTo) || chunkToMoveTo.IsFull)
-			{
-				groupingToMoveTo.TryAdd(chunkToMoveTo = new EntityArchetypeChunk(groupingToMoveTo.Key,
-					TargetChunkSize / groupingToMoveTo.Key.EntitySize));
-			}
-
-			int indexToMoveTo = chunkToMoveTo.Count;
-
-			chunkToMoveTo.PushRange(entryToMove.Chunk, entryToMove.Index, 1);
-			entryToMove.Chunk.SetRange(entryToMove.Index, chunkToPop, entryToPop.Index, 1);
-			chunkToPop.Pop();
-
-			if (chunkToPop.IsEmpty)
-			{
-				groupingToMoveFrom.TryTake(out _);
-			}
-
-			entryToPop.Chunk = entryToMove.Chunk;
-			entryToPop.Index = entryToMove.Index;
-			entryToMove.Chunk = chunkToMoveTo;
-			entryToMove.Index = indexToMoveTo;
 		}
 
 		public EntityArchetype GetArchetype(params ComponentType[] componentTypes)
@@ -271,9 +248,11 @@ namespace Monophyll.Entities
 			return m_lookup.GetGrouping(componentTypes).Key;
 		}
 
-		public EntityArchetype GetArchetype(EntityArchetype archetype)
+		public ReadOnlySpan<EntityArchetypeChunk> GetChunks(EntityArchetype archetype)
 		{
-			return m_lookup.GetGrouping(archetype).Key;
+			return m_lookup.TryGetGrouping(archetype, out EntityArchetypeGrouping? grouping)
+				? grouping.AsSpan()
+				: ReadOnlySpan<EntityArchetypeChunk>.Empty;
 		}
 
 		public bool TryGetChunk(Entity entity, out EntityArchetypeChunk? chunk)
@@ -282,9 +261,9 @@ namespace Monophyll.Entities
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 			if ((uint)entity.Id < (uint)container.NextId
-				&& entity.Version == (entry = ref container.Entries[entity.Id]).Version
-				&& (chunk = entry.Chunk) != null
-				&& entry.Index >= 0)
+				&& (chunk = (entry = ref container.Entries[entity.Id]).Chunk) != null
+				&& entry.Index >= 0
+				&& entry.Version == entity.Version)
 			{
 				return true;
 			}
@@ -310,7 +289,9 @@ namespace Monophyll.Entities
 
 		public EntityQuery GetQuery(EntityFilter filter)
 		{
-			return filter == EntityFilter.Universal ? UniversalQuery : new EntityQuery(m_lookup, filter);
+			return filter == EntityFilter.Universal
+				? UniversalQuery
+				: new EntityQuery(m_lookup, filter);
 		}
 
 		private struct Entry
@@ -331,6 +312,26 @@ namespace Monophyll.Entities
 			{
 				Entries = new Entry[capacity];
 				FreeIds = new int[capacity];
+			}
+
+			public Container Grow()
+			{
+				int capacity = Count * 2;
+
+				if ((uint)capacity > (uint)Array.MaxLength)
+				{
+					capacity = Array.MaxLength;
+				}
+
+				if (capacity <= Count)
+				{
+					capacity = Count + 1;
+				}
+
+				Container container = new Container(capacity);
+				Array.Copy(Entries, container.Entries, Count);
+				container.NextId = container.Count = Count;
+				return container;
 			}
 		}
 	}

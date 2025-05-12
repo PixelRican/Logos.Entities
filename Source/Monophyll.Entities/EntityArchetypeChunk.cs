@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Immutable;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -8,16 +6,16 @@ namespace Monophyll.Entities
 {
 	public class EntityArchetypeChunk
 	{
-		private const int DefaultCapacity = 8;
+		private const int MinimumCapacity = 8;
 
-		private readonly object? m_lock;
+		private readonly object? m_writeLock;
 		private readonly EntityArchetype m_archetype;
 		private readonly Array[] m_components;
 		private readonly Entity[] m_entities;
 		private int m_size;
 		private int m_version;
 
-		public EntityArchetypeChunk(EntityArchetype archetype) : this(archetype, null, DefaultCapacity)
+		public EntityArchetypeChunk(EntityArchetype archetype) : this(archetype, null, MinimumCapacity)
 		{
 		}
 
@@ -25,28 +23,35 @@ namespace Monophyll.Entities
 		{
 		}
 
-		public EntityArchetypeChunk(EntityArchetype archetype, object? modificationLock) : this(archetype, modificationLock, DefaultCapacity)
+		public EntityArchetypeChunk(EntityArchetype archetype, object? writeLock) : this(archetype, writeLock, MinimumCapacity)
 		{
 		}
 
-		public EntityArchetypeChunk(EntityArchetype archetype, object? modificationLock, int capacity)
+		public EntityArchetypeChunk(EntityArchetype archetype, object? writeLock, int capacity)
 		{
-			ArgumentNullException.ThrowIfNull(archetype);
-			ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-
-			m_archetype = archetype;
-			m_lock = modificationLock;
-
-			if (capacity < DefaultCapacity)
+			if (archetype == null)
 			{
-				capacity = DefaultCapacity;
+				throw new ArgumentNullException(nameof(archetype));
 			}
 
-			if (archetype.StoredComponentTypeCount > 0)
+			if (capacity < MinimumCapacity)
 			{
-				ImmutableArray<ComponentType> componentTypes = archetype.ComponentTypes;
+				if (capacity < 0)
+				{
+					throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "capacity is negative.");
+				}
 
-				m_components = new Array[archetype.StoredComponentTypeCount];
+				capacity = MinimumCapacity;
+			}
+
+			ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes.Slice(0,
+				archetype.ManagedPartitionLength + archetype.UnmanagedPartitionLength);
+			m_archetype = archetype;
+			m_writeLock = writeLock;
+
+			if (componentTypes.Length > 0)
+			{
+				m_components = new Array[componentTypes.Length];
 
 				for (int i = 0; i < m_components.Length; i++)
 				{
@@ -91,31 +96,59 @@ namespace Monophyll.Entities
 			get => m_size == m_entities.Length;
 		}
 
-		public bool IsModifiable
+		public bool IsReadOnly
 		{
-			get => m_lock == null || Monitor.IsEntered(m_lock);
+			get => m_writeLock != null && !Monitor.IsEntered(m_writeLock);
 		}
 
 		public Span<T> GetComponents<T>()
 		{
-			return new Span<T>((T[])GetComponents(ComponentType.TypeOf<T>()), 0, m_size);
+			T[]? components = (T[]?)GetComponents(ComponentType.TypeOf<T>());
+
+			if (components == null)
+			{
+				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {typeof(T).Name}.");
+			}
+
+			return new Span<T>(components, 0, m_size);
+		}
+
+		public bool TryGetComponents<T>(out Span<T> result)
+		{
+			T[]? components = (T[]?)GetComponents(ComponentType.TypeOf<T>());
+
+			if (components != null)
+			{
+				result = new Span<T>(components, 0, m_size);
+				return true;
+			}
+
+			result = Span<T>.Empty;
+			return false;
 		}
 
 		public ref T GetComponentDataReference<T>()
 		{
-			return ref MemoryMarshal.GetArrayDataReference((T[])GetComponents(ComponentType.TypeOf<T>()));
+			T[]? components = (T[]?)GetComponents(ComponentType.TypeOf<T>());
+
+			if (components == null)
+			{
+				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {typeof(T).Name}.");
+			}
+
+			return ref MemoryMarshal.GetArrayDataReference(components);
 		}
 
-		private Array GetComponents(ComponentType componentType)
+		private Array? GetComponents(ComponentType componentType)
 		{
 			int index = m_archetype.ComponentTypes.BinarySearch(componentType);
 
-			if ((uint)index >= (uint)m_components.Length)
+			if ((uint)index < (uint)m_components.Length)
 			{
-				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {componentType.Type.Name}.");
+				return m_components[index];
 			}
 
-			return m_components[index];
+			return null;
 		}
 
 		public ReadOnlySpan<Entity> GetEntities()
@@ -128,7 +161,7 @@ namespace Monophyll.Entities
 			return ref MemoryMarshal.GetArrayDataReference(m_entities);
 		}
 
-		public void Push(Entity entity)
+		public void Add(Entity entity)
 		{
 			int size = m_size;
 
@@ -137,10 +170,13 @@ namespace Monophyll.Entities
 				throw new InvalidOperationException("The EntityArchetypeChunk is full.");
 			}
 
-			ThrowIfUnmodifiable();
+			if (IsReadOnly)
+			{
+				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+			}
 
-			// Zero-initializes unmanaged components.
-			for (int i = m_archetype.ManagedComponentTypeCount; i < m_archetype.StoredComponentTypeCount; i++)
+			// Zero-initialize unmanaged components.
+			for (int i = m_archetype.ManagedPartitionLength; i < m_components.Length; i++)
 			{
 				Array.Clear(m_components[i], size, 1);
 			}
@@ -150,7 +186,7 @@ namespace Monophyll.Entities
 			m_version++;
 		}
 
-		public void PushRange(EntityArchetypeChunk chunk, int chunkIndex, int length)
+		public void AddRange(EntityArchetypeChunk chunk, int chunkIndex, int length)
 		{
 			int index = m_size;
 
@@ -163,27 +199,59 @@ namespace Monophyll.Entities
 			m_size = index + length;
 		}
 
-		public Entity Pop()
+		public bool Remove(Entity entity)
 		{
-			int size = m_size - 1;
+			int index = Array.IndexOf(m_entities, entity, 0, m_size);
 
-			if (size < 0)
+			if (index == -1)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is empty.");
+				return false;
 			}
 
-			ThrowIfUnmodifiable();
+			RemoveAt(index);
+			return true;
+		}
 
-			// Frees references to managed objects.
-			for (int i = 0; i < m_archetype.ManagedComponentTypeCount; i++)
+		public void RemoveAt(int index)
+		{
+			int size = m_size;
+
+			if ((uint)index >= (uint)size)
 			{
-				Array.Clear(m_components[i], size, 1);
+				throw new ArgumentOutOfRangeException(nameof(index), index, "");
 			}
 
-			Entity entity = m_entities[size];
+			if (IsReadOnly)
+			{
+				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+			}
+
+			if (index < --size)
+			{
+				for (int i = 0; i < m_components.Length; i++)
+				{
+					Array array = m_components[i];
+					Array.Copy(array, size, array, index, 1);
+
+					if (i < m_archetype.ManagedPartitionLength)
+					{
+						Array.Clear(array, size, 1);
+					}
+				}
+
+				m_entities[index] = m_entities[size];
+			}
+			else
+			{
+				// Frees references to managed objects.
+				for (int i = 0; i < m_archetype.ManagedPartitionLength; i++)
+				{
+					Array.Clear(m_components[i], size, 1);
+				}
+			}
+
 			m_size = size;
 			m_version++;
-			return entity;
 		}
 
 		public void Set(int index, Entity entity)
@@ -193,9 +261,14 @@ namespace Monophyll.Entities
 				throw new ArgumentOutOfRangeException(nameof(index), index, "");
 			}
 
-			for (int i = 0; i < m_components.Length; i++)
+			if (IsReadOnly)
 			{
-				Array.Clear(m_components[i], index, 1);
+				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+			}
+
+			foreach (Array array in m_components)
+			{
+				Array.Clear(array, index, 1);
 			}
 
 			m_entities[index] = entity;
@@ -206,7 +279,7 @@ namespace Monophyll.Entities
 		{
 			if ((uint)(index + length) > (uint)m_size)
 			{
-				throw new ArgumentOutOfRangeException();
+				throw new ArgumentOutOfRangeException(nameof(index), index, "");
 			}
 
 			CopyRange(index, chunk, chunkIndex, length);
@@ -224,19 +297,20 @@ namespace Monophyll.Entities
 				throw new ArgumentOutOfRangeException();
 			}
 
-			ThrowIfUnmodifiable();
+			if (IsReadOnly)
+			{
+				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+			}
 
-			EntityArchetype destinationArchetype = m_archetype;
-			EntityArchetype sourceArchetype = chunk.m_archetype;
-			ImmutableArray<ComponentType> destinationComponentTypes = destinationArchetype.ComponentTypes;
-			ImmutableArray<ComponentType> sourceComponentTypes = sourceArchetype.ComponentTypes;
+			ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes;
+			ReadOnlySpan<ComponentType> sourceComponentTypes = chunk.m_archetype.ComponentTypes;
 			Array[] destinationComponents = m_components;
 			Array[] sourceComponents = chunk.m_components;
 			int destinationIndex = 0;
 			int sourceIndex = 0;
 			ComponentType? sourceComponentType = null;
 
-			while (destinationIndex < destinationArchetype.StoredComponentTypeCount)
+			while (destinationIndex < destinationComponents.Length)
 			{
 				ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
 
@@ -244,8 +318,8 @@ namespace Monophyll.Entities
 				switch (ComponentType.Compare(sourceComponentType, destinationComponentType))
 				{
 					case -1:
-						if (sourceIndex < sourceArchetype.StoredComponentTypeCount &&
-							(sourceComponentType == null || ++sourceIndex < sourceArchetype.StoredComponentTypeCount))
+						if (sourceIndex < sourceComponents.Length &&
+							(sourceComponentType == null || ++sourceIndex < sourceComponents.Length))
 						{
 							sourceComponentType = sourceComponentTypes[sourceIndex];
 							goto CompareTypes;
@@ -262,14 +336,6 @@ namespace Monophyll.Entities
 
 			Array.Copy(chunk.m_entities, chunkIndex, m_entities, index, length);
 			m_version++;
-		}
-
-		private void ThrowIfUnmodifiable()
-		{
-			if (m_lock != null && !Monitor.IsEntered(m_lock))
-			{
-				throw new InvalidOperationException("The EntityArchetypeChunk cannot be modified by the caller.");
-			}
 		}
 	}
 }

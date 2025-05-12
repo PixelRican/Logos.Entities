@@ -26,22 +26,27 @@ namespace Monophyll.Entities
 
 		public int CompareTo(Entity other)
 		{
-			return m_id.CompareTo(other.m_id);
+			if (m_id != other.m_id)
+			{
+				return m_id < other.m_id ? -1 : 1;
+			}
+
+			return m_version.CompareTo(other.m_version);
 		}
 
 		public int CompareTo(object? obj)
 		{
-			if (obj == null)
+			if (obj is not Entity other)
 			{
+				if (obj != null)
+				{
+					throw new ArgumentException("obj is not the same type as this instance.");
+				}
+
 				return 1;
 			}
 
-			if (obj is Entity other)
-			{
-				return m_id.CompareTo(other.m_id);
-			}
-
-			throw new ArgumentException("obj is not the same type as this instance.");
+			return CompareTo(other);
 		}
 
 		public bool Equals(Entity other)

@@ -12,11 +12,11 @@ namespace Monophyll.Entities.Tests
 			EntityArchetypeChunk chunk = new EntityArchetypeChunk(EntityArchetype.Create([
 				ComponentType.TypeOf<Position3D>(),
 				ComponentType.TypeOf<Rotation3D>(),
-				ComponentType.TypeOf<Scale3D>()], 0));
+				ComponentType.TypeOf<Scale3D>()]));
 
 			Debug.Assert(chunk.Capacity == 8);
 			Debug.Assert(chunk.Count == 0);
-			Debug.Assert(chunk.IsModifiable);
+			Debug.Assert(!chunk.IsReadOnly);
 
 			try
 			{
@@ -54,15 +54,15 @@ namespace Monophyll.Entities.Tests
 				Debug.Assert(e is ArgumentException, "An unexpected exception was thrown.", e.Message);
 			}
 
-			chunk = new EntityArchetypeChunk(chunk.Archetype.CloneWith(ComponentType.TypeOf<Tag>(), 0), this, 0);
+			chunk = new EntityArchetypeChunk(chunk.Archetype.Add(ComponentType.TypeOf<Tag>()), this, 0);
 
 			Debug.Assert(chunk.Capacity == 8);
 			Debug.Assert(chunk.Count == 0);
-			Debug.Assert(!chunk.IsModifiable);
+			Debug.Assert(chunk.IsReadOnly);
 			Monitor.Enter(this);
-			Debug.Assert(chunk.IsModifiable);
+			Debug.Assert(!chunk.IsReadOnly);
 			Monitor.Exit(this);
-			Debug.Assert(!chunk.IsModifiable);
+			Debug.Assert(chunk.IsReadOnly);
 
 			try
 			{
