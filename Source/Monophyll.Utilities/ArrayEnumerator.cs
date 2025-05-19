@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Monophyll.Entities.Utilities
+namespace Monophyll.Utilities
 {
-	public struct ArrayEnumerator<T> : IEnumerator<T>, IEnumerator
+	public struct ArrayEnumerator<T> : IEnumerator<T>
 	{
 		private readonly T[] m_items;
 		private readonly int m_end;

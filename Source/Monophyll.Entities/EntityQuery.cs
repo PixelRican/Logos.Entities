@@ -1,4 +1,4 @@
-﻿using Monophyll.Entities.Utilities;
+﻿using Monophyll.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,22 +6,37 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public sealed class EntityQuery : IEnumerable<EntityArchetypeChunk>
+	public sealed class EntityQuery : IReadOnlyCollection<EntityTable>
 	{
 		private const int DefaultCapacity = 4;
 
 		private readonly object m_lock;
-		private readonly EntityArchetypeLookup m_lookup;
+		private readonly EntityTableLookup m_lookup;
 		private readonly EntityFilter m_filter;
-		private EntityArchetypeGrouping[] m_groupings;
+		private EntityTableGrouping[] m_groupings;
 		private int m_count;
 		private int m_lookupIndex;
 
-		public EntityQuery(EntityArchetypeLookup lookup) : this(lookup, EntityFilter.Universal)
+        public int Count
+		{
+			get
+			{
+				int count = 0;
+
+				for (int i = 0; i < m_count; i++)
+				{
+					count += m_groupings[i].Count;
+				}
+
+				return count;
+			}
+		}
+
+        public EntityQuery(EntityTableLookup lookup) : this(lookup, EntityFilter.Universal)
 		{
 		}
 
-		public EntityQuery(EntityArchetypeLookup lookup, EntityFilter filter)
+		public EntityQuery(EntityTableLookup lookup, EntityFilter filter)
 		{
 			ArgumentNullException.ThrowIfNull(lookup);
 			ArgumentNullException.ThrowIfNull(filter);
@@ -29,7 +44,7 @@ namespace Monophyll.Entities
 			m_lock = new object();
 			m_lookup = lookup;
 			m_filter = filter;
-			m_groupings = Array.Empty<EntityArchetypeGrouping>();
+			m_groupings = Array.Empty<EntityTableGrouping>();
 		}
 
 		public Enumerator GetEnumerator()
@@ -46,44 +61,47 @@ namespace Monophyll.Entities
 		{
 			lock (m_lock)
 			{
-				if (m_lookupIndex < m_lookup.Count)
-				{
-					int lookupIndex = m_lookupIndex;
+                int lookupIndex = m_lookupIndex;
 
-					do
-					{
-						EntityArchetypeGrouping grouping = m_lookup[lookupIndex++];
+				if (lookupIndex < m_lookup.Count)
+                {
+                    int count = m_count;
 
-						if (m_filter.Matches(grouping.Key))
-						{
-							if (m_count == m_groupings.Length)
-							{
-								int newCapacity = m_groupings.Length == 0 ? DefaultCapacity : m_groupings.Length * 2;
+                    do
+                    {
+                        EntityTableGrouping grouping = m_lookup[lookupIndex++];
 
-								if ((uint)newCapacity > (uint)Array.MaxLength)
-								{
-									newCapacity = Array.MaxLength;
-								}
+                        if (m_filter.Matches(grouping.Key))
+                        {
+                            if (count == m_groupings.Length)
+                            {
+                                int newCapacity = m_groupings.Length == 0 ? DefaultCapacity : m_groupings.Length * 2;
 
-								if (newCapacity >= m_count)
-								{
-									newCapacity = m_count + 1;
-								}
+                                if ((uint)newCapacity > (uint)Array.MaxLength)
+                                {
+                                    newCapacity = Array.MaxLength;
+                                }
 
-								Array.Resize(ref m_groupings, newCapacity);
-							}
+                                if (newCapacity >= count)
+                                {
+                                    newCapacity = count + 1;
+                                }
 
-							m_groupings[m_count++] = grouping;
-						}
-					}
-					while (lookupIndex < m_lookup.Count);
+                                Array.Resize(ref m_groupings, newCapacity);
+                            }
 
-					Volatile.Write(ref m_lookupIndex, lookupIndex);
-				}
-			}
+                            m_groupings[count++] = grouping;
+                        }
+                    }
+                    while (lookupIndex < m_lookup.Count);
+
+					m_count = count;
+                    Volatile.Write(ref m_lookupIndex, lookupIndex);
+                }
+            }
 		}
 
-		IEnumerator<EntityArchetypeChunk> IEnumerable<EntityArchetypeChunk>.GetEnumerator()
+		IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
 		{
 			return GetEnumerator();
 		}
@@ -93,22 +111,22 @@ namespace Monophyll.Entities
 			return GetEnumerator();
 		}
 
-		public struct Enumerator : IEnumerator<EntityArchetypeChunk>
+		public struct Enumerator : IEnumerator<EntityTable>
 		{
 			private readonly EntityQuery m_query;
 			private readonly int m_count;
 			private int m_index;
-			private ArrayEnumerator<EntityArchetypeChunk> m_enumerator;
+			private ArrayEnumerator<EntityTable> m_enumerator;
 
 			internal Enumerator(EntityQuery query)
 			{
 				m_query = query;
 				m_count = query.m_count;
 				m_index = 0;
-				m_enumerator = ArrayEnumerator<EntityArchetypeChunk>.Empty;
+				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
 			}
 
-			public readonly EntityArchetypeChunk Current
+			public readonly EntityTable Current
 			{
 				get => m_enumerator.Current;
 			}
@@ -139,14 +157,14 @@ namespace Monophyll.Entities
 					}
 				}
 
-				m_enumerator = ArrayEnumerator<EntityArchetypeChunk>.Empty;
+				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
 				return false;
 			}
 
 			void IEnumerator.Reset()
 			{
 				m_index = 0;
-				m_enumerator = ArrayEnumerator<EntityArchetypeChunk>.Empty;
+				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
 			}
 		}
 	}

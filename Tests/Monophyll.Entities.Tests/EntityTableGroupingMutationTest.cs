@@ -3,11 +3,11 @@ using System.Threading;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class EntityArchetypeGroupingMutationTest : ITestCase
+	internal sealed class EntityTableGroupingMutationTest : ITestCase
 	{
 		private static void Producer(State state)
 		{
-			state.Grouping.Add(state.Chunk);
+			state.Grouping.Add(state.Table);
 
 			lock (state)
 			{
@@ -20,7 +20,7 @@ namespace Monophyll.Entities.Tests
 
 		private static void Consumer(State state)
 		{
-			state.Grouping.Remove(state.Chunk);
+			state.Grouping.Remove(state.Table);
 
 			lock (state)
 			{
@@ -39,11 +39,6 @@ namespace Monophyll.Entities.Tests
 
 			for (int i = 0; i < 50; i++)
 			{
-				state.Grouping.Add(state.Chunk);
-			}
-
-			for (int i = 0; i < 50; i++)
-			{
 				ThreadPool.QueueUserWorkItem(producer, state, false);
 				ThreadPool.QueueUserWorkItem(consumer, state, false);
 			}
@@ -59,15 +54,21 @@ namespace Monophyll.Entities.Tests
 
 		private sealed class State
 		{
-			public readonly EntityArchetypeChunk Chunk;
-			public readonly EntityArchetypeGrouping Grouping;
+			public readonly EntityTable Table;
+			public readonly EntityTableGrouping Grouping;
 			public int Counter;
 
 			public State()
 			{
-				Chunk = new EntityArchetypeChunk(EntityArchetype.Base);
-				Grouping = new EntityArchetypeGrouping(EntityArchetype.Base);
-				Counter = 100;
+				Table = new EntityTable(EntityArchetype.Base);
+				Grouping = new EntityTableGrouping(EntityArchetype.Base);
+
+                for (int i = 0; i < 50; i++)
+                {
+                    Grouping.Add(Table);
+                }
+
+                Counter = 100;
 			}
 		}
 	}

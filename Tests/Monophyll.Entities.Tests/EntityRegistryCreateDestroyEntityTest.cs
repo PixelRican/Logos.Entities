@@ -27,13 +27,13 @@ namespace Monophyll.Entities.Tests
 				Debug.Assert(registry.ContainsEntity(new Entity(i * 4 + 1, 0)));
 				Debug.Assert(registry.ContainsEntity(new Entity(i * 4 + 2, 0)));
 				Debug.Assert(registry.ContainsEntity(new Entity(i * 4 + 3, 0)));
-				Debug.Assert(registry.TryGetChunk(new Entity(i * 4, 0), out EntityArchetypeChunk? chunk));
+				Debug.Assert(registry.TryGetTable(new Entity(i * 4, 0), out EntityTable? chunk));
 				Debug.Assert(chunk!.Archetype.Equals(archetype));
-				Debug.Assert(registry.TryGetChunk(new Entity(i * 4 + 1, 0), out chunk));
+				Debug.Assert(registry.TryGetTable(new Entity(i * 4 + 1, 0), out chunk));
 				Debug.Assert(chunk!.Archetype.Equals(archetype));
-				Debug.Assert(registry.TryGetChunk(new Entity(i * 4 + 2, 0), out chunk));
+				Debug.Assert(registry.TryGetTable(new Entity(i * 4 + 2, 0), out chunk));
 				Debug.Assert(chunk!.Archetype.Equals(archetype));
-				Debug.Assert(registry.TryGetChunk(new Entity(i * 4 + 3, 0), out chunk));
+				Debug.Assert(registry.TryGetTable(new Entity(i * 4 + 3, 0), out chunk));
 				Debug.Assert(chunk!.Archetype.Equals(archetype));
 			}
 
@@ -41,11 +41,11 @@ namespace Monophyll.Entities.Tests
 
 			int count = 0;
 
-			foreach (EntityArchetypeChunk chunk in registry.UniversalQuery)
+			foreach (EntityTable table in registry.UniversalQuery)
 			{
-				Debug.Assert(chunk.Count == 100);
+				Debug.Assert(table.Count == 100);
 
-				foreach (Entity entity in chunk.GetEntities())
+				foreach (Entity entity in table.GetEntities())
 				{
 					Debug.Assert(entity.Equals(new Entity(count++, 0)));
 				}
@@ -59,7 +59,7 @@ namespace Monophyll.Entities.Tests
 
 			Debug.Assert(registry.Count == 50);
 
-			foreach (EntityArchetypeChunk chunk in registry.UniversalQuery)
+			foreach (EntityTable chunk in registry.UniversalQuery)
 			{
 				Debug.Assert(chunk.Count == 50);
 
@@ -77,13 +77,13 @@ namespace Monophyll.Entities.Tests
 
 			Debug.Assert(registry.Count == 100);
 
-			foreach (EntityArchetypeChunk chunk in registry.UniversalQuery)
+			foreach (EntityTable table in registry.UniversalQuery)
 			{
-				ReadOnlySpan<Entity> entities = chunk.GetEntities();
+				ReadOnlySpan<Entity> entities = table.GetEntities();
 
-				Debug.Assert(chunk.Count == 100);
+				Debug.Assert(table.Count == 100);
 
-				for (int i = 0; i < chunk.Count; i++)
+				for (int i = 0; i < table.Count; i++)
 				{
 					Debug.Assert(entities[i].Equals(new Entity(99 - i, i < 50 ? 0 : 1)));
 				}

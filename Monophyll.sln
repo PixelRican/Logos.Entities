@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monophyll.Utilities", "Source\Monophyll.Utilities\Monophyll.Utilities.csproj", "{07ACBCAB-5A63-61CD-31EC-DA15C3761BCC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{7C4D7D32-1208-446E-94E7-2D284A054053}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C4D7D32-1208-446E-94E7-2D284A054053}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C4D7D32-1208-446E-94E7-2D284A054053}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07ACBCAB-5A63-61CD-31EC-DA15C3761BCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07ACBCAB-5A63-61CD-31EC-DA15C3761BCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07ACBCAB-5A63-61CD-31EC-DA15C3761BCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07ACBCAB-5A63-61CD-31EC-DA15C3761BCC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -37,6 +43,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3D27C67C-CECB-4FFE-A45E-235A088ABDC9} = {A0848C99-DA67-4808-9D79-FE351E2CFDA9}
 		{7C4D7D32-1208-446E-94E7-2D284A054053} = {0F4B9182-4DA0-405F-A14A-023D9ABBE798}
+		{07ACBCAB-5A63-61CD-31EC-DA15C3761BCC} = {A0848C99-DA67-4808-9D79-FE351E2CFDA9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5F952544-5ACF-4482-9781-CC6DC7C02E73}

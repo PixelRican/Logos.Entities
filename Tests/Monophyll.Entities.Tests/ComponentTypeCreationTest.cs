@@ -52,7 +52,7 @@ namespace Monophyll.Entities.Tests
 					Debug.Assert(RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 					break;
 				default:
-					Debug.Fail("Invalid CompenentTypeCategory detected.");
+					Debug.Fail("Invalid ComponentTypeCategory detected.");
 					break;
 			}
 		}

@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public class EntityArchetypeChunk
+	public class EntityTable
 	{
 		private const int MinimumCapacity = 8;
 
@@ -15,19 +15,19 @@ namespace Monophyll.Entities
 		private int m_size;
 		private int m_version;
 
-		public EntityArchetypeChunk(EntityArchetype archetype) : this(archetype, null, MinimumCapacity)
+		public EntityTable(EntityArchetype archetype) : this(archetype, null, MinimumCapacity)
 		{
 		}
 
-		public EntityArchetypeChunk(EntityArchetype archetype, int capacity) : this(archetype, null, capacity)
+		public EntityTable(EntityArchetype archetype, int capacity) : this(archetype, null, capacity)
 		{
 		}
 
-		public EntityArchetypeChunk(EntityArchetype archetype, object? writeLock) : this(archetype, writeLock, MinimumCapacity)
+		public EntityTable(EntityArchetype archetype, object? writeLock) : this(archetype, writeLock, MinimumCapacity)
 		{
 		}
 
-		public EntityArchetypeChunk(EntityArchetype archetype, object? writeLock, int capacity)
+		public EntityTable(EntityArchetype archetype, object? writeLock, int capacity)
 		{
 			if (archetype == null)
 			{
@@ -107,7 +107,7 @@ namespace Monophyll.Entities
 
 			if (components == null)
 			{
-				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {typeof(T).Name}.");
+				throw new ArgumentException($"The EntityTable does not store components of type {typeof(T).Name}.");
 			}
 
 			return new Span<T>(components, 0, m_size);
@@ -133,7 +133,7 @@ namespace Monophyll.Entities
 
 			if (components == null)
 			{
-				throw new ArgumentException($"The EntityArchetypeChunk does not store components of type {typeof(T).Name}.");
+				throw new ArgumentException($"The EntityTable does not store components of type {typeof(T).Name}.");
 			}
 
 			return ref MemoryMarshal.GetArrayDataReference(components);
@@ -167,12 +167,12 @@ namespace Monophyll.Entities
 
 			if ((uint)size >= (uint)m_entities.Length)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is full.");
+				throw new InvalidOperationException("The EntityTable is full.");
 			}
 
 			if (IsReadOnly)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+				throw new InvalidOperationException("The EntityTable is read-only.");
 			}
 
 			// Zero-initialize unmanaged components.
@@ -186,7 +186,7 @@ namespace Monophyll.Entities
 			m_version++;
 		}
 
-		public void AddRange(EntityArchetypeChunk chunk, int chunkIndex, int length)
+		public void AddRange(EntityTable table, int tableIndex, int length)
 		{
 			int index = m_size;
 
@@ -195,7 +195,7 @@ namespace Monophyll.Entities
 				throw new InvalidOperationException();
 			}
 
-			CopyRange(index, chunk, chunkIndex, length);
+			CopyRange(index, table, tableIndex, length);
 			m_size = index + length;
 		}
 
@@ -223,7 +223,7 @@ namespace Monophyll.Entities
 
 			if (IsReadOnly)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+				throw new InvalidOperationException("The EntityTable is read-only.");
 			}
 
 			if (index < --size)
@@ -263,7 +263,7 @@ namespace Monophyll.Entities
 
 			if (IsReadOnly)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+				throw new InvalidOperationException("The EntityTable is read-only.");
 			}
 
 			foreach (Array array in m_components)
@@ -275,37 +275,37 @@ namespace Monophyll.Entities
 			m_version++;
 		}
 
-		public void SetRange(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+		public void SetRange(int index, EntityTable table, int tableIndex, int length)
 		{
 			if ((uint)(index + length) > (uint)m_size)
 			{
 				throw new ArgumentOutOfRangeException(nameof(index), index, "");
 			}
 
-			CopyRange(index, chunk, chunkIndex, length);
+			CopyRange(index, table, tableIndex, length);
 		}
 
-		private void CopyRange(int index, EntityArchetypeChunk chunk, int chunkIndex, int length)
+		private void CopyRange(int index, EntityTable table, int tableIndex, int length)
 		{
-			ArgumentNullException.ThrowIfNull(chunk);
+			ArgumentNullException.ThrowIfNull(table);
 			ArgumentOutOfRangeException.ThrowIfNegative(index);
-			ArgumentOutOfRangeException.ThrowIfNegative(chunkIndex);
+			ArgumentOutOfRangeException.ThrowIfNegative(tableIndex);
 			ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-			if ((uint)(chunkIndex + length) > (uint)chunk.m_size)
+			if ((uint)(tableIndex + length) > (uint)table.m_size)
 			{
 				throw new ArgumentOutOfRangeException();
 			}
 
 			if (IsReadOnly)
 			{
-				throw new InvalidOperationException("The EntityArchetypeChunk is read-only.");
+				throw new InvalidOperationException("The EntityTable is read-only.");
 			}
 
 			ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes;
-			ReadOnlySpan<ComponentType> sourceComponentTypes = chunk.m_archetype.ComponentTypes;
+			ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes;
 			Array[] destinationComponents = m_components;
-			Array[] sourceComponents = chunk.m_components;
+			Array[] sourceComponents = table.m_components;
 			int destinationIndex = 0;
 			int sourceIndex = 0;
 			ComponentType? sourceComponentType = null;
@@ -318,8 +318,8 @@ namespace Monophyll.Entities
 				switch (ComponentType.Compare(sourceComponentType, destinationComponentType))
 				{
 					case -1:
-						if (sourceIndex < sourceComponents.Length &&
-							(sourceComponentType == null || ++sourceIndex < sourceComponents.Length))
+						if (sourceIndex < sourceComponents.Length
+							&& (sourceComponentType == null || ++sourceIndex < sourceComponents.Length))
 						{
 							sourceComponentType = sourceComponentTypes[sourceIndex];
 							goto CompareTypes;
@@ -329,12 +329,12 @@ namespace Monophyll.Entities
 						Array.Clear(destinationComponents[destinationIndex++], index, length);
 						continue;
 					default:
-						Array.Copy(sourceComponents[sourceIndex], chunkIndex, destinationComponents[destinationIndex++], index, length);
+						Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex++], index, length);
 						continue;
 				}
 			}
 
-			Array.Copy(chunk.m_entities, chunkIndex, m_entities, index, length);
+			Array.Copy(table.m_entities, tableIndex, m_entities, index, length);
 			m_version++;
 		}
 	}

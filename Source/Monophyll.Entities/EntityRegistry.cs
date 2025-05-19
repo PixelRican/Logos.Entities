@@ -8,9 +8,9 @@ namespace Monophyll.Entities
 	public class EntityRegistry
 	{
 		private const int DefaultCapacity = 8;
-		private const int TargetChunkSize = 16384;
+		private const int TargetTableSize = 16384;
 
-		private readonly EntityArchetypeLookup m_lookup;
+		private readonly EntityTableLookup m_lookup;
 		private volatile Container m_container;
 		private EntityQuery? m_universalQuery;
 
@@ -31,7 +31,7 @@ namespace Monophyll.Entities
 
 		public EntityRegistry()
 		{
-			m_lookup = new EntityArchetypeLookup();
+			m_lookup = new EntityTableLookup();
 			m_container = new Container(DefaultCapacity);
 		}
 
@@ -55,7 +55,7 @@ namespace Monophyll.Entities
 			return CreateEntity(m_lookup.GetGrouping(archetype));
 		}
 
-		private Entity CreateEntity(EntityArchetypeGrouping grouping)
+		private Entity CreateEntity(EntityTableGrouping grouping)
 		{
 			lock (m_lookup)
 			{
@@ -72,16 +72,16 @@ namespace Monophyll.Entities
 				ref Entry entry = ref container.Entries[index];
 				Entity entity = new Entity(index, entry.Version);
 
-				entry.Chunk = GetNextAvailableChunk(grouping);
-				entry.Index = entry.Chunk.Count;
-				entry.Chunk.Add(entity);
+				entry.Table = GetTable(grouping);
+				entry.Index = entry.Table.Count;
+				entry.Table.Add(entity);
 				return entity;
 			}
 		}
 
-		private EntityArchetypeChunk GetNextAvailableChunk(EntityArchetypeGrouping grouping)
+		private EntityTable GetTable(EntityTableGrouping grouping)
 		{
-			foreach (EntityArchetypeChunk current in grouping)
+			foreach (EntityTable current in grouping)
 			{
 				if (!current.IsFull)
 				{
@@ -89,10 +89,9 @@ namespace Monophyll.Entities
 				}
 			}
 
-			EntityArchetypeChunk chunk = new EntityArchetypeChunk(grouping.Key,
-				m_lookup, TargetChunkSize / grouping.Key.EntitySize);
-			grouping.Add(chunk);
-			return chunk;
+			EntityTable table = new EntityTable(grouping.Key, m_lookup, TargetTableSize / grouping.Key.EntitySize);
+			grouping.Add(table);
+			return table;
 		}
 
 		public bool DestroyEntity(Entity entity)
@@ -103,25 +102,25 @@ namespace Monophyll.Entities
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 				if ((uint)entity.Id >= (uint)container.NextId
-					|| (entry = ref container.Entries[entity.Id]).Chunk == null
+					|| (entry = ref container.Entries[entity.Id]).Table == null
 					|| entry.Version != entity.Version)
 				{
 					return false;
 				}
 
-				entry.Chunk.RemoveAt(entry.Index);
+				entry.Table.RemoveAt(entry.Index);
 
-				if (entry.Chunk.IsEmpty)
+				if (entry.Table.IsEmpty)
 				{
-					m_lookup.GetGrouping(entry.Chunk.Archetype).Remove(entry.Chunk);
+					m_lookup.GetGrouping(entry.Table.Archetype).Remove(entry.Table);
 				}
 				else
 				{
-					container.Entries[entry.Chunk.GetEntities()[entry.Index].Id].Index = entry.Index;
+					container.Entries[entry.Table.GetEntities()[entry.Index].Id].Index = entry.Index;
 				}
 
 				container.FreeIds[container.NextId - container.Count--] = entity.Id;
-				entry.Chunk = null!;
+				entry.Table = null!;
 				entry.Index = -1;
 				entry.Version++;
 				return true;
@@ -133,7 +132,7 @@ namespace Monophyll.Entities
 			Container container = m_container;
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
 			return (uint)entity.Id < (uint)container.NextId
-				&& (entry = ref container.Entries[entity.Id]).Chunk != null
+				&& (entry = ref container.Entries[entity.Id]).Table != null
 				&& entry.Index >= 0
 				&& entity.Version == entity.Version;
 		}
@@ -151,17 +150,17 @@ namespace Monophyll.Entities
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 				if ((uint)entity.Id >= (uint)container.NextId
-					|| (entry = ref container.Entries[entity.Id]).Chunk == null
+					|| (entry = ref container.Entries[entity.Id]).Table == null
 					|| entry.Version != entity.Version)
 				{
 					throw new ArgumentException("The entity does not exist.", nameof(entity));
 				}
 
-				EntityArchetypeGrouping groupingToMoveTo = m_lookup.GetSubgrouping(entry.Chunk.Archetype, ComponentType.TypeOf<T>());
+				EntityTableGrouping groupingToMoveTo = m_lookup.GetSubgrouping(entry.Table.Archetype, ComponentType.TypeOf<T>());
 
-				if (!EntityArchetype.Equals(entry.Chunk.Archetype, groupingToMoveTo.Key))
+				if (!EntityArchetype.Equals(entry.Table.Archetype, groupingToMoveTo.Key))
 				{
-					MoveEntry(ref entry, container, GetNextAvailableChunk(groupingToMoveTo));
+					MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
 				}
 			}
 		}
@@ -174,41 +173,41 @@ namespace Monophyll.Entities
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 				if ((uint)entity.Id >= (uint)container.NextId
-					|| (entry = ref container.Entries[entity.Id]).Chunk == null
+					|| (entry = ref container.Entries[entity.Id]).Table == null
 					|| entry.Version != entity.Version)
 				{
 					throw new ArgumentException("The entity does not exist.", nameof(entity));
 				}
 
-				EntityArchetypeGrouping groupingToMoveTo = m_lookup.GetSupergrouping(entry.Chunk.Archetype, ComponentType.TypeOf<T>());
+				EntityTableGrouping groupingToMoveTo = m_lookup.GetSupergrouping(entry.Table.Archetype, ComponentType.TypeOf<T>());
 
-				if (!EntityArchetype.Equals(entry.Chunk.Archetype, groupingToMoveTo.Key))
+				if (!EntityArchetype.Equals(entry.Table.Archetype, groupingToMoveTo.Key))
 				{
-					MoveEntry(ref entry, container, GetNextAvailableChunk(groupingToMoveTo));
+					MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
 				}
 
-				if (entry.Chunk.TryGetComponents(out Span<T> components))
+				if (entry.Table.TryGetComponents(out Span<T> components))
 				{
 					components[entry.Index] = component;
 				}
 			}
 		}
 
-		private void MoveEntry(ref Entry entry, Container container, EntityArchetypeChunk destination)
+		private void MoveEntry(ref Entry entry, Container container, EntityTable destination)
 		{
-			destination.AddRange(entry.Chunk, entry.Index, 1);
-			entry.Chunk.RemoveAt(entry.Index);
+			destination.AddRange(entry.Table, entry.Index, 1);
+			entry.Table.RemoveAt(entry.Index);
 
-			if (entry.Chunk.IsEmpty)
+			if (entry.Table.IsEmpty)
 			{
-				m_lookup.GetGrouping(entry.Chunk.Archetype).Remove(entry.Chunk);
+				m_lookup.GetGrouping(entry.Table.Archetype).Remove(entry.Table);
 			}
 			else
 			{
-				container.Entries[entry.Chunk.GetEntities()[entry.Index].Id].Index = entry.Index;
+				container.Entries[entry.Table.GetEntities()[entry.Index].Id].Index = entry.Index;
 			}
 
-			entry.Chunk = destination;
+			entry.Table = destination;
 			entry.Index = destination.Count - 1;
 		}
 
@@ -216,12 +215,12 @@ namespace Monophyll.Entities
 		{
 			Container container = m_container;
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
-			EntityArchetypeChunk chunk;
+			EntityTable table;
 			int index;
 
 			if ((uint)entity.Id < (uint)container.NextId
-				&& (chunk = (entry = ref container.Entries[entity.Id]).Chunk) != null
-				&& chunk.TryGetComponents(out Span<T> components)
+				&& (table = (entry = ref container.Entries[entity.Id]).Table) != null
+				&& table.TryGetComponents(out Span<T> components)
 				&& (uint)(index = entry.Index) < (uint)components.Length
 				&& entity.Version == entry.Version)
 			{
@@ -248,27 +247,27 @@ namespace Monophyll.Entities
 			return m_lookup.GetGrouping(componentTypes).Key;
 		}
 
-		public ReadOnlySpan<EntityArchetypeChunk> GetChunks(EntityArchetype archetype)
+		public ReadOnlySpan<EntityTable> GetTables(EntityArchetype archetype)
 		{
-			return m_lookup.TryGetGrouping(archetype, out EntityArchetypeGrouping? grouping)
+			return m_lookup.TryGetGrouping(archetype, out EntityTableGrouping? grouping)
 				? grouping.AsSpan()
-				: ReadOnlySpan<EntityArchetypeChunk>.Empty;
+				: ReadOnlySpan<EntityTable>.Empty;
 		}
 
-		public bool TryGetChunk(Entity entity, out EntityArchetypeChunk? chunk)
+		public bool TryGetTable(Entity entity, out EntityTable? table)
 		{
 			Container container = m_container;
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
 
 			if ((uint)entity.Id < (uint)container.NextId
-				&& (chunk = (entry = ref container.Entries[entity.Id]).Chunk) != null
+				&& (table = (entry = ref container.Entries[entity.Id]).Table) != null
 				&& entry.Index >= 0
 				&& entry.Version == entity.Version)
 			{
 				return true;
 			}
 
-			chunk = null;
+			table = null;
 			return false;
 		}
 
@@ -289,14 +288,12 @@ namespace Monophyll.Entities
 
 		public EntityQuery GetQuery(EntityFilter filter)
 		{
-			return filter == EntityFilter.Universal
-				? UniversalQuery
-				: new EntityQuery(m_lookup, filter);
+			return filter == EntityFilter.Universal ? UniversalQuery : new EntityQuery(m_lookup, filter);
 		}
 
 		private struct Entry
 		{
-			public EntityArchetypeChunk Chunk;
+			public EntityTable Table;
 			public int Index;
 			public int Version;
 		}

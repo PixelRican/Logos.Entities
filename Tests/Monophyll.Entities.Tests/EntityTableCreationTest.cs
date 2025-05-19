@@ -5,29 +5,29 @@ using System.Threading;
 
 namespace Monophyll.Entities.Tests
 {
-	internal sealed class EntityArchetypeChunkCreationTest : ITestCase
+	internal sealed class EntityTableCreationTest : ITestCase
 	{
 		public void Execute()
 		{
-			EntityArchetypeChunk chunk = new EntityArchetypeChunk(EntityArchetype.Create([
+			EntityTable table = new EntityTable(EntityArchetype.Create([
 				ComponentType.TypeOf<Position3D>(),
 				ComponentType.TypeOf<Rotation3D>(),
 				ComponentType.TypeOf<Scale3D>()]));
 
-			Debug.Assert(chunk.Capacity == 8);
-			Debug.Assert(chunk.Count == 0);
-			Debug.Assert(!chunk.IsReadOnly);
+			Debug.Assert(table.Capacity == 8);
+			Debug.Assert(table.Count == 0);
+			Debug.Assert(!table.IsReadOnly);
 
 			try
 			{
-				chunk.GetEntities();
-				chunk.GetComponents<Position3D>();
-				chunk.GetComponents<Rotation3D>();
-				chunk.GetComponents<Scale3D>();
-				chunk.GetEntityDataReference();
-				chunk.GetComponentDataReference<Position3D>();
-				chunk.GetComponentDataReference<Rotation3D>();
-				chunk.GetComponentDataReference<Scale3D>();
+				table.GetEntities();
+				table.GetComponents<Position3D>();
+				table.GetComponents<Rotation3D>();
+				table.GetComponents<Scale3D>();
+				table.GetEntityDataReference();
+				table.GetComponentDataReference<Position3D>();
+				table.GetComponentDataReference<Rotation3D>();
+				table.GetComponentDataReference<Scale3D>();
 			}
 			catch (Exception e)
 			{
@@ -36,7 +36,7 @@ namespace Monophyll.Entities.Tests
 
 			try
 			{
-				chunk.GetComponents<Matrix4x4>();
+				table.GetComponents<Matrix4x4>();
 				Debug.Fail("An expected exception was not thrown.");
 			}
 			catch (Exception e)
@@ -46,7 +46,7 @@ namespace Monophyll.Entities.Tests
 
 			try
 			{
-				chunk.GetComponentDataReference<Matrix4x4>();
+				table.GetComponentDataReference<Matrix4x4>();
 				Debug.Fail("An expected exception was not thrown.");
 			}
 			catch (Exception e)
@@ -54,26 +54,26 @@ namespace Monophyll.Entities.Tests
 				Debug.Assert(e is ArgumentException, "An unexpected exception was thrown.", e.Message);
 			}
 
-			chunk = new EntityArchetypeChunk(chunk.Archetype.Add(ComponentType.TypeOf<Tag>()), this, 0);
+			table = new EntityTable(table.Archetype.Add(ComponentType.TypeOf<Tag>()), this, 0);
 
-			Debug.Assert(chunk.Capacity == 8);
-			Debug.Assert(chunk.Count == 0);
-			Debug.Assert(chunk.IsReadOnly);
+			Debug.Assert(table.Capacity == 8);
+			Debug.Assert(table.Count == 0);
+			Debug.Assert(table.IsReadOnly);
 			Monitor.Enter(this);
-			Debug.Assert(!chunk.IsReadOnly);
+			Debug.Assert(!table.IsReadOnly);
 			Monitor.Exit(this);
-			Debug.Assert(chunk.IsReadOnly);
+			Debug.Assert(table.IsReadOnly);
 
 			try
 			{
-				chunk.GetEntities();
-				chunk.GetComponents<Position3D>();
-				chunk.GetComponents<Rotation3D>();
-				chunk.GetComponents<Scale3D>();
-				chunk.GetEntityDataReference();
-				chunk.GetComponentDataReference<Position3D>();
-				chunk.GetComponentDataReference<Rotation3D>();
-				chunk.GetComponentDataReference<Scale3D>();
+				table.GetEntities();
+				table.GetComponents<Position3D>();
+				table.GetComponents<Rotation3D>();
+				table.GetComponents<Scale3D>();
+				table.GetEntityDataReference();
+				table.GetComponentDataReference<Position3D>();
+				table.GetComponentDataReference<Rotation3D>();
+				table.GetComponentDataReference<Scale3D>();
 			}
 			catch (Exception e)
 			{
@@ -82,7 +82,7 @@ namespace Monophyll.Entities.Tests
 
 			try
 			{
-				chunk.GetComponents<Tag>();
+				table.GetComponents<Tag>();
 				Debug.Fail("An expected exception was not thrown.");
 			}
 			catch (Exception e)
@@ -92,7 +92,7 @@ namespace Monophyll.Entities.Tests
 
 			try
 			{
-				chunk.GetComponentDataReference<Tag>();
+				table.GetComponentDataReference<Tag>();
 				Debug.Fail("An expected exception was not thrown.");
 			}
 			catch (Exception e)

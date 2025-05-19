@@ -1,4 +1,4 @@
-﻿using Monophyll.Entities.Utilities;
+﻿using Monophyll.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,13 +6,13 @@ using System.Linq;
 
 namespace Monophyll.Entities
 {
-	public class EntityArchetypeGrouping : IGrouping<EntityArchetype, EntityArchetypeChunk>, IList<EntityArchetypeChunk>, IReadOnlyList<EntityArchetypeChunk>, IList
+	public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IReadOnlyList<EntityTable>, IList
 	{
 		private readonly object m_lock;
 		private readonly EntityArchetype m_key;
-		private volatile EntityArchetypeChunk[] m_items;
+		private volatile EntityTable[] m_items;
 
-		public EntityArchetypeGrouping(EntityArchetype key)
+		public EntityTableGrouping(EntityArchetype key)
 		{
 			if (key == null)
 			{
@@ -21,7 +21,7 @@ namespace Monophyll.Entities
 
 			m_lock = new object();
 			m_key = key;
-			m_items = Array.Empty<EntityArchetypeChunk>();
+			m_items = Array.Empty<EntityTable>();
 		}
 
 		public EntityArchetype Key
@@ -34,7 +34,7 @@ namespace Monophyll.Entities
 			get => m_items.Length;
 		}
 
-		bool ICollection<EntityArchetypeChunk>.IsReadOnly
+		bool ICollection<EntityTable>.IsReadOnly
 		{
 			get => false;
 		}
@@ -59,7 +59,7 @@ namespace Monophyll.Entities
 			get => this;
 		}
 
-		public EntityArchetypeChunk this[int index]
+		public EntityTable this[int index]
 		{
 			get => m_items[index];
 			set
@@ -76,11 +76,11 @@ namespace Monophyll.Entities
 
 				lock (m_lock)
 				{
-					EntityArchetypeChunk[] items = m_items;
+					EntityTable[] items = m_items;
 
 					if (items[index] != value)
 					{
-						EntityArchetypeChunk[] array = new EntityArchetypeChunk[items.Length];
+						EntityTable[] array = new EntityTable[items.Length];
 
 						Array.Copy(items, array, items.Length);
 						array[index] = value;
@@ -97,16 +97,16 @@ namespace Monophyll.Entities
 			{
 				try
 				{
-					this[index] = (EntityArchetypeChunk)value!;
+					this[index] = (EntityTable)value!;
 				}
 				catch (InvalidCastException)
 				{
-					throw new ArgumentException("value is not of type EntityArchetypeChunk", nameof(value));
+					throw new ArgumentException("value is not of type Table", nameof(value));
 				}
 			}
 		}
 
-		public void Add(EntityArchetypeChunk item)
+		public void Add(EntityTable item)
 		{
 			if (item == null)
 			{
@@ -120,8 +120,8 @@ namespace Monophyll.Entities
 
 			lock (m_lock)
 			{
-				EntityArchetypeChunk[] items = m_items;
-				EntityArchetypeChunk[] array = new EntityArchetypeChunk[items.Length + 1];
+				EntityTable[] items = m_items;
+				EntityTable[] array = new EntityTable[items.Length + 1];
 
 				Array.Copy(items, array, items.Length);
 				array[items.Length] = item;
@@ -133,41 +133,41 @@ namespace Monophyll.Entities
 		{
 			try
 			{
-				Add((EntityArchetypeChunk)value!);
+				Add((EntityTable)value!);
 				return m_items.Length;
 			}
 			catch (InvalidCastException)
 			{
-				throw new ArgumentException("value is not of type EntityArchetypeChunk", nameof(value));
+				throw new ArgumentException("value is not of type Table", nameof(value));
 			}
 		}
 
-		public ReadOnlySpan<EntityArchetypeChunk> AsSpan()
+		public ReadOnlySpan<EntityTable> AsSpan()
 		{
-			return new ReadOnlySpan<EntityArchetypeChunk>(m_items);
+			return new ReadOnlySpan<EntityTable>(m_items);
 		}
 
 		public void Clear()
 		{
 			lock (m_lock)
 			{
-				m_items = Array.Empty<EntityArchetypeChunk>();
+				m_items = Array.Empty<EntityTable>();
 			}
 		}
 
-		public bool Contains(EntityArchetypeChunk item)
+		public bool Contains(EntityTable item)
 		{
 			return Array.IndexOf(m_items, item) != -1;
 		}
 
 		bool IList.Contains(object? value)
 		{
-			return Array.IndexOf(m_items, value as EntityArchetypeChunk) != -1;
+			return Array.IndexOf(m_items, value as EntityTable) != -1;
 		}
 
-		public void CopyTo(EntityArchetypeChunk[] array, int index)
+		public void CopyTo(EntityTable[] array, int index)
 		{
-			EntityArchetypeChunk[] items = m_items;
+			EntityTable[] items = m_items;
 			Array.Copy(items, 0, array, index, items.Length);
 		}
 
@@ -180,38 +180,38 @@ namespace Monophyll.Entities
 
 			try
 			{
-				EntityArchetypeChunk[] items = m_items;
+				EntityTable[] items = m_items;
 				Array.Copy(items, 0, array!, index, items.Length);
 			}
 			catch (ArrayTypeMismatchException)
 			{
-				throw new ArgumentException("array is not of type EntityArchetypeChunk[].", nameof(array));
+				throw new ArgumentException("array is not of type Table[].", nameof(array));
 			}
 		}
 
-		public ArrayEnumerator<EntityArchetypeChunk> GetEnumerator()
+		public ArrayEnumerator<EntityTable> GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityArchetypeChunk>(m_items);
+			return new ArrayEnumerator<EntityTable>(m_items);
 		}
 
-		IEnumerator<EntityArchetypeChunk> IEnumerable<EntityArchetypeChunk>.GetEnumerator()
+		IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityArchetypeChunk>(m_items);
+			return new ArrayEnumerator<EntityTable>(m_items);
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityArchetypeChunk>(m_items);
+			return new ArrayEnumerator<EntityTable>(m_items);
 		}
 
-		public int IndexOf(EntityArchetypeChunk item)
+		public int IndexOf(EntityTable item)
 		{
 			return Array.IndexOf(m_items, item);
 		}
 
 		int IList.IndexOf(object? value)
 		{
-			if (value is EntityArchetypeChunk item)
+			if (value is EntityTable item)
 			{
 				return Array.IndexOf(m_items, item);
 			}
@@ -219,7 +219,7 @@ namespace Monophyll.Entities
 			return -1;
 		}
 
-		public void Insert(int index, EntityArchetypeChunk item)
+		public void Insert(int index, EntityTable item)
 		{
 			if (item == null)
 			{
@@ -233,7 +233,7 @@ namespace Monophyll.Entities
 
 			lock (m_lock)
 			{
-				EntityArchetypeChunk[] items = m_items;
+				EntityTable[] items = m_items;
 
 				if ((uint)index > (uint)items.Length)
 				{
@@ -241,7 +241,7 @@ namespace Monophyll.Entities
 						"index is less than zero or greater than Count.");
 				}
 
-				EntityArchetypeChunk[] array = new EntityArchetypeChunk[items.Length + 1];
+				EntityTable[] array = new EntityTable[items.Length + 1];
 				Array.Copy(items, array, index);
 				array[index] = item;
 
@@ -258,19 +258,19 @@ namespace Monophyll.Entities
 		{
 			try
 			{
-				Insert(index, (EntityArchetypeChunk)value!);
+				Insert(index, (EntityTable)value!);
 			}
 			catch (InvalidCastException)
 			{
-				throw new ArgumentException("value is not of type EntityArchetypeChunk", nameof(value));
+				throw new ArgumentException("value is not of type Table", nameof(value));
 			}
 		}
 
-		public bool Remove(EntityArchetypeChunk item)
+		public bool Remove(EntityTable item)
 		{
 			lock (m_lock)
 			{
-				EntityArchetypeChunk[] items = m_items;
+				EntityTable[] items = m_items;
 				int index = Array.IndexOf(items, item);
 
 				if (index != -1)
@@ -285,14 +285,14 @@ namespace Monophyll.Entities
 
 		void IList.Remove(object? value)
 		{
-			Remove((value as EntityArchetypeChunk)!);
+			Remove((value as EntityTable)!);
 		}
 
 		public void RemoveAt(int index)
 		{
 			lock (m_lock)
 			{
-				EntityArchetypeChunk[] items = m_items;
+				EntityTable[] items = m_items;
 
 				if ((uint)index >= (uint)items.Length)
 				{
@@ -304,14 +304,14 @@ namespace Monophyll.Entities
 			}
 		}
 
-		private static EntityArchetypeChunk[] RemoveAt(EntityArchetypeChunk[] array, int index)
+		private static EntityTable[] RemoveAt(EntityTable[] array, int index)
 		{
 			if (array.Length == 1)
 			{
-				return Array.Empty<EntityArchetypeChunk>();
+				return Array.Empty<EntityTable>();
 			}
 
-			EntityArchetypeChunk[] newArray = new EntityArchetypeChunk[array.Length - 1];
+			EntityTable[] newArray = new EntityTable[array.Length - 1];
 			Array.Copy(array, newArray, index);
 
 			if (index < newArray.Length)

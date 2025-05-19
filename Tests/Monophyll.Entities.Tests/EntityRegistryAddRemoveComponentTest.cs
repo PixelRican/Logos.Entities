@@ -8,28 +8,27 @@ namespace Monophyll.Entities.Tests
 		{
 			EntityRegistry registry = new EntityRegistry();
 			Entity entity = registry.CreateEntity();
-			EntityArchetypeChunk currentChunk;
-			EntityArchetypeChunk previousChunk;
+			EntityTable current;
+			EntityTable previous;
 
-			Debug.Assert(registry.TryGetChunk(entity, out currentChunk!));
-			Debug.Assert(currentChunk.Archetype.ComponentTypes.Length == 0);
+			Debug.Assert(registry.TryGetTable(entity, out current!));
+			Debug.Assert(current.Archetype.ComponentTypes.Length == 0);
 
-			previousChunk = currentChunk;
+			previous = current;
 			registry.AddComponent<Position2D>(entity);
 
-			Debug.Assert(registry.TryGetChunk(entity, out currentChunk!));
-			Debug.Assert(currentChunk != previousChunk);
-			Debug.Assert(currentChunk.Count == 1);
-			Debug.Assert(previousChunk.IsEmpty);
+			Debug.Assert(registry.TryGetTable(entity, out current!));
+			Debug.Assert(current != previous);
+			Debug.Assert(current.Count == 1);
+			Debug.Assert(previous.IsEmpty);
 
-			previousChunk = currentChunk;
+			previous = current;
 			registry.RemoveComponent<Position2D>(entity);
 
-			Debug.Assert(registry.TryGetChunk(entity, out currentChunk!));
-			Debug.Assert(currentChunk != previousChunk);
-			Debug.Assert(currentChunk.Count == 1);
-			Debug.Assert(previousChunk.IsEmpty);
-
+			Debug.Assert(registry.TryGetTable(entity, out current!));
+			Debug.Assert(current != previous);
+			Debug.Assert(current.Count == 1);
+			Debug.Assert(previous.IsEmpty);
 		}
 	}
 }

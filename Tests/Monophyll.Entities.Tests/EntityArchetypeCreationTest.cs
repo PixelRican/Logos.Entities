@@ -10,83 +10,77 @@ namespace Monophyll.Entities.Tests
 	{
 		public void Execute()
 		{
-			ComponentType[] argumentTypes = new ComponentType[10];
-			ComponentType[] expectedTypes = new ComponentType[10];
+            ComponentType[] arguments = new ComponentType[10];
+            ComponentType[] controls = new ComponentType[10];
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, default);
+            AssertCreateConsistency(Array.Empty<ComponentType>(), Span<ComponentType>.Empty);
 
-			argumentTypes[0] = argumentTypes[4] = expectedTypes[0] = ComponentType.TypeOf<Position2D>();
-			argumentTypes[1] = argumentTypes[5] = expectedTypes[1] = ComponentType.TypeOf<Rotation2D>();
-			argumentTypes[2] = argumentTypes[6] = expectedTypes[2] = ComponentType.TypeOf<Scale2D>();
-			argumentTypes[3] = argumentTypes[7] = expectedTypes[3] = ComponentType.TypeOf<Matrix3x2>();
+            arguments[0] = arguments[4] = controls[0] = ComponentType.TypeOf<Position2D>();
+			arguments[1] = arguments[5] = controls[1] = ComponentType.TypeOf<Rotation2D>();
+			arguments[2] = arguments[6] = controls[2] = ComponentType.TypeOf<Scale2D>();
+			arguments[3] = arguments[7] = controls[3] = ComponentType.TypeOf<Matrix3x2>();
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 4));
+			AssertCreateConsistency(arguments, controls.AsSpan(0, 4));
 
-			Array.Clear(argumentTypes);
-			Array.Clear(expectedTypes);
+			arguments[1] = controls[0] = ComponentType.TypeOf<Position3D>();
+			arguments[8] = controls[1] = ComponentType.TypeOf<Rotation3D>();
+			arguments[4] = controls[2] = ComponentType.TypeOf<Scale3D>();
+			arguments[7] = controls[3] = ComponentType.TypeOf<Matrix4x4>();
+			arguments[0] = controls[4] = ComponentType.TypeOf<Tag>();
 
-			argumentTypes[1] = expectedTypes[0] = ComponentType.TypeOf<Position3D>();
-			argumentTypes[8] = expectedTypes[1] = ComponentType.TypeOf<Rotation3D>();
-			argumentTypes[4] = expectedTypes[2] = ComponentType.TypeOf<Scale3D>();
-			argumentTypes[7] = expectedTypes[3] = ComponentType.TypeOf<Matrix4x4>();
-			argumentTypes[0] = expectedTypes[4] = ComponentType.TypeOf<Tag>();
+			AssertCreateConsistency(arguments, controls.AsSpan(0, 5));
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 5));
+			arguments[9] = controls[0] = ComponentType.TypeOf<object>();
+			arguments[8] = controls[1] = ComponentType.TypeOf<Position2D>();
+			arguments[7] = controls[2] = ComponentType.TypeOf<Rotation2D>();
+			arguments[6] = controls[3] = ComponentType.TypeOf<Scale2D>();
+			arguments[5] = controls[4] = ComponentType.TypeOf<Matrix3x2>();
+			arguments[4] = controls[5] = ComponentType.TypeOf<Tag>();
 
-			Array.Clear(argumentTypes);
-			Array.Clear(expectedTypes);
+			AssertCreateConsistency(arguments, controls.AsSpan(0, 6));
 
-			argumentTypes[9] = expectedTypes[0] = ComponentType.TypeOf<object>();
-			argumentTypes[8] = expectedTypes[1] = ComponentType.TypeOf<Position2D>();
-			argumentTypes[7] = expectedTypes[2] = ComponentType.TypeOf<Rotation2D>();
-			argumentTypes[6] = expectedTypes[3] = ComponentType.TypeOf<Scale2D>();
-			argumentTypes[5] = expectedTypes[4] = ComponentType.TypeOf<Matrix3x2>();
-			argumentTypes[4] = expectedTypes[5] = ComponentType.TypeOf<Tag>();
+			arguments[0] = controls[0] = ComponentType.TypeOf<object>();
+			arguments[2] = controls[1] = ComponentType.TypeOf<Position2D>();
+			arguments[4] = controls[2] = ComponentType.TypeOf<Rotation2D>();
+			arguments[6] = controls[3] = ComponentType.TypeOf<Scale2D>();
+			arguments[8] = controls[4] = ComponentType.TypeOf<Matrix3x2>();
+			arguments[1] = controls[5] = ComponentType.TypeOf<Position3D>();
+			arguments[3] = controls[6] = ComponentType.TypeOf<Rotation3D>();
+			arguments[5] = controls[7] = ComponentType.TypeOf<Scale3D>();
+			arguments[7] = controls[8] = ComponentType.TypeOf<Matrix4x4>();
+			arguments[9] = controls[9] = ComponentType.TypeOf<Tag>();
 
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes.AsSpan(0, 6));
-
-			Array.Clear(argumentTypes);
-			Array.Clear(expectedTypes);
-
-			argumentTypes[0] = expectedTypes[0] = ComponentType.TypeOf<object>();
-			argumentTypes[2] = expectedTypes[1] = ComponentType.TypeOf<Position2D>();
-			argumentTypes[4] = expectedTypes[2] = ComponentType.TypeOf<Rotation2D>();
-			argumentTypes[6] = expectedTypes[3] = ComponentType.TypeOf<Scale2D>();
-			argumentTypes[8] = expectedTypes[4] = ComponentType.TypeOf<Matrix3x2>();
-			argumentTypes[1] = expectedTypes[5] = ComponentType.TypeOf<Position3D>();
-			argumentTypes[3] = expectedTypes[6] = ComponentType.TypeOf<Rotation3D>();
-			argumentTypes[5] = expectedTypes[7] = ComponentType.TypeOf<Scale3D>();
-			argumentTypes[7] = expectedTypes[8] = ComponentType.TypeOf<Matrix4x4>();
-			argumentTypes[9] = expectedTypes[9] = ComponentType.TypeOf<Tag>();
-
-			AssertEntityArchetypeCreateConsistency(argumentTypes, expectedTypes);
+			AssertCreateConsistency(arguments, controls);
 		}
 
-		private static void AssertEntityArchetypeCreateConsistency(ComponentType[] argumentTypes, ReadOnlySpan<ComponentType> expectedTypes)
-		{
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsEnumerable()), expectedTypes);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes.AsSpan()), expectedTypes);
-			AssertEntityArchetypeIntegrity(EntityArchetype.Create(argumentTypes), expectedTypes);
-		}
+		private static void AssertCreateConsistency(ComponentType[] arguments, Span<ComponentType> controls)
+        {
+            AssertCreateCorrectness(EntityArchetype.Create(arguments), controls);
+            AssertCreateCorrectness(EntityArchetype.Create(arguments.AsSpan()), controls);
+            AssertCreateCorrectness(EntityArchetype.Create(arguments.AsEnumerable()), controls);
 
-		private static void AssertEntityArchetypeIntegrity(EntityArchetype archetype, ReadOnlySpan<ComponentType> expectedTypes)
+            Array.Clear(arguments);
+			controls.Clear();
+        }
+
+		private static void AssertCreateCorrectness(EntityArchetype archetype, ReadOnlySpan<ComponentType> controls)
 		{
-			Debug.Assert(archetype.ComponentTypes.Length == expectedTypes.Length);
+			Debug.Assert(archetype.ComponentTypes.Length == controls.Length);
 
 			int expectedEntitySize = Unsafe.SizeOf<Entity>();
 			int expectedTagPartitionLength = 0;
 			int expectedUnmanagedPartitionLength = 0;
 			int expectedManagedPartitionLength = 0;
 
-			if (expectedTypes.Length > 0)
+			if (controls.Length > 0)
 			{
-				Debug.Assert(archetype.ComponentBits.Length == (expectedTypes[^1].Id >> 5) + 1);
+				Debug.Assert(archetype.ComponentBits.Length == (controls[^1].Id >> 5) + 1);
 
 				int i = 0;
 
 				do
 				{
-					ComponentType type = expectedTypes[i];
+					ComponentType type = controls[i];
 
 					Debug.Assert(type == archetype.ComponentTypes[i]);
 					Debug.Assert(archetype.Contains(type));
@@ -105,7 +99,7 @@ namespace Monophyll.Entities.Tests
 							continue;
 					}
 				}
-				while (++i < expectedTypes.Length);
+				while (++i < controls.Length);
 			}
 
 			Debug.Assert(archetype.ManagedPartitionLength == expectedManagedPartitionLength);

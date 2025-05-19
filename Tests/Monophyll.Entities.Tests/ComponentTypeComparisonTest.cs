@@ -21,18 +21,18 @@ namespace Monophyll.Entities.Tests
 				ComponentType.TypeOf<Tag>()
 			];
 
-			ComponentType previousType = null!;
+			ComponentType previous = null!;
 
-			foreach (ComponentType currentType in types)
+			foreach (ComponentType current in types)
 			{
-				Debug.Assert(ComponentType.Equals(currentType, currentType));
-				Debug.Assert(!ComponentType.Equals(previousType, currentType));
-				Debug.Assert(!ComponentType.Equals(currentType, previousType));
-				Debug.Assert(ComponentType.Compare(currentType, currentType) == 0);
-				Debug.Assert(ComponentType.Compare(previousType, currentType) < 0);
-				Debug.Assert(ComponentType.Compare(currentType, previousType) > 0);
+				Debug.Assert(ComponentType.Equals(current, current));
+				Debug.Assert(!ComponentType.Equals(previous, current));
+				Debug.Assert(!ComponentType.Equals(current, previous));
+				Debug.Assert(ComponentType.Compare(current, current) == 0);
+				Debug.Assert(ComponentType.Compare(previous, current) < 0);
+				Debug.Assert(ComponentType.Compare(current, previous) > 0);
 
-				previousType = currentType;
+				previous = current;
 			}
 		}
 	}
