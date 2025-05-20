@@ -101,7 +101,7 @@ namespace Monophyll.Entities
 				}
 				catch (InvalidCastException)
 				{
-					throw new ArgumentException("value is not of type Table", nameof(value));
+					throw new ArgumentException("value is not of type EntityTable", nameof(value));
 				}
 			}
 		}
@@ -138,7 +138,7 @@ namespace Monophyll.Entities
 			}
 			catch (InvalidCastException)
 			{
-				throw new ArgumentException("value is not of type Table", nameof(value));
+				throw new ArgumentException("value is not of type EntityTable", nameof(value));
 			}
 		}
 
@@ -162,7 +162,7 @@ namespace Monophyll.Entities
 
 		bool IList.Contains(object? value)
 		{
-			return Array.IndexOf(m_items, value as EntityTable) != -1;
+			return Array.IndexOf(m_items, value) != -1;
 		}
 
 		public void CopyTo(EntityTable[] array, int index)
@@ -185,7 +185,7 @@ namespace Monophyll.Entities
 			}
 			catch (ArrayTypeMismatchException)
 			{
-				throw new ArgumentException("array is not of type Table[].", nameof(array));
+				throw new ArgumentException("array is not of type EntityTable[].", nameof(array));
 			}
 		}
 
@@ -211,13 +211,8 @@ namespace Monophyll.Entities
 
 		int IList.IndexOf(object? value)
 		{
-			if (value is EntityTable item)
-			{
-				return Array.IndexOf(m_items, item);
-			}
-
-			return -1;
-		}
+            return Array.IndexOf(m_items, value);
+        }
 
 		public void Insert(int index, EntityTable item)
 		{
@@ -262,7 +257,7 @@ namespace Monophyll.Entities
 			}
 			catch (InvalidCastException)
 			{
-				throw new ArgumentException("value is not of type Table", nameof(value));
+				throw new ArgumentException("value is not of type EntityTable", nameof(value));
 			}
 		}
 

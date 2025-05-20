@@ -7,6 +7,10 @@ using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities
 {
+	/// <summary>
+	/// Represents a model that describes how an entity's components are laid
+	/// out in memory.
+	/// </summary>
 	public sealed class EntityArchetype : IEquatable<EntityArchetype>
 	{
 		private static readonly EntityArchetype s_base = new EntityArchetype();
@@ -60,6 +64,10 @@ namespace Monophyll.Entities
 			Array.Resize(ref m_componentTypes, freeIndex);
 		}
 
+		/// <summary>
+		/// Gets an <see cref="EntityArchetype"/> instance that models entities
+		/// without any components.
+		/// </summary>
 		public static EntityArchetype Base
 		{
 			get => s_base;

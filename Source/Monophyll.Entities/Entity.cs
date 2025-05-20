@@ -3,22 +3,40 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Monophyll.Entities
 {
+	/// <summary>
+	/// Represents an identifier associated with a set of components.
+	/// </summary>
 	public readonly struct Entity : IEquatable<Entity>, IComparable<Entity>, IComparable
 	{
 		private readonly int m_id;
 		private readonly int m_version;
 
-		public Entity(int id, int version)
+        /// <summary>
+        /// Creates a new entity with an ID and a generational version.
+        /// </summary>
+        /// <param name="id">
+        /// The ID of the <see cref="Entity"/>.
+        /// </param>
+        /// <param name="version">
+        /// The generational version of the <see cref="Entity"/>.
+        /// </param>
+        public Entity(int id, int version)
 		{
 			m_id = id;
 			m_version = version;
 		}
 
+		/// <summary>
+		/// Gets the ID of the <see cref="Entity"/>.
+		/// </summary>
 		public int Id
 		{
 			get => m_id;
 		}
 
+		/// <summary>
+		/// Gets the generational version of the <see cref="Entity"/>.
+		/// </summary>
 		public int Version
 		{
 			get => m_version;

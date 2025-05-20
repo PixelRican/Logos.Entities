@@ -11,7 +11,8 @@ namespace Monophyll.Entities
 	/// </summary>
 	public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
 	{
-		private const BindingFlags FieldBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+		private const BindingFlags FieldBindingFlags = BindingFlags.Instance
+			| BindingFlags.Public | BindingFlags.NonPublic;
 
 		private static int s_nextTypeId = -1;
 
@@ -87,7 +88,8 @@ namespace Monophyll.Entities
 		}
 
 		/// <summary>
-		/// Gets the category associated with the <see cref="ComponentType"/>.
+		/// Gets the <see cref="ComponentTypeCategory"/> associated with the
+		/// <see cref="ComponentType"/>.
 		/// </summary>
 		public ComponentTypeCategory Category
 		{
@@ -194,12 +196,12 @@ namespace Monophyll.Entities
 		}
 
 		/// <summary>
-		/// Gets the <see cref="ComponentType"/> associated with
+		/// Gets a <see cref="ComponentType"/> instance associated with
 		/// <see langword="typeof"/>(<typeparamref name="T"/>).
 		/// </summary>
 		/// <typeparam name="T">The type of the component.</typeparam>
 		/// <returns>
-		/// The <see cref="ComponentType"/> associated with
+		/// A <see cref="ComponentType"/> instance associated with
 		/// <see langword="typeof"/>(<typeparamref name="T"/>).
 		/// </returns>
 		public static ComponentType TypeOf<T>()
@@ -246,7 +248,9 @@ namespace Monophyll.Entities
 
 		private static class ComponentTypeLookup<T>
 		{
-			public static readonly ComponentType Value = new ComponentType(typeof(T), Interlocked.Increment(ref s_nextTypeId), Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+			public static readonly ComponentType Value = new ComponentType(typeof(T),
+				Interlocked.Increment(ref s_nextTypeId), Unsafe.SizeOf<T>(),
+				RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		}
 	}
 }

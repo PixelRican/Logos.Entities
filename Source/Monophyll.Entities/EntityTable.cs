@@ -302,35 +302,38 @@ namespace Monophyll.Entities
 				throw new InvalidOperationException("The EntityTable is read-only.");
 			}
 
-			ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes;
-			ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes;
-			Array[] destinationComponents = m_components;
-			Array[] sourceComponents = table.m_components;
-			int destinationIndex = 0;
-			int sourceIndex = 0;
-			ComponentType? sourceComponentType = null;
+            ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes;
+            ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes;
+            Array[] sourceComponents = table.m_components;
+            Array[] destinationComponents = m_components;
+            int sourceIndex = -1;
+            int destinationIndex = 0;
+			ComponentType sourceComponentType = null!;
 
 			while (destinationIndex < destinationComponents.Length)
 			{
 				ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
 
-			CompareTypes:
+			Comparison:
 				switch (ComponentType.Compare(sourceComponentType, destinationComponentType))
 				{
 					case -1:
-						if (sourceIndex < sourceComponents.Length
-							&& (sourceComponentType == null || ++sourceIndex < sourceComponents.Length))
+						int nextSourceIndex = sourceIndex + 1;
+
+                        if (nextSourceIndex < sourceComponents.Length)
 						{
+							sourceIndex = nextSourceIndex;
 							sourceComponentType = sourceComponentTypes[sourceIndex];
-							goto CompareTypes;
+							goto Comparison;
 						}
-						goto case 1;
-					case 1:
-						Array.Clear(destinationComponents[destinationIndex++], index, length);
+
+						goto default;
+					case 0:
+                        Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex++], index, length);
 						continue;
 					default:
-						Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex++], index, length);
-						continue;
+                        Array.Clear(destinationComponents[destinationIndex++], index, length);
+                        continue;
 				}
 			}
 

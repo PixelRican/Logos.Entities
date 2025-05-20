@@ -38,10 +38,17 @@ namespace Monophyll.Entities
 
 		public EntityQuery(EntityTableLookup lookup, EntityFilter filter)
 		{
-			ArgumentNullException.ThrowIfNull(lookup);
-			ArgumentNullException.ThrowIfNull(filter);
+			if (lookup == null)
+			{
+				throw new ArgumentNullException(nameof(lookup));
+			}
 
-			m_lock = new object();
+            if (filter == null)
+            {
+                throw new ArgumentNullException(nameof(filter));
+            }
+
+            m_lock = new object();
 			m_lookup = lookup;
 			m_filter = filter;
 			m_groupings = Array.Empty<EntityTableGrouping>();
