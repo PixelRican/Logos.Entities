@@ -75,12 +75,12 @@ namespace Monophyll.Entities
 
 		public ReadOnlySpan<ComponentType> ComponentTypes
 		{
-			get => new ReadOnlySpan<ComponentType>(m_componentTypes);
+			get => m_componentTypes;
 		}
 
 		public ReadOnlySpan<uint> ComponentBits
 		{
-			get => new ReadOnlySpan<uint>(m_componentBits);
+			get => m_componentBits;
 		}
 
 		public int ManagedPartitionLength
@@ -156,7 +156,7 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& MemoryExtensions.SequenceEqual<uint>(a.m_componentBits, b.m_componentBits);
+				&& a.m_componentBits.AsSpan().SequenceEqual(b.m_componentBits);
 		}
 
 		public EntityArchetype Add(ComponentType componentType)
@@ -233,7 +233,7 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			return BitSetOperations.GetHashCode(new ReadOnlySpan<uint>(m_componentBits));
+			return BitSetOperations.GetHashCode(m_componentBits);
 		}
 
 		public override string ToString()

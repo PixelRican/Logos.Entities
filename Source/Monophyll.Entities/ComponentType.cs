@@ -12,7 +12,8 @@ namespace Monophyll.Entities
 	public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
 	{
 		private const BindingFlags FieldBindingFlags = BindingFlags.Instance
-			| BindingFlags.Public | BindingFlags.NonPublic;
+													   | BindingFlags.Public
+													   | BindingFlags.NonPublic;
 
 		private static int s_nextTypeId = -1;
 

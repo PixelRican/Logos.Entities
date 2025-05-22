@@ -27,8 +27,8 @@ namespace Monophyll.Entities
         }
 
 		private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBits,
-					   ComponentType[] includedComponentTypes, uint[] includedComponentBits,
-					   ComponentType[] excludedComponentTypes, uint[] excludedComponentBits)
+							 ComponentType[] includedComponentTypes, uint[] includedComponentBits,
+							 ComponentType[] excludedComponentTypes, uint[] excludedComponentBits)
 		{
 			m_requiredComponentTypes = requiredComponentTypes;
 			m_includedComponentTypes = includedComponentTypes;
@@ -74,7 +74,8 @@ namespace Monophyll.Entities
         }
 
 		public static EntityFilter Create(ComponentType[] requiredComponentTypes,
-			ComponentType[] includedComponentTypes, ComponentType[] excludedComponentTypes)
+										  ComponentType[] includedComponentTypes,
+										  ComponentType[] excludedComponentTypes)
 		{
 			if (requiredComponentTypes == null)
 			{
@@ -123,7 +124,8 @@ namespace Monophyll.Entities
 		}
 
 		public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes,
-			IEnumerable<ComponentType> includedComponentTypes, IEnumerable<ComponentType> excludedComponentTypes)
+										  IEnumerable<ComponentType> includedComponentTypes,
+										  IEnumerable<ComponentType> excludedComponentTypes)
 		{
 			ComponentType[] requiredComponentTypeArray = requiredComponentTypes.ToArray();
 			ComponentType[] includedComponentTypeArray = includedComponentTypes.ToArray();
@@ -146,7 +148,8 @@ namespace Monophyll.Entities
 		}
 
 		public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes,
-			ReadOnlySpan<ComponentType> includedComponentTypes, ReadOnlySpan<ComponentType> excludedComponentTypes)
+										  ReadOnlySpan<ComponentType> includedComponentTypes,
+										  ReadOnlySpan<ComponentType> excludedComponentTypes)
 		{
 			ComponentType[] requiredComponentTypeArray = requiredComponentTypes.ToArray();
 			ComponentType[] includedComponentTypeArray = includedComponentTypes.ToArray();
@@ -245,9 +248,9 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& MemoryExtensions.SequenceEqual<uint>(a.m_requiredComponentBits, b.m_requiredComponentBits)
-				&& MemoryExtensions.SequenceEqual<uint>(a.m_includedComponentBits, b.m_includedComponentBits)
-				&& MemoryExtensions.SequenceEqual<uint>(a.m_excludedComponentBits, b.m_excludedComponentBits);
+				&& a.m_requiredComponentBits.AsSpan().SequenceEqual(b.m_requiredComponentBits)
+                && a.m_includedComponentBits.AsSpan().SequenceEqual(b.m_includedComponentBits)
+                && a.m_excludedComponentBits.AsSpan().SequenceEqual(b.m_excludedComponentBits);
 		}
 
 		public bool Equals(EntityFilter? other)

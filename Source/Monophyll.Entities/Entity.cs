@@ -90,14 +90,12 @@ namespace Monophyll.Entities
 
 		public static bool operator ==(Entity left, Entity right)
 		{
-			return left.m_id == right.m_id
-				&& left.m_version == right.m_version;
+			return left.Equals(right);
 		}
 
 		public static bool operator !=(Entity left, Entity right)
 		{
-			return left.m_id != right.m_id
-				|| left.m_version != right.m_version;
+			return !left.Equals(right);
 		}
 	}
 }

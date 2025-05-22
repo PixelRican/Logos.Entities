@@ -35,7 +35,7 @@ namespace Monophyll.Entities
 			m_container = new Container(DefaultCapacity);
 		}
 
-		public Entity CreateEntity(params ComponentType[] componentTypes)
+		public Entity CreateEntity(ComponentType[] componentTypes)
 		{
 			return CreateEntity(m_lookup.GetGrouping(componentTypes));
 		}
@@ -232,7 +232,7 @@ namespace Monophyll.Entities
 			return false;
 		}
 
-		public EntityArchetype GetArchetype(params ComponentType[] componentTypes)
+		public EntityArchetype GetArchetype(ComponentType[] componentTypes)
 		{
 			return m_lookup.GetGrouping(componentTypes).Key;
 		}
@@ -271,7 +271,7 @@ namespace Monophyll.Entities
 			return false;
 		}
 
-		public EntityQuery GetQuery(params ComponentType[] componentTypes)
+		public EntityQuery GetQuery(ComponentType[] componentTypes)
 		{
 			return GetQuery(EntityFilter.Create(componentTypes, Array.Empty<ComponentType>(), Array.Empty<ComponentType>()));
 		}

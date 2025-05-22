@@ -1,38 +1,92 @@
-﻿using System.Numerics;
-
-namespace Monophyll.Entities.Tests
+﻿namespace Monophyll.Entities.Tests
 {
-	internal record struct Position2D(Vector2 Value)
-	{
-		public Vector2 Value = Value;
-	}
+    public record struct Name
+    {
+        public string Value;
 
-	internal record struct Position3D(Vector3 Value)
-	{
-		public Vector3 Value = Value;
-	}
+        public Name(string value)
+        {
+            Value = value;
+        }
+    }
 
-	internal record struct Rotation2D(float Value)
-	{
-		public float Value = Value;
-	}
+    public record struct Position2D
+    {
+        public float X;
+        public float Y;
 
-	internal record struct Rotation3D(Quaternion Value)
-	{
-		public Quaternion Value = Value;
-	}
+        public Position2D(float x, float y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
 
-	internal record struct Scale2D(Vector2 Value)
-	{
-		public Vector2 Value = Value;
-	}
+    public record struct Position3D
+    {
+        public float X;
+        public float Y;
+        public float Z;
 
-	internal record struct Scale3D(Vector3 Value)
-	{
-		public Vector3 Value = Value;
-	}
+        public Position3D(float x, float y, float z)
+        {
+            X = x;
+            Y = y;
+            Z = z;
+        }
+    }
 
-	internal readonly record struct Tag
-	{
-	}
+    public record struct Rotation2D
+    {
+        public float Angle;
+
+        public Rotation2D(float angle)
+        {
+            Angle = angle;
+        }
+    }
+
+    public record struct Rotation3D
+    {
+        public float Yaw;
+        public float Pitch;
+        public float Roll;
+
+        public Rotation3D(float yaw, float pitch, float roll)
+        {
+            Yaw = yaw;
+            Pitch = pitch;
+            Roll = roll;
+        }
+    }
+
+    public record struct Scale2D
+    {
+        public float X;
+        public float Y;
+
+        public Scale2D(float x, float y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
+    public record struct Scale3D
+    {
+        public float X;
+        public float Y;
+        public float Z;
+
+        public Scale3D(float x, float y, float z)
+        {
+            X = x;
+            Y = y;
+            Z = z;
+        }
+    }
+
+    public readonly record struct Tag
+    {
+    }
 }
