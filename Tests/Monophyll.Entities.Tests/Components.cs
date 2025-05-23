@@ -1,15 +1,5 @@
 ﻿namespace Monophyll.Entities.Tests
 {
-    public record struct Name
-    {
-        public string Value;
-
-        public Name(string value)
-        {
-            Value = value;
-        }
-    }
-
     public record struct Position2D
     {
         public float X;
@@ -88,5 +78,15 @@
 
     public readonly record struct Tag
     {
+    }
+
+    public record struct User
+    {
+        public string Name;
+
+        public User(string value)
+        {
+            Name = value;
+        }
     }
 }

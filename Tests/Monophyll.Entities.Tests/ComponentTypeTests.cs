@@ -10,71 +10,70 @@ namespace Monophyll.Entities.Tests
         public static void Initialize(TestContext testContext)
         {
             ComponentType.TypeOf<Position2D>();
-            ComponentType.TypeOf<Rotation2D>();
-            ComponentType.TypeOf<Scale2D>();
             ComponentType.TypeOf<Position3D>();
+            ComponentType.TypeOf<Rotation2D>();
             ComponentType.TypeOf<Rotation3D>();
+            ComponentType.TypeOf<Scale2D>();
             ComponentType.TypeOf<Scale3D>();
-            ComponentType.TypeOf<Name>();
             ComponentType.TypeOf<Tag>();
+            ComponentType.TypeOf<User>();
         }
 
         [TestMethod]
-        public void CompareTest()
+        public void ComparableTest()
         {
-            ReadOnlySpan<ComponentType> expectedComponentTypes =
+            ReadOnlySpan<ComponentType> expectedSpan =
             [
-                ComponentType.TypeOf<Name>(),
+                ComponentType.TypeOf<User>(),
                 ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Position3D>(),
+                ComponentType.TypeOf<Rotation2D>(),
                 ComponentType.TypeOf<Rotation3D>(),
+                ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
                 ComponentType.TypeOf<Tag>()
             ];
-            Span<ComponentType> actualComponentTypes =
+            Span<ComponentType> actualSpan =
             [
                 ComponentType.TypeOf<Tag>(),
-                ComponentType.TypeOf<Position3D>(),
-                ComponentType.TypeOf<Rotation3D>(),
-                ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Scale2D>()
+                ComponentType.TypeOf<Scale2D>(),
+                ComponentType.TypeOf<User>(),
+                ComponentType.TypeOf<Position3D>(),
+                ComponentType.TypeOf<Rotation3D>(),
+                ComponentType.TypeOf<Scale3D>()
             ];
 
-            actualComponentTypes.Sort();
+            actualSpan.Sort();
 
             for (int i = 0; i < 8; i++)
             {
-                ComponentType actualComponentType = actualComponentTypes[i];
+                ComponentType actual = actualSpan[i];
 
-                Assert.AreEqual(0, actualComponentType.CompareTo(expectedComponentTypes[i]));
-                Assert.AreEqual(1, actualComponentType.CompareTo(null));
-                Assert.ThrowsException<ArgumentException>(() => actualComponentType.CompareTo(this));
+                Assert.AreEqual(0, actual.CompareTo(expectedSpan[i]));
+                Assert.AreEqual(1, actual.CompareTo(null));
+                Assert.ThrowsException<ArgumentException>(() => actual.CompareTo(this));
             }
         }
 
         [TestMethod]
-        public void EqualsTest()
+        public void EquatableTest()
         {
-            ReadOnlySpan<ComponentType> componentTypes =
+            ReadOnlySpan<ComponentType> span =
             [
                 ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Position3D>(),
+                ComponentType.TypeOf<Rotation2D>(),
                 ComponentType.TypeOf<Rotation3D>(),
+                ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Name>(),
-                ComponentType.TypeOf<Tag>()
+                ComponentType.TypeOf<Tag>(),
+                ComponentType.TypeOf<User>()
             ];
-
             ComponentType previous = null!;
 
-            foreach (ComponentType current in componentTypes)
+            foreach (ComponentType current in span)
             {
                 Assert.AreEqual(current, current);
                 Assert.AreNotEqual(previous, current);
@@ -87,13 +86,13 @@ namespace Monophyll.Entities.Tests
         public void TypeOfTest()
         {
             TypeOfTestHelper<Position2D>(0);
-            TypeOfTestHelper<Rotation2D>(1);
-            TypeOfTestHelper<Scale2D>(2);
-            TypeOfTestHelper<Position3D>(3);
-            TypeOfTestHelper<Rotation3D>(4);
+            TypeOfTestHelper<Position3D>(1);
+            TypeOfTestHelper<Rotation2D>(2);
+            TypeOfTestHelper<Rotation3D>(3);
+            TypeOfTestHelper<Scale2D>(4);
             TypeOfTestHelper<Scale3D>(5);
-            TypeOfTestHelper<Name>(6);
-            TypeOfTestHelper<Tag>(7);
+            TypeOfTestHelper<Tag>(6);
+            TypeOfTestHelper<User>(7);
         }
 
         private static void TypeOfTestHelper<T>(int expectedId)

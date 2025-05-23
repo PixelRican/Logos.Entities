@@ -8,8 +8,8 @@ using System.Runtime.CompilerServices;
 namespace Monophyll.Entities
 {
 	/// <summary>
-	/// Represents a model that describes how an entity's components are laid
-	/// out in memory.
+	/// Represents a data model that describes how an entity's components are
+	/// laid out in memory.
 	/// </summary>
 	public sealed class EntityArchetype : IEquatable<EntityArchetype>
 	{
