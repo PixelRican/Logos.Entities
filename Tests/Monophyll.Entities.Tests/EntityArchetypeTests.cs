@@ -42,6 +42,22 @@ namespace Monophyll.Entities.Tests
             }
         }
 
+        private static void AddRemoveAssertHelper(EntityArchetype subarchetype,
+            EntityArchetype superarchetype, ComponentType type)
+        {
+            ReadOnlySpan<ComponentType> subset = subarchetype.ComponentTypes;
+            ReadOnlySpan<ComponentType> superset = superarchetype.ComponentTypes;
+            int index = ~subset.BinarySearch(type);
+
+            Assert.AreEqual(index, superset.BinarySearch(type));
+            Assert.IsFalse(subarchetype.Contains(type));
+            Assert.IsTrue(superarchetype.Contains(type));
+            Assert.IsTrue(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)));
+            Assert.IsTrue(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)));
+            Assert.AreSame(subarchetype, subarchetype.Add(null!));
+            Assert.AreSame(superarchetype, superarchetype.Add(type));
+        }
+
         [TestMethod]
         public void CreateTest()
         {
@@ -122,10 +138,10 @@ namespace Monophyll.Entities.Tests
 
                 for (int i = 0; i < expectedLength; i++)
                 {
-                    ComponentType componentType = componentTypes[i];
+                    ComponentType componentType = expectedArray[i];
 
                     Assert.IsTrue(archetype.Contains(componentType));
-                    Assert.AreEqual(expectedArray[i], componentType);
+                    Assert.AreEqual(componentType, componentTypes[i]);
 
                     switch (componentType.Category)
                     {
@@ -220,22 +236,6 @@ namespace Monophyll.Entities.Tests
                 AddRemoveAssertHelper(subarchetype, superarchetype, type);
                 superarchetype = subarchetype;
             }
-        }
-
-        private static void AddRemoveAssertHelper(EntityArchetype subarchetype,
-            EntityArchetype superarchetype, ComponentType type)
-        {
-            ReadOnlySpan<ComponentType> subset = subarchetype.ComponentTypes;
-            ReadOnlySpan<ComponentType> superset = superarchetype.ComponentTypes;
-            int index = ~subset.BinarySearch(type);
-
-            Assert.AreEqual(index, superset.BinarySearch(type));
-            Assert.IsFalse(subarchetype.Contains(type));
-            Assert.IsTrue(superarchetype.Contains(type));
-            Assert.IsTrue(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)));
-            Assert.IsTrue(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)));
-            Assert.AreSame(subarchetype, subarchetype.Add(null!));
-            Assert.AreSame(superarchetype, superarchetype.Add(type));
         }
     }
 }

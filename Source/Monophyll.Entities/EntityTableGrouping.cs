@@ -10,18 +10,15 @@ namespace Monophyll.Entities
 	{
 		private readonly object m_lock;
 		private readonly EntityArchetype m_key;
-		private volatile EntityTable[] m_items;
+		private volatile EntityTable[] m_tables;
 
 		public EntityTableGrouping(EntityArchetype key)
 		{
-			if (key == null)
-			{
-				throw new ArgumentNullException(nameof(key));
-			}
+            ArgumentNullException.ThrowIfNull(key);
 
-			m_lock = new object();
+            m_lock = new object();
 			m_key = key;
-			m_items = Array.Empty<EntityTable>();
+			m_tables = Array.Empty<EntityTable>();
 		}
 
 		public EntityArchetype Key
@@ -31,7 +28,7 @@ namespace Monophyll.Entities
 
 		public int Count
 		{
-			get => m_items.Length;
+			get => m_tables.Length;
 		}
 
 		bool ICollection<EntityTable>.IsReadOnly
@@ -61,30 +58,34 @@ namespace Monophyll.Entities
 
 		public EntityTable this[int index]
 		{
-			get => m_items[index];
+			get => m_tables[index];
 			set
 			{
-				if (value == null)
-				{
-					throw new ArgumentNullException(nameof(value));
-				}
+				ArgumentNullException.ThrowIfNull(value);
 
 				if (!EntityArchetype.Equals(m_key, value.Archetype))
 				{
-					throw new ArgumentException("value.Archetype does not match Key.", nameof(value));
+					throw new ArgumentException(
+						"Value's archetype does not match the EntityTableGrouping's key.", nameof(value));
 				}
 
 				lock (m_lock)
 				{
-					EntityTable[] items = m_items;
+					EntityTable[] tables = m_tables;
 
-					if (items[index] != value)
+                    if ((uint)index >= (uint)tables.Length)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(index), index,
+                            "Index was out of range. Must be non-negative and less than the size of the EntityTableGrouping.");
+                    }
+
+                    if (tables[index] != value)
 					{
-						EntityTable[] array = new EntityTable[items.Length];
+						EntityTable[] array = new EntityTable[tables.Length];
 
-						Array.Copy(items, array, items.Length);
+						Array.Copy(tables, array, tables.Length);
 						array[index] = value;
-						m_items = array;
+						m_tables = array;
 					}
 				}
 			}
@@ -92,7 +93,7 @@ namespace Monophyll.Entities
 
 		object? IList.this[int index]
 		{
-			get => m_items[index];
+			get => m_tables[index];
 			set
 			{
 				try
@@ -101,31 +102,29 @@ namespace Monophyll.Entities
 				}
 				catch (InvalidCastException)
 				{
-					throw new ArgumentException("value is not of type EntityTable", nameof(value));
+					throw new ArgumentException("Value is not of type EntityTable", nameof(value));
 				}
 			}
 		}
 
 		public void Add(EntityTable item)
 		{
-			if (item == null)
-			{
-				throw new ArgumentNullException(nameof(item));
-			}
+			ArgumentNullException.ThrowIfNull(item);
 
 			if (!EntityArchetype.Equals(m_key, item.Archetype))
 			{
-				throw new ArgumentException("item.Archetype does not match Key.", nameof(item));
+				throw new ArgumentException(
+					"Item's archetype does not match the EntityTableGrouping's key.", nameof(item));
 			}
 
 			lock (m_lock)
 			{
-				EntityTable[] items = m_items;
-				EntityTable[] array = new EntityTable[items.Length + 1];
+				EntityTable[] tables = m_tables;
+				EntityTable[] newTables = new EntityTable[tables.Length + 1];
 
-				Array.Copy(items, array, items.Length);
-				array[items.Length] = item;
-				m_items = array;
+				Array.Copy(tables, newTables, tables.Length);
+				newTables[tables.Length] = item;
+				m_tables = newTables;
 			}
 		}
 
@@ -134,40 +133,40 @@ namespace Monophyll.Entities
 			try
 			{
 				Add((EntityTable)value!);
-				return m_items.Length;
+				return m_tables.Length;
 			}
 			catch (InvalidCastException)
 			{
-				throw new ArgumentException("value is not of type EntityTable", nameof(value));
+				throw new ArgumentException("Value is not of type EntityTable", nameof(value));
 			}
 		}
 
 		public ReadOnlySpan<EntityTable> AsSpan()
 		{
-			return new ReadOnlySpan<EntityTable>(m_items);
+			return m_tables;
 		}
 
 		public void Clear()
 		{
 			lock (m_lock)
 			{
-				m_items = Array.Empty<EntityTable>();
+				m_tables = Array.Empty<EntityTable>();
 			}
 		}
 
 		public bool Contains(EntityTable item)
 		{
-			return Array.IndexOf(m_items, item) != -1;
+			return Array.IndexOf(m_tables, item) != -1;
 		}
 
 		bool IList.Contains(object? value)
 		{
-			return Array.IndexOf(m_items, value) != -1;
+			return Array.IndexOf(m_tables, value) != -1;
 		}
 
 		public void CopyTo(EntityTable[] array, int index)
 		{
-			EntityTable[] items = m_items;
+			EntityTable[] items = m_tables;
 			Array.Copy(items, 0, array, index, items.Length);
 		}
 
@@ -180,72 +179,70 @@ namespace Monophyll.Entities
 
 			try
 			{
-				EntityTable[] items = m_items;
+				EntityTable[] items = m_tables;
 				Array.Copy(items, 0, array!, index, items.Length);
 			}
 			catch (ArrayTypeMismatchException)
 			{
-				throw new ArgumentException("array is not of type EntityTable[].", nameof(array));
+				throw new ArgumentException("Array is not of type EntityTable[].", nameof(array));
 			}
 		}
 
 		public ArrayEnumerator<EntityTable> GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityTable>(m_items);
+			return new ArrayEnumerator<EntityTable>(m_tables);
 		}
 
 		IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityTable>(m_items);
+			return new ArrayEnumerator<EntityTable>(m_tables);
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityTable>(m_items);
+			return new ArrayEnumerator<EntityTable>(m_tables);
 		}
 
 		public int IndexOf(EntityTable item)
 		{
-			return Array.IndexOf(m_items, item);
+			return Array.IndexOf(m_tables, item);
 		}
 
 		int IList.IndexOf(object? value)
 		{
-            return Array.IndexOf(m_items, value);
+            return Array.IndexOf(m_tables, value);
         }
 
 		public void Insert(int index, EntityTable item)
 		{
-			if (item == null)
-			{
-				throw new ArgumentNullException(nameof(item));
-			}
+			ArgumentNullException.ThrowIfNull(item);
 
 			if (!EntityArchetype.Equals(m_key, item.Archetype))
-			{
-				throw new ArgumentException("item.Archetype does not match Key.", nameof(item));
-			}
+            {
+                throw new ArgumentException(
+                    "Item's archetype does not match the EntityTableGrouping's key.", nameof(item));
+            }
 
 			lock (m_lock)
 			{
-				EntityTable[] items = m_items;
+				EntityTable[] tables = m_tables;
 
-				if ((uint)index > (uint)items.Length)
+				if ((uint)index > (uint)tables.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), index,
+                        "Index was out of range. Must be non-negative and less than or equal to the size of the EntityTableGrouping.");
+                }
+
+				EntityTable[] newTables = new EntityTable[tables.Length + 1];
+				Array.Copy(tables, newTables, index);
+				newTables[index] = item;
+
+				if (index < tables.Length)
 				{
-					throw new ArgumentOutOfRangeException(nameof(index), index,
-						"index is less than zero or greater than Count.");
+					Array.Copy(tables, index, newTables, index + 1, tables.Length - index);
 				}
 
-				EntityTable[] array = new EntityTable[items.Length + 1];
-				Array.Copy(items, array, index);
-				array[index] = item;
-
-				if (index < items.Length)
-				{
-					Array.Copy(items, index, array, index + 1, items.Length - index);
-				}
-
-				m_items = array;
+				m_tables = newTables;
 			}
 		}
 
@@ -257,7 +254,7 @@ namespace Monophyll.Entities
 			}
 			catch (InvalidCastException)
 			{
-				throw new ArgumentException("value is not of type EntityTable", nameof(value));
+				throw new ArgumentException("Value is not of type EntityTable", nameof(value));
 			}
 		}
 
@@ -265,12 +262,12 @@ namespace Monophyll.Entities
 		{
 			lock (m_lock)
 			{
-				EntityTable[] items = m_items;
-				int index = Array.IndexOf(items, item);
+				EntityTable[] tables = m_tables;
+				int index = Array.IndexOf(tables, item);
 
 				if (index != -1)
 				{
-					m_items = RemoveAt(items, index);
+					m_tables = RemoveAt(tables, index);
 					return true;
 				}
 
@@ -287,34 +284,34 @@ namespace Monophyll.Entities
 		{
 			lock (m_lock)
 			{
-				EntityTable[] items = m_items;
+				EntityTable[] tables = m_tables;
 
-				if ((uint)index >= (uint)items.Length)
-				{
-					throw new ArgumentOutOfRangeException(nameof(index), index,
-						"index is less than zero or greater than or equal to Count.");
-				}
+				if ((uint)index >= (uint)tables.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), index,
+                        "Index was out of range. Must be non-negative and less than the size of the EntityTableGrouping.");
+                }
 
-				m_items = RemoveAt(items, index);
+				m_tables = RemoveAt(tables, index);
 			}
 		}
 
-		private static EntityTable[] RemoveAt(EntityTable[] array, int index)
+		private static EntityTable[] RemoveAt(EntityTable[] tables, int index)
 		{
-			if (array.Length == 1)
+			if (tables.Length == 1)
 			{
 				return Array.Empty<EntityTable>();
 			}
 
-			EntityTable[] newArray = new EntityTable[array.Length - 1];
-			Array.Copy(array, newArray, index);
+			EntityTable[] newTables = new EntityTable[tables.Length - 1];
+			Array.Copy(tables, newTables, index);
 
-			if (index < newArray.Length)
+			if (index < newTables.Length)
 			{
-				Array.Copy(array, index + 1, newArray, index, newArray.Length - index);
+				Array.Copy(tables, index + 1, newTables, index, newTables.Length - index);
 			}
 
-			return newArray;
+			return newTables;
 		}
 	}
 }

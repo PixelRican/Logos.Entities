@@ -36,17 +36,17 @@ namespace Monophyll.Entities
 			m_entitySize = Unsafe.SizeOf<Entity>();
 
 			int freeIndex = 0;
-			ComponentType? previousComponentType = null;
+			ComponentType? previous = null;
 
-			foreach (ComponentType currentComponentType in componentTypes)
+			foreach (ComponentType current in componentTypes)
 			{
-				if (!ComponentType.Equals(previousComponentType, currentComponentType))
+				if (!ComponentType.Equals(previous, current))
 				{
-					m_componentTypes[freeIndex++] = previousComponentType = currentComponentType;
-					m_componentBits[currentComponentType.Id >> 5] |= 1u << currentComponentType.Id;
-					m_entitySize += currentComponentType.Size;
+					m_componentTypes[freeIndex++] = previous = current;
+					m_componentBits[current.Id >> 5] |= 1u << current.Id;
+					m_entitySize += current.Size;
 
-					switch (currentComponentType.Category)
+					switch (current.Category)
 					{
 						case ComponentTypeCategory.Managed:
 							m_managedPartitionLength++;
@@ -105,10 +105,7 @@ namespace Monophyll.Entities
 
 		public static EntityArchetype Create(ComponentType[] componentTypes)
 		{
-			if (componentTypes == null)
-			{
-				throw new ArgumentNullException(nameof(componentTypes));
-			}
+			ArgumentNullException.ThrowIfNull(componentTypes);
 
 			if (componentTypes.Length > 0)
 			{
@@ -128,11 +125,15 @@ namespace Monophyll.Entities
 		public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
 		{
 			ComponentType[] array = componentTypes.ToArray();
-			Array.Sort(array);
 
-			if (array.Length > 0 && array[^1] != null)
-			{
-				return new EntityArchetype(array);
+			if (array.Length > 0)
+            {
+                Array.Sort(array);
+
+				if (array[^1] != null)
+                {
+                    return new EntityArchetype(array);
+                }
 			}
 
 			return s_base;
@@ -140,12 +141,15 @@ namespace Monophyll.Entities
 
 		public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
 		{
-			ComponentType[] array = componentTypes.ToArray();
-			Array.Sort(array);
-
-			if (array.Length > 0 && array[^1] != null)
+			if (componentTypes.Length > 0)
 			{
-				return new EntityArchetype(array);
+                ComponentType[] array = componentTypes.ToArray();
+                Array.Sort(array);
+
+				if (array[^1] != null)
+				{
+                    return new EntityArchetype(array);
+                }
 			}
 
 			return s_base;
@@ -161,64 +165,67 @@ namespace Monophyll.Entities
 
 		public EntityArchetype Add(ComponentType componentType)
 		{
-			if (componentType == null || Contains(componentType))
+			if (componentType == null || BitSetOperations.Contains(m_componentBits, componentType.Id))
 			{
 				return this;
 			}
 
-			ComponentType[] destinationComponentTypes = new ComponentType[m_componentTypes.Length + 1];
-			int destinationIndex = 1;
-			int insertIndex = 0;
+			ComponentType[] source = m_componentTypes;
+            ComponentType[] destination = new ComponentType[source.Length + 1];
+            int index = 0;
+			ComponentType current;
 
-			foreach (ComponentType sourceComponentType in m_componentTypes)
+			while (index < source.Length && ComponentType.Compare(current = source[index], componentType) < 0)
 			{
-				if (ComponentType.Compare(sourceComponentType, componentType) >= 0)
-				{
-					destinationComponentTypes[destinationIndex++] = sourceComponentType;
-				}
-				else
-				{
-					destinationComponentTypes[insertIndex] = sourceComponentType;
-					insertIndex = destinationIndex++;
-				}
+				destination[index++] = current;
 			}
 
-			destinationComponentTypes[insertIndex] = componentType;
-			return new EntityArchetype(destinationComponentTypes);
+			destination[index] = componentType;
+
+			while (index < source.Length)
+			{
+				current = source[index];
+				destination[++index] = current;
+			}
+
+			return new EntityArchetype(destination);
 		}
 
 		public EntityArchetype Remove(ComponentType componentType)
 		{
-			if (!Contains(componentType))
+			if (componentType == null || !BitSetOperations.Contains(m_componentBits, componentType.Id))
 			{
 				return this;
-			}
+            }
 
-			if (m_componentTypes.Length == 1)
+            ComponentType[] source = m_componentTypes;
+
+            if (source.Length == 1)
 			{
 				return s_base;
 			}
 
-			ComponentType[] destinationComponentTypes = new ComponentType[m_componentTypes.Length - 1];
-			int destinationIndex = 0;
+            ComponentType[] destination = new ComponentType[source.Length - 1];
+			int index = 0;
+			ComponentType current;
 
-			foreach (ComponentType sourceComponentType in m_componentTypes)
-			{
-				if (!ComponentType.Equals(componentType, sourceComponentType))
-				{
-					destinationComponentTypes[destinationIndex++] = sourceComponentType;
-				}
+            while (!ComponentType.Equals(current = source[index], componentType))
+            {
+				destination[index++] = current;
+            }
+
+            while (index < destination.Length)
+            {
+				destination[index] = source[++index];
 			}
 
-			return new EntityArchetype(destinationComponentTypes);
+            return new EntityArchetype(destination);
 		}
 
 		public bool Contains(ComponentType componentType)
 		{
-			int index;
 			return componentType != null
-				&& (index = componentType.Id >> 5) < m_componentBits.Length
-				&& (m_componentBits[index] & 1u << componentType.Id) != 0;
+				&& BitSetOperations.Contains(m_componentBits, componentType.Id);
 		}
 
 		public bool Equals([NotNullWhen(true)] EntityArchetype? other)

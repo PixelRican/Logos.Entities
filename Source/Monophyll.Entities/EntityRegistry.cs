@@ -89,7 +89,8 @@ namespace Monophyll.Entities
 				}
 			}
 
-			EntityTable table = new EntityTable(grouping.Key, m_lookup, TargetTableSize / grouping.Key.EntitySize);
+			EntityTable table = new EntityTable(grouping.Key,
+				m_lookup, TargetTableSize / grouping.Key.EntitySize);
 			grouping.Add(table);
 			return table;
 		}
@@ -101,9 +102,9 @@ namespace Monophyll.Entities
 				Container container = m_container;
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
-				if ((uint)entity.Id >= (uint)container.NextId
-					|| (entry = ref container.Entries[entity.Id]).Table == null
-					|| entry.Version != entity.Version)
+				if ((uint)entity.Id >= (uint)container.NextId ||
+					(entry = ref container.Entries[entity.Id]).Table == null ||
+					entry.Version != entity.Version)
 				{
 					return false;
 				}
@@ -134,66 +135,144 @@ namespace Monophyll.Entities
 			return (uint)entity.Id < (uint)container.NextId
 				&& (entry = ref container.Entries[entity.Id]).Table != null
 				&& entry.Index >= 0
-				&& entity.Version == entity.Version;
+				&& entry.Version == entity.Version;
 		}
 
-		public void AddComponent<T>(Entity entity)
+		public bool AddComponent(Entity entity, ComponentType componentType)
+        {
+			return ModifyEntity(entity, componentType, true);
+        }
+
+        public bool RemoveComponent(Entity entity, ComponentType componentType)
+        {
+			return ModifyEntity(entity, componentType, false);
+        }
+
+		private bool ModifyEntity(Entity entity, ComponentType componentType, bool addComponent)
 		{
-			SetComponent<T>(entity, default!);
-		}
+            lock (m_lookup)
+            {
+                Container container = m_container;
+                ref Entry entry = ref Unsafe.NullRef<Entry>();
 
-		public void RemoveComponent<T>(Entity entity)
+                if ((uint)entity.Id >= (uint)container.NextId ||
+                    (entry = ref container.Entries[entity.Id]).Table == null ||
+                    entry.Version != entity.Version)
+                {
+                    throw new ArgumentException(
+                        "Entity does not exist within the EntityRegistry.", nameof(entity));
+                }
+
+				EntityArchetype archetype = entry.Table.Archetype;
+                EntityTableGrouping groupingToMoveTo = addComponent
+					? m_lookup.GetSupergrouping(archetype, componentType)
+					: m_lookup.GetSubgrouping(archetype, componentType);
+
+                if (!EntityArchetype.Equals(archetype, groupingToMoveTo.Key))
+                {
+                    MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        public bool ContainsComponent(Entity entity, ComponentType componentType)
+        {
+            Container container = m_container;
+            ref Entry entry = ref Unsafe.NullRef<Entry>();
+            EntityTable table;
+
+            return (uint)entity.Id < (uint)container.NextId
+                && (table = (entry = ref container.Entries[entity.Id]).Table) != null
+                && entry.Version == entity.Version
+                && table.Archetype.Contains(componentType);
+        }
+
+        public bool AddComponent<T>(Entity entity, in T? component)
+        {
+            lock (m_lookup)
+            {
+                Container container = m_container;
+                ref Entry entry = ref Unsafe.NullRef<Entry>();
+
+                if ((uint)entity.Id >= (uint)container.NextId ||
+                    (entry = ref container.Entries[entity.Id]).Table == null ||
+                    entry.Version != entity.Version)
+                {
+                    throw new ArgumentException(
+                        "Entity does not exist within the EntityRegistry.", nameof(entity));
+                }
+
+                EntityArchetype archetype = entry.Table.Archetype;
+                EntityTableGrouping groupingToMoveTo = m_lookup.GetSupergrouping(
+                    archetype, ComponentType.TypeOf<T>());
+				bool success = !EntityArchetype.Equals(archetype, groupingToMoveTo.Key);
+
+                if (success)
+                {
+                    MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
+                }
+
+				entry.Table.GetComponents<T>()[entry.Index] = component!;
+				return success;
+            }
+        }
+
+		public bool RemoveComponent<T>(Entity entity, out T? component)
 		{
 			lock (m_lookup)
 			{
 				Container container = m_container;
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 
-				if ((uint)entity.Id >= (uint)container.NextId
-					|| (entry = ref container.Entries[entity.Id]).Table == null
-					|| entry.Version != entity.Version)
+				if ((uint)entity.Id >= (uint)container.NextId ||
+					(entry = ref container.Entries[entity.Id]).Table == null ||
+					entry.Version != entity.Version)
 				{
-					throw new ArgumentException("The entity does not exist.", nameof(entity));
+					throw new ArgumentException(
+						"Entity does not exist within the EntityRegistry.", nameof(entity));
 				}
 
-				EntityTableGrouping groupingToMoveTo = m_lookup.GetSubgrouping(entry.Table.Archetype, ComponentType.TypeOf<T>());
+                EntityArchetype archetype = entry.Table.Archetype;
+                EntityTableGrouping groupingToMoveTo = m_lookup.GetSubgrouping(
+                    archetype, ComponentType.TypeOf<T>());
 
-				if (!EntityArchetype.Equals(entry.Table.Archetype, groupingToMoveTo.Key))
-				{
-					MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
+				if (!EntityArchetype.Equals(archetype, groupingToMoveTo.Key))
+                {
+                    component = entry.Table.GetComponents<T>()[entry.Index];
+                    MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
+                    return true;
 				}
+
+				component = default;
+				return false;
 			}
 		}
 
-		public void SetComponent<T>(Entity entity, T component)
-		{
-			lock (m_lookup)
-			{
-				Container container = m_container;
-				ref Entry entry = ref Unsafe.NullRef<Entry>();
+        public bool TryGetComponent<T>(Entity entity, out T? component)
+        {
+            Container container = m_container;
+            ref Entry entry = ref Unsafe.NullRef<Entry>();
+            EntityTable table;
+            int index;
 
-				if ((uint)entity.Id >= (uint)container.NextId
-					|| (entry = ref container.Entries[entity.Id]).Table == null
-					|| entry.Version != entity.Version)
-				{
-					throw new ArgumentException("The entity does not exist.", nameof(entity));
-				}
+            if ((uint)entity.Id < (uint)container.NextId &&
+                (table = (entry = ref container.Entries[entity.Id]).Table) != null &&
+                table.TryGetComponents(out Span<T> components) &&
+                (uint)(index = entry.Index) < (uint)components.Length &&
+                entry.Version == entity.Version)
+            {
+                component = components[index];
+                return true;
+            }
 
-				EntityTableGrouping groupingToMoveTo = m_lookup.GetSupergrouping(entry.Table.Archetype, ComponentType.TypeOf<T>());
+            component = default;
+            return false;
+        }
 
-				if (!EntityArchetype.Equals(entry.Table.Archetype, groupingToMoveTo.Key))
-				{
-					MoveEntry(ref entry, container, GetTable(groupingToMoveTo));
-				}
-
-				if (entry.Table.TryGetComponents(out Span<T> components))
-				{
-					components[entry.Index] = component;
-				}
-			}
-		}
-
-		private void MoveEntry(ref Entry entry, Container container, EntityTable destination)
+        private void MoveEntry(ref Entry entry, Container container, EntityTable destination)
 		{
 			destination.AddRange(entry.Table, entry.Index, 1);
 			entry.Table.RemoveAt(entry.Index);
@@ -209,27 +288,6 @@ namespace Monophyll.Entities
 
 			entry.Table = destination;
 			entry.Index = destination.Count - 1;
-		}
-
-		public bool TryGetComponent<T>(Entity entity, out T? component)
-		{
-			Container container = m_container;
-			ref Entry entry = ref Unsafe.NullRef<Entry>();
-			EntityTable table;
-			int index;
-
-			if ((uint)entity.Id < (uint)container.NextId
-				&& (table = (entry = ref container.Entries[entity.Id]).Table) != null
-				&& table.TryGetComponents(out Span<T> components)
-				&& (uint)(index = entry.Index) < (uint)components.Length
-				&& entity.Version == entry.Version)
-			{
-				component = components[index];
-				return true;
-			}
-
-			component = default;
-			return false;
 		}
 
 		public EntityArchetype GetArchetype(ComponentType[] componentTypes)
@@ -249,9 +307,12 @@ namespace Monophyll.Entities
 
 		public ReadOnlySpan<EntityTable> GetTables(EntityArchetype archetype)
 		{
-			return m_lookup.TryGetGrouping(archetype, out EntityTableGrouping? grouping)
-				? grouping.AsSpan()
-				: ReadOnlySpan<EntityTable>.Empty;
+			if (m_lookup.TryGetGrouping(archetype, out EntityTableGrouping? grouping))
+			{
+				return grouping.AsSpan();
+			}
+
+			return ReadOnlySpan<EntityTable>.Empty;
 		}
 
 		public bool TryGetTable(Entity entity, out EntityTable? table)
@@ -259,10 +320,10 @@ namespace Monophyll.Entities
 			Container container = m_container;
 			ref Entry entry = ref Unsafe.NullRef<Entry>();
 
-			if ((uint)entity.Id < (uint)container.NextId
-				&& (table = (entry = ref container.Entries[entity.Id]).Table) != null
-				&& entry.Index >= 0
-				&& entry.Version == entity.Version)
+			if ((uint)entity.Id < (uint)container.NextId &&
+				(table = (entry = ref container.Entries[entity.Id]).Table) != null &&
+				entry.Index >= 0 &&
+				entry.Version == entity.Version)
 			{
 				return true;
 			}
@@ -273,22 +334,30 @@ namespace Monophyll.Entities
 
 		public EntityQuery GetQuery(ComponentType[] componentTypes)
 		{
-			return GetQuery(EntityFilter.Create(componentTypes, Array.Empty<ComponentType>(), Array.Empty<ComponentType>()));
+			return GetQuery(EntityFilter.Create(componentTypes,
+				Array.Empty<ComponentType>(), Array.Empty<ComponentType>()));
 		}
 
 		public EntityQuery GetQuery(IEnumerable<ComponentType> componentTypes)
 		{
-			return GetQuery(EntityFilter.Create(componentTypes, Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>()));
+			return GetQuery(EntityFilter.Create(componentTypes,
+				Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>()));
 		}
 
 		public EntityQuery GetQuery(ReadOnlySpan<ComponentType> componentTypes)
 		{
-			return GetQuery(EntityFilter.Create(componentTypes, ReadOnlySpan<ComponentType>.Empty, ReadOnlySpan<ComponentType>.Empty));
+			return GetQuery(EntityFilter.Create(componentTypes,
+				ReadOnlySpan<ComponentType>.Empty, ReadOnlySpan<ComponentType>.Empty));
 		}
 
 		public EntityQuery GetQuery(EntityFilter filter)
 		{
-			return filter == EntityFilter.Universal ? UniversalQuery : new EntityQuery(m_lookup, filter);
+			if (filter != EntityFilter.Universal)
+			{
+				return new EntityQuery(m_lookup, filter);
+            }
+
+			return UniversalQuery;
 		}
 
 		private struct Entry

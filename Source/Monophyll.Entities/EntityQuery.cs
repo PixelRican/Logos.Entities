@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public sealed class EntityQuery : IReadOnlyCollection<EntityTable>
+	public class EntityQuery : IReadOnlyCollection<EntityTable>
 	{
 		private const int DefaultCapacity = 4;
 
@@ -14,7 +14,7 @@ namespace Monophyll.Entities
 		private readonly EntityTableLookup m_lookup;
 		private readonly EntityFilter m_filter;
 		private EntityTableGrouping[] m_groupings;
-		private int m_count;
+		private int m_size;
 		private int m_lookupIndex;
 
         public int Count
@@ -23,7 +23,7 @@ namespace Monophyll.Entities
 			{
 				int count = 0;
 
-				for (int i = 0; i < m_count; i++)
+				for (int i = 0; i < m_size; i++)
 				{
 					count += m_groupings[i].Count;
 				}
@@ -38,15 +38,8 @@ namespace Monophyll.Entities
 
 		public EntityQuery(EntityTableLookup lookup, EntityFilter filter)
 		{
-			if (lookup == null)
-			{
-				throw new ArgumentNullException(nameof(lookup));
-			}
-
-            if (filter == null)
-            {
-                throw new ArgumentNullException(nameof(filter));
-            }
+            ArgumentNullException.ThrowIfNull(lookup);
+            ArgumentNullException.ThrowIfNull(filter);
 
             m_lock = new object();
 			m_lookup = lookup;
@@ -67,43 +60,47 @@ namespace Monophyll.Entities
 		private void UpdateCache()
 		{
 			lock (m_lock)
-			{
-                int lookupIndex = m_lookupIndex;
+            {
+                EntityTableLookup lookup = m_lookup;
+                int index = m_lookupIndex;
 
-				if (lookupIndex < m_lookup.Count)
+				if (index < lookup.Count)
                 {
-                    int count = m_count;
+                    int size = m_size;
+					EntityTableGrouping[] groupings = m_groupings;
+					EntityFilter filter = m_filter;
 
                     do
                     {
-                        EntityTableGrouping grouping = m_lookup[lookupIndex++];
+                        EntityTableGrouping grouping = lookup[index++];
 
-                        if (m_filter.Matches(grouping.Key))
+                        if (filter.Matches(grouping.Key))
                         {
-                            if (count == m_groupings.Length)
+                            if (size == groupings.Length)
                             {
-                                int newCapacity = m_groupings.Length == 0 ? DefaultCapacity : m_groupings.Length * 2;
+                                int newCapacity = groupings.Length == 0 ? DefaultCapacity : groupings.Length * 2;
 
                                 if ((uint)newCapacity > (uint)Array.MaxLength)
                                 {
                                     newCapacity = Array.MaxLength;
                                 }
 
-                                if (newCapacity >= count)
+                                if (newCapacity <= size)
                                 {
-                                    newCapacity = count + 1;
+                                    newCapacity = size + 1;
                                 }
 
-                                Array.Resize(ref m_groupings, newCapacity);
+                                Array.Resize(ref groupings, newCapacity);
                             }
 
-                            m_groupings[count++] = grouping;
+                            groupings[size++] = grouping;
                         }
                     }
-                    while (lookupIndex < m_lookup.Count);
+                    while (index < lookup.Count);
 
-					m_count = count;
-                    Volatile.Write(ref m_lookupIndex, lookupIndex);
+					m_groupings = groupings;
+					m_size = size;
+                    Volatile.Write(ref m_lookupIndex, index);
                 }
             }
 		}
@@ -128,7 +125,7 @@ namespace Monophyll.Entities
 			internal Enumerator(EntityQuery query)
 			{
 				m_query = query;
-				m_count = query.m_count;
+				m_count = query.m_size;
 				m_index = 0;
 				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
 			}

@@ -6,30 +6,39 @@ namespace Monophyll.Utilities
 {
 	public struct ArrayEnumerator<T> : IEnumerator<T>
 	{
-		private readonly T[] m_items;
+		private readonly T[] m_array;
 		private readonly int m_end;
 		private int m_index;
 
-		public ArrayEnumerator(T[]? items)
+		public ArrayEnumerator()
 		{
-			m_items = items ?? Array.Empty<T>();
-			m_end = m_items.Length;
+			m_array = Array.Empty<T>();
+			m_end = 0;
+			m_index = -1;
+		}
+
+		public ArrayEnumerator(T[] array)
+		{
+			ArgumentNullException.ThrowIfNull(array);
+
+			m_array = array;
+			m_end = array.Length;
 			m_index = -1;
 		}
 
 		public static ArrayEnumerator<T> Empty
 		{
-			get => new ArrayEnumerator<T>(Array.Empty<T>());
+			get => new ArrayEnumerator<T>();
 		}
 
 		public readonly T Current
 		{
-			get => m_items[m_index];
+			get => m_array[m_index];
 		}
 
 		readonly object IEnumerator.Current
 		{
-			get => m_items[m_index]!;
+			get => m_array[m_index]!;
 		}
 
 		public readonly void Dispose()

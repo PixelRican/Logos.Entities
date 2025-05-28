@@ -45,30 +45,33 @@ namespace Monophyll.Entities
 
 		public EntityTableGrouping this[int index]
 		{
-			get => m_container[index];
+			get
+			{
+				Container container = m_container;
+
+                if ((uint)index >= (uint)container.Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), index,
+                        "Index was out of range. Must be non-negative and less than the size of the EntityTableLookup.");
+                }
+
+				return container[index];
+            }
 		}
 
 		IEnumerable<EntityTable> ILookup<EntityArchetype, EntityTable>.this[EntityArchetype key]
 		{
 			get
 			{
-				if (key == null)
-				{
-					throw new ArgumentNullException(nameof(key));
-				}
-				
+				ArgumentNullException.ThrowIfNull(key);
 				return m_container.FindGrouping(key.ComponentBits) ?? Enumerable.Empty<EntityTable>();
 			}
 		}
 
 		public bool Contains(EntityArchetype key)
-		{
-			if (key == null)
-			{
-				throw new ArgumentNullException(nameof(key));
-			}
-
-			return m_container.FindGrouping(key.ComponentBits) != null;
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            return m_container.FindGrouping(key.ComponentBits) != null;
 		}
 
 		public void CopyTo(EntityTableGrouping[] array, int index)
@@ -103,10 +106,7 @@ namespace Monophyll.Entities
 
 		public EntityTableGrouping GetGrouping(ComponentType[] componentTypes)
 		{
-			if (componentTypes == null)
-			{
-				throw new ArgumentNullException(nameof(componentTypes));
-			}
+			ArgumentNullException.ThrowIfNull(componentTypes);
 
 			ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
 
@@ -120,7 +120,7 @@ namespace Monophyll.Entities
 					}
 				}
 
-				return GetGrouping(new ReadOnlySpan<ComponentType>(componentTypes), buffer.AsSpan());
+				return GetGrouping(componentTypes, buffer.AsSpan());
 			}
 			finally
 			{
@@ -216,10 +216,7 @@ namespace Monophyll.Entities
 
 		public EntityTableGrouping GetGrouping(EntityArchetype archetype)
 		{
-			if (archetype == null)
-			{
-				throw new ArgumentNullException(nameof(archetype));
-			}
+			ArgumentNullException.ThrowIfNull(archetype);
 
 			EntityTableGrouping? grouping = m_container.FindGrouping(archetype.ComponentBits);
 
@@ -247,15 +244,8 @@ namespace Monophyll.Entities
 
 		public EntityTableGrouping GetSubgrouping(EntityArchetype archetype, ComponentType componentType)
 		{
-			if (componentType == null)
-			{
-				return GetGrouping(archetype);
-			}
-
-			if (archetype == null)
-			{
-				throw new ArgumentNullException(nameof(archetype));
-			}
+			ArgumentNullException.ThrowIfNull(archetype);
+			ArgumentNullException.ThrowIfNull(componentType);
 
 			ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
 			int index = componentType.Id >> 5;
@@ -266,10 +256,19 @@ namespace Monophyll.Entities
 				return GetGrouping(archetype);
 			}
 
-			uint[]? rentedArray = null;
-			Span<uint> key = componentBits.Length > DefaultCapacity
-				? new Span<uint>(rentedArray = ArrayPool<uint>.Shared.Rent(componentBits.Length), 0, componentBits.Length)
-				: stackalloc uint[componentBits.Length];
+			uint[]? rentedArray;
+			scoped Span<uint> key;
+			
+			if (componentBits.Length > DefaultCapacity)
+			{
+				rentedArray = ArrayPool<uint>.Shared.Rent(componentBits.Length);
+				key = new Span<uint>(rentedArray, 0, componentBits.Length);
+            }
+			else
+			{
+				rentedArray = null;
+				key = stackalloc uint[componentBits.Length];
+            }
 
 			try
 			{
@@ -277,7 +276,9 @@ namespace Monophyll.Entities
 
 				if ((key[index] ^= bit) == 0)
 				{
-					key = key.Slice(0, archetype.ComponentTypes.Length > 1 ? archetype.ComponentTypes[^2].Id >> 5 : 0);
+					ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
+
+                    key = key.Slice(0, componentTypes.Length > 1 ? componentTypes[^2].Id >> 5 : 0);
 				}
 
 				EntityTableGrouping? grouping = m_container.FindGrouping(key);
@@ -313,18 +314,11 @@ namespace Monophyll.Entities
 		}
 
 		public EntityTableGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
-		{
-			if (componentType == null)
-			{
-				return GetGrouping(archetype);
-			}
+        {
+            ArgumentNullException.ThrowIfNull(archetype);
+            ArgumentNullException.ThrowIfNull(componentType);
 
-			if (archetype == null)
-			{
-				throw new ArgumentNullException(nameof(archetype));
-			}
-
-			ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
+            ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
 			int index = componentType.Id >> 5;
 			uint bit = 1u << componentType.Id;
 
@@ -333,13 +327,22 @@ namespace Monophyll.Entities
 				return GetGrouping(archetype);
 			}
 
-			uint[]? rentedArray = null;
-			int length = Math.Max(index + 1, componentBits.Length);
-			Span<uint> key = length > DefaultCapacity ?
-							 new Span<uint>(rentedArray = ArrayPool<uint>.Shared.Rent(length), 0, length) :
-							 stackalloc uint[length];
+			uint[]? rentedArray;
+			scoped Span<uint> key;
+            int length = Math.Max(index + 1, componentBits.Length);
 
-			try
+            if (length > DefaultCapacity)
+            {
+                rentedArray = ArrayPool<uint>.Shared.Rent(length);
+                key = new Span<uint>(rentedArray, 0, length);
+            }
+            else
+            {
+                rentedArray = null;
+                key = stackalloc uint[length];
+            }
+
+            try
 			{
 				componentBits.CopyTo(key);
 				key.Slice(componentBits.Length).Clear();
@@ -379,11 +382,7 @@ namespace Monophyll.Entities
 
 		public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityTableGrouping? grouping)
 		{
-			if (key == null)
-			{
-				throw new ArgumentNullException(nameof(key));
-			}
-
+			ArgumentNullException.ThrowIfNull(key);
 			return (grouping = m_container.FindGrouping(key.ComponentBits)) != null;
 		}
 
@@ -392,25 +391,23 @@ namespace Monophyll.Entities
 			private readonly Container m_container;
 			private readonly int m_count;
 			private int m_index;
-			private EntityTableGrouping? m_current;
 
 			internal Enumerator(EntityTableLookup lookup)
 			{
 				m_container = lookup.m_container;
 				m_count = m_container.Count;
-				m_index = 0;
-				m_current = null;
+				m_index = -1;
 			}
 
 			public readonly EntityTableGrouping Current
 			{
-				get => m_current!;
+				get => m_container[m_index];
 			}
 
 			readonly object IEnumerator.Current
-			{
-				get => m_current!;
-			}
+            {
+                get => m_container[m_index];
+            }
 
 			public readonly void Dispose()
 			{
@@ -418,20 +415,20 @@ namespace Monophyll.Entities
 
 			public bool MoveNext()
 			{
-				if ((uint)m_index < (uint)m_count)
+				int index = m_index + 1;
+
+				if (index < m_count)
 				{
-					m_current = m_container[m_index++];
+					m_index = index;
 					return true;
 				}
 
-				m_current = null;
 				return false;
 			}
 
 			void IEnumerator.Reset()
 			{
-				m_current = null;
-				m_index = 0;
+				m_index = -1;
 			}
 		}
 
@@ -485,7 +482,7 @@ namespace Monophyll.Entities
 						ArrayPool<uint>.Shared.Return(rentedArray);
 					}
 
-					m_bits = new Span<uint>(m_rentedArray = array);
+					m_bits = m_rentedArray = array;
 				}
 
 				m_bits.Slice(m_size, capacity).Clear();
@@ -519,15 +516,7 @@ namespace Monophyll.Entities
 
 			public EntityTableGrouping this[int index]
 			{
-				get
-				{
-					if ((uint)index >= (uint)m_count)
-					{
-						throw new ArgumentOutOfRangeException(nameof(index), index, "");
-					}
-
-					return m_entries[index].Grouping;
-				}
+				get => m_entries[index].Grouping;
 			}
 
 			public int Capacity
@@ -560,19 +549,18 @@ namespace Monophyll.Entities
 
 			public void CopyTo(EntityTableGrouping[] array, int index)
 			{
-				if (array == null)
-				{
-					throw new ArgumentNullException(nameof(array));
-				}
+				ArgumentNullException.ThrowIfNull(array);
 
-				if ((uint)index > (uint)array.Length)
-				{
-					throw new ArgumentOutOfRangeException(nameof(index), index, "");
-				}
+                if ((uint)index >= (uint)array.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), index,
+                        "Index was out of range. Must be non-negative and less than the length of the array.");
+                }
 
-				if (array.Length - index < m_count)
+                if (array.Length - index < m_count)
 				{
-					throw new ArgumentOutOfRangeException(nameof(index), index, "");
+					throw new ArgumentOutOfRangeException(nameof(index), index,
+						"Count exceeds the length of the array.");
 				}
 
 				int count = m_count;
@@ -584,54 +572,58 @@ namespace Monophyll.Entities
 			}
 
 			public void CopyTo(Array array, int index)
-			{
-				ArgumentNullException.ThrowIfNull(array);
+            {
+                ArgumentNullException.ThrowIfNull(array);
 
-				if (array.Rank != 1)
-				{
-					throw new ArgumentException();
-				}
+                if (array is EntityTableGrouping[] groupings)
+                {
+                    CopyTo(groupings, index);
+					return;
+                }
+
+                if (array.Rank != 1)
+                {
+                    throw new ArgumentException(
+						"Multi-dimensional arrays are not supported.", nameof(array));
+                }
 
 				if (array.GetLowerBound(0) != 0)
-				{
-					throw new ArgumentException();
-				}
+                {
+                    throw new ArgumentException(
+						"Arrays with non-zero lower bounds are not supported.", nameof(array));
+                }
 
 				if ((uint)index > (uint)array.Length)
 				{
-					throw new ArgumentOutOfRangeException(nameof(index), index, "");
-				}
+					throw new ArgumentOutOfRangeException(nameof(index), index,
+                        "Index was out of range. Must be non-negative and less than the length of the array.");
+                }
 
 				if (array.Length - index < m_count)
 				{
-					throw new ArgumentOutOfRangeException(nameof(index), index, "");
+					throw new ArgumentOutOfRangeException(nameof(index), index,
+                        "Count exceeds the length of the array.");
+                }
+
+				if (array is not object[] objects)
+                {
+                    throw new ArgumentException(
+                        "Array is not of type EntityTableGrouping[].", nameof(array));
 				}
 
-				if (array is EntityTableGrouping[] groupings)
-				{
-					CopyTo(groupings, index);
-				}
-				else if (array is object[] objects)
-				{
-					try
-					{
-						int count = m_count;
-
-						for (int i = 0; i < count; i++)
-						{
-							objects[index++] = m_entries[i].Grouping;
-						}
-					}
-					catch (ArrayTypeMismatchException)
-					{
-						throw new ArgumentException();
-					}
-				}
-				else
-				{
-					throw new ArgumentException();
-				}
-			}
+                try
+                {
+                    for (int i = 0, count = m_count; i < count; i++)
+                    {
+                        objects[index++] = m_entries[i].Grouping;
+                    }
+                }
+                catch (ArrayTypeMismatchException)
+                {
+                    throw new ArgumentException(
+                        "Array is not of type EntityTableGrouping[].", nameof(array));
+                }
+            }
 
 			public EntityTableGrouping? FindGrouping(ReadOnlySpan<uint> key)
 			{

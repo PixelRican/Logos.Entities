@@ -44,9 +44,11 @@ namespace Monophyll.Entities
 
 		public int CompareTo(Entity other)
 		{
-			if (m_id != other.m_id)
+			int comparison = m_id.CompareTo(other.Id);
+
+            if (comparison != 0)
 			{
-				return m_id < other.m_id ? -1 : 1;
+				return comparison;
 			}
 
 			return m_version.CompareTo(other.m_version);

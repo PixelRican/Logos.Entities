@@ -11,11 +11,11 @@ namespace Monophyll.Entities
 	/// </summary>
 	public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
 	{
-		private const BindingFlags FieldBindingFlags = BindingFlags.Instance
-													   | BindingFlags.Public
-													   | BindingFlags.NonPublic;
+		private const BindingFlags SearchFlags = BindingFlags.Public |
+												 BindingFlags.NonPublic |
+												 BindingFlags.Instance;
 
-		private static int s_nextTypeId = -1;
+		private static int s_nextId = -1;
 
 		private readonly Type m_type;
 		private readonly int m_id;
@@ -26,7 +26,7 @@ namespace Monophyll.Entities
 			m_type = type;
 			m_id = id;
 
-			if (size > 1 || type.GetFields(FieldBindingFlags).Length > 0)
+			if (size > 1 || type.GetFields(SearchFlags).Length > 0)
 			{
 				m_size = isManaged ? size | int.MinValue : size;
 			}
@@ -57,35 +57,6 @@ namespace Monophyll.Entities
 		public int Size
 		{
 			get => m_size & int.MaxValue;
-		}
-
-		/// <summary>
-		/// Gets a value that indicates whether instances of the
-		/// <see cref="ComponentType"/> has no member fields.
-		/// </summary>
-		public bool IsTag
-		{
-			get => m_size == 0;
-		}
-
-		/// <summary>
-		/// Gets a value that indicates whether instances of the
-		/// <see cref="ComponentType"/> are neither references nor contain
-		/// references as member fields.
-		/// </summary>
-		public bool IsUnmanaged
-		{
-			get => m_size > 0;
-		}
-
-		/// <summary>
-		/// Gets a value that indicates whether instances of the
-		/// <see cref="ComponentType"/> are references or contain references
-		/// as member fields.
-		/// </summary>
-		public bool IsManaged
-		{
-			get => m_size < 0;
 		}
 
 		/// <summary>
@@ -140,32 +111,15 @@ namespace Monophyll.Entities
 				return 1;
 			}
 
-			// Determine what kind of comparison to use.
-			int compareFlag = a.m_size ^ b.m_size;
+			int comparison = ((int)a.Category).CompareTo((int)b.Category);
 
-			// Managed component types will always precede unmanaged component types.
-			if (compareFlag < 0)
+			if (comparison != 0)
 			{
-				return a.m_size < 0 ? -1 : 1;
+				return comparison;
 			}
 
-			// Non-tag component types will always precede tag component types.
-			if (compareFlag > 0)
-			{
-				if (a.m_size == 0)
-				{
-					return 1;
-				}
-
-				if (b.m_size == 0)
-				{
-					return -1;
-				}
-			}
-
-			// Fall back to comparing IDs.
-			return a.m_id.CompareTo(b.m_id);
-		}
+            return a.m_id.CompareTo(b.m_id);
+        }
 
 		/// <summary>
 		/// Determines whether two specified <see cref="ComponentType"/>
@@ -250,7 +204,7 @@ namespace Monophyll.Entities
 		private static class ComponentTypeLookup<T>
 		{
 			public static readonly ComponentType Value = new ComponentType(typeof(T),
-				Interlocked.Increment(ref s_nextTypeId), Unsafe.SizeOf<T>(),
+				Interlocked.Increment(ref s_nextId), Unsafe.SizeOf<T>(),
 				RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		}
 	}
