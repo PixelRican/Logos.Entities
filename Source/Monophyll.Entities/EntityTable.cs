@@ -126,8 +126,9 @@ namespace Monophyll.Entities
 		private Array? GetComponents(ComponentType componentType, bool throwIfNotFound)
 		{
 			int index = m_archetype.ComponentTypes.BinarySearch(componentType);
+			Array[] components = m_components;
 
-			if (index < 0)
+			if ((uint)index >= (uint)components.Length)
 			{
 				if (throwIfNotFound)
 				{
@@ -138,7 +139,7 @@ namespace Monophyll.Entities
                 return null;
             }
 
-            return m_components[index];
+            return components[index];
         }
 
 		public ReadOnlySpan<Entity> GetEntities()
