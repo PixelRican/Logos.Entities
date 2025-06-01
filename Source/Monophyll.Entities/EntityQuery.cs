@@ -17,21 +17,6 @@ namespace Monophyll.Entities
 		private int m_size;
 		private int m_lookupIndex;
 
-        public int Count
-		{
-			get
-			{
-				int count = 0;
-
-				for (int i = 0; i < m_size; i++)
-				{
-					count += m_groupings[i].Count;
-				}
-
-				return count;
-			}
-		}
-
         public EntityQuery(EntityTableLookup lookup) : this(lookup, EntityFilter.Universal)
 		{
 		}
@@ -45,9 +30,29 @@ namespace Monophyll.Entities
 			m_lookup = lookup;
 			m_filter = filter;
 			m_groupings = Array.Empty<EntityTableGrouping>();
+        }
+
+        public int Count
+        {
+            get
+            {
+                int count = 0;
+
+                for (int i = 0; i < m_size; i++)
+                {
+                    count += m_groupings[i].Count;
+                }
+
+                return count;
+            }
+        }
+
+		public EntityFilter Filter
+		{
+			get => m_filter;
 		}
 
-		public Enumerator GetEnumerator()
+        public Enumerator GetEnumerator()
 		{
 			if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
 			{

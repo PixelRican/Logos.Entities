@@ -160,12 +160,12 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& a.m_componentBits.AsSpan().SequenceEqual(b.m_componentBits);
+				&& a.ComponentBits.SequenceEqual(b.ComponentBits);
 		}
 
 		public EntityArchetype Add(ComponentType componentType)
 		{
-			if (componentType == null || BitSetOperations.Contains(m_componentBits, componentType.Id))
+			if (componentType == null || BitSetOperations.Contains(ComponentBits, componentType.Id))
 			{
 				return this;
 			}
@@ -193,7 +193,7 @@ namespace Monophyll.Entities
 
 		public EntityArchetype Remove(ComponentType componentType)
 		{
-			if (componentType == null || !BitSetOperations.Contains(m_componentBits, componentType.Id))
+			if (componentType == null || !BitSetOperations.Contains(ComponentBits, componentType.Id))
 			{
 				return this;
             }
@@ -225,7 +225,7 @@ namespace Monophyll.Entities
 		public bool Contains(ComponentType componentType)
 		{
 			return componentType != null
-				&& BitSetOperations.Contains(m_componentBits, componentType.Id);
+				&& BitSetOperations.Contains(ComponentBits, componentType.Id);
 		}
 
 		public bool Equals([NotNullWhen(true)] EntityArchetype? other)
@@ -240,7 +240,7 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			return BitSetOperations.GetHashCode(m_componentBits);
+			return BitSetOperations.GetHashCode(ComponentBits);
 		}
 
 		public override string ToString()

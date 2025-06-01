@@ -27,6 +27,16 @@ namespace Monophyll.Entities
             m_excludedComponentBits = Array.Empty<uint>();
         }
 
+        private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBits)
+        {
+            m_requiredComponentTypes = requiredComponentTypes;
+            m_includedComponentTypes = Array.Empty<ComponentType>();
+            m_excludedComponentTypes = Array.Empty<ComponentType>();
+            m_requiredComponentBits = requiredComponentBits;
+            m_includedComponentBits = Array.Empty<uint>();
+            m_excludedComponentBits = Array.Empty<uint>();
+        }
+
         private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBits,
                              ComponentType[] includedComponentTypes, uint[] includedComponentBits,
                              ComponentType[] excludedComponentTypes, uint[] excludedComponentBits)
@@ -74,6 +84,18 @@ namespace Monophyll.Entities
             get => m_excludedComponentBits;
         }
 
+        public static EntityFilter Create(ComponentType[] requiredComponentTypes)
+        {
+            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
+
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits))
+            {
+                return new EntityFilter(requiredTypes, requiredBits);
+            }
+
+            return s_universal;
+        }
+
         public static EntityFilter Create(ComponentType[] requiredComponentTypes,
 										  ComponentType[] includedComponentTypes,
 										  ComponentType[] excludedComponentTypes)
@@ -94,6 +116,16 @@ namespace Monophyll.Entities
             return s_universal;
 		}
 
+        public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes)
+        {
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits))
+            {
+                return new EntityFilter(requiredTypes, requiredBits);
+            }
+
+            return s_universal;
+        }
+
         public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes,
 										  IEnumerable<ComponentType> includedComponentTypes,
 										  IEnumerable<ComponentType> excludedComponentTypes)
@@ -109,6 +141,16 @@ namespace Monophyll.Entities
                 return new EntityFilter(requiredTypes, requiredBits,
                                         includedTypes, includedBits,
                                         excludedTypes, excludedBits);
+            }
+
+            return s_universal;
+        }
+
+        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes)
+        {
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits))
+            {
+                return new EntityFilter(requiredTypes, requiredBits);
             }
 
             return s_universal;
@@ -252,9 +294,9 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& a.m_requiredComponentBits.AsSpan().SequenceEqual(b.m_requiredComponentBits)
-                && a.m_includedComponentBits.AsSpan().SequenceEqual(b.m_includedComponentBits)
-                && a.m_excludedComponentBits.AsSpan().SequenceEqual(b.m_excludedComponentBits);
+				&& a.RequiredComponentBits.SequenceEqual(b.RequiredComponentBits)
+                && a.IncludedComponentBits.SequenceEqual(b.IncludedComponentBits)
+                && a.ExcludedComponentBits.SequenceEqual(b.ExcludedComponentBits);
         }
 
         public bool Equals(EntityFilter? other)
@@ -269,36 +311,36 @@ namespace Monophyll.Entities
 
         public override int GetHashCode()
         {
-			return HashCode.Combine(BitSetOperations.GetHashCode(m_requiredComponentBits),
-									BitSetOperations.GetHashCode(m_includedComponentBits),
-									BitSetOperations.GetHashCode(m_excludedComponentBits));
+			return HashCode.Combine(BitSetOperations.GetHashCode(RequiredComponentBits),
+									BitSetOperations.GetHashCode(IncludedComponentBits),
+									BitSetOperations.GetHashCode(ExcludedComponentBits));
         }
 
 		public bool Requires(ComponentType componentType)
 		{
             return componentType != null
-                && BitSetOperations.Contains(m_requiredComponentBits, componentType.Id);
+                && BitSetOperations.Contains(RequiredComponentBits, componentType.Id);
 		}
 
 		public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitSetOperations.Contains(m_includedComponentBits, componentType.Id);
+                && BitSetOperations.Contains(IncludedComponentBits, componentType.Id);
         }
 
 		public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitSetOperations.Contains(m_excludedComponentBits, componentType.Id);
+                && BitSetOperations.Contains(ExcludedComponentBits, componentType.Id);
         }
 
         public bool Matches(EntityArchetype archetype)
         {
             ReadOnlySpan<uint> componentBits;
 			return archetype != null
-				&& BitSetOperations.IsSubsetOf(m_requiredComponentBits, componentBits = archetype.ComponentBits)
-				&& (m_includedComponentBits.Length == 0 || BitSetOperations.Overlaps(m_includedComponentBits, componentBits))
-				&& !BitSetOperations.Overlaps(m_excludedComponentBits, componentBits);
+				&& BitSetOperations.IsSubsetOf(RequiredComponentBits, componentBits = archetype.ComponentBits)
+				&& (m_includedComponentBits.Length == 0 || BitSetOperations.Overlaps(IncludedComponentBits, componentBits))
+				&& !BitSetOperations.Overlaps(ExcludedComponentBits, componentBits);
         }
 
         public Builder ToBuilder()

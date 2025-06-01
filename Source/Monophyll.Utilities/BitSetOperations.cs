@@ -26,30 +26,28 @@ namespace Monophyll.Utilities
 
 		public static bool IsSubsetOf(ReadOnlySpan<uint> a, ReadOnlySpan<uint> b)
 		{
-			int i = a.Length;
-
-			while (i > b.Length)
+			for (int i = 0, length = Math.Min(a.Length, b.Length); i < length; i++)
 			{
-				if (a[--i] != 0)
-				{
-					return false;
-				}
-			}
+                if ((a[i] & ~b[i]) != 0)
+                {
+                    return false;
+                }
+            }
 
-			while (--i >= 0)
+			for (int i = b.Length; i < a.Length; i++)
 			{
-				if ((a[i] & ~b[i]) != 0)
-				{
-					return false;
-				}
-			}
+                if (a[i] != 0)
+                {
+                    return false;
+                }
+            }
 
 			return true;
 		}
 
 		public static bool Overlaps(ReadOnlySpan<uint> a, ReadOnlySpan<uint> b)
 		{
-			for (int i = Math.Min(a.Length, b.Length) - 1; i >= 0; i--)
+			for (int i = 0, length = Math.Min(a.Length, b.Length); i < length; i++)
 			{
 				if ((a[i] & b[i]) != 0)
 				{

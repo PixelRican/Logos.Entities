@@ -64,14 +64,14 @@ namespace Monophyll.Entities
 			get
 			{
 				ArgumentNullException.ThrowIfNull(key);
-				return m_container.FindGrouping(key.ComponentBits) ?? Enumerable.Empty<EntityTable>();
+				return m_container.Find(key.ComponentBits) ?? Enumerable.Empty<EntityTable>();
 			}
 		}
 
 		public bool Contains(EntityArchetype key)
         {
             ArgumentNullException.ThrowIfNull(key);
-            return m_container.FindGrouping(key.ComponentBits) != null;
+            return m_container.Find(key.ComponentBits) != null;
 		}
 
 		public void CopyTo(EntityTableGrouping[] array, int index)
@@ -109,23 +109,18 @@ namespace Monophyll.Entities
 			ArgumentNullException.ThrowIfNull(componentTypes);
 
 			ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
+			
+			foreach (ComponentType componentType in componentTypes)
+            {
+                if (componentType != null)
+                {
+                    buffer.Set(componentType.Id);
+                }
+            }
 
-			try
-			{
-				foreach (ComponentType componentType in componentTypes)
-				{
-					if (componentType != null)
-					{
-						buffer.Set(componentType.Id);
-					}
-				}
-
-				return GetGrouping(componentTypes, buffer.AsSpan());
-			}
-			finally
-			{
-				buffer.Dispose();
-			}
+            EntityTableGrouping grouping = GetGrouping(componentTypes, buffer.AsSpan());
+            buffer.Dispose();
+			return grouping;
 		}
 
 		public EntityTableGrouping GetGrouping(IEnumerable<ComponentType> componentTypes)
@@ -136,69 +131,61 @@ namespace Monophyll.Entities
 			ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
 			count = 0;
 
-			try
-			{
-				foreach (ComponentType componentType in componentTypes)
-				{
-					if (componentType != null)
-					{
-						if (count >= array.Length)
-						{
-							ComponentType[] newArray = ArrayPool<ComponentType>.Shared.Rent(count + 1);
-							Array.Copy(array, newArray, count);
-							ArrayPool<ComponentType>.Shared.Return(array, true);
-							array = newArray;
-						}
+            foreach (ComponentType componentType in componentTypes)
+            {
+                if (componentType != null)
+                {
+                    if (count >= array.Length)
+                    {
+                        ComponentType[] newArray = ArrayPool<ComponentType>.Shared.Rent(count + 1);
+                        Array.Copy(array, newArray, count);
+                        ArrayPool<ComponentType>.Shared.Return(array, true);
+                        array = newArray;
+                    }
 
-						array[count++] = componentType;
-						buffer.Set(componentType.Id);
-					}
-				}
+                    array[count++] = componentType;
+                    buffer.Set(componentType.Id);
+                }
+            }
 
-				return GetGrouping(new ReadOnlySpan<ComponentType>(array, 0, count), buffer.AsSpan());
-			}
-			finally
-			{
-				ArrayPool<ComponentType>.Shared.Return(array, true);
-				buffer.Dispose();
-			}
+            EntityTableGrouping grouping = GetGrouping(
+				new ReadOnlySpan<ComponentType>(array, 0, count), buffer.AsSpan());
+            ArrayPool<ComponentType>.Shared.Return(array, clearArray: true);
+            buffer.Dispose();
+			return grouping;
 		}
 
 		public EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes)
 		{
 			ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
 
-			try
-			{
-				for (int i = 0; i < componentTypes.Length; i++)
-				{
-					ComponentType componentType = componentTypes[i];
+            for (int i = 0; i < componentTypes.Length; i++)
+            {
+                ComponentType componentType = componentTypes[i];
 
-					if (componentType != null)
-					{
-						buffer.Set(componentType.Id);
-					}
-				}
+                if (componentType != null)
+                {
+                    buffer.Set(componentType.Id);
+                }
+            }
 
-				return GetGrouping(componentTypes, buffer.AsSpan());
-			}
-			finally
-			{
-				buffer.Dispose();
-			}
+            EntityTableGrouping grouping = GetGrouping(componentTypes, buffer.AsSpan());
+            buffer.Dispose();
+			return grouping;
 		}
 
 		private EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes, ReadOnlySpan<uint> componentBits)
 		{
-			EntityTableGrouping? grouping = m_container.FindGrouping(componentBits);
+			EntityTableGrouping? grouping = m_container.Find(componentBits);
 
 			if (grouping == null)
 			{
 				lock (m_lock)
 				{
 					Container container = m_container;
+					grouping = container.Find(componentBits);
 
-					if ((grouping = container.FindGrouping(componentBits)) == null)
+                    if (grouping == null)
 					{
 						if (container.Isfull)
 						{
@@ -206,7 +193,7 @@ namespace Monophyll.Entities
 						}
 
 						grouping = new EntityTableGrouping(EntityArchetype.Create(componentTypes));
-						container.AddGrouping(grouping);
+						container.Add(grouping);
 					}
 				}
 			}
@@ -218,7 +205,7 @@ namespace Monophyll.Entities
 		{
 			ArgumentNullException.ThrowIfNull(archetype);
 
-			EntityTableGrouping? grouping = m_container.FindGrouping(archetype.ComponentBits);
+			EntityTableGrouping? grouping = m_container.Find(archetype.ComponentBits);
 
 			if (grouping == null)
 			{
@@ -226,7 +213,7 @@ namespace Monophyll.Entities
 				{
 					Container container = m_container;
 
-					if ((grouping = container.FindGrouping(archetype.ComponentBits)) == null)
+					if ((grouping = container.Find(archetype.ComponentBits)) == null)
 					{
 						if (container.Isfull)
 						{
@@ -234,7 +221,7 @@ namespace Monophyll.Entities
 						}
 
 						grouping = new EntityTableGrouping(archetype);
-						container.AddGrouping(grouping);
+						container.Add(grouping);
 					}
 				}
 			}
@@ -259,59 +246,53 @@ namespace Monophyll.Entities
 			uint[]? rentedArray;
 			scoped Span<uint> key;
 			
-			if (componentBits.Length > DefaultCapacity)
-			{
-				rentedArray = ArrayPool<uint>.Shared.Rent(componentBits.Length);
-				key = new Span<uint>(rentedArray, 0, componentBits.Length);
+			if (componentBits.Length <= DefaultCapacity)
+            {
+                rentedArray = null;
+                key = stackalloc uint[componentBits.Length];
             }
 			else
 			{
-				rentedArray = null;
-				key = stackalloc uint[componentBits.Length];
+                rentedArray = ArrayPool<uint>.Shared.Rent(componentBits.Length);
+                key = new Span<uint>(rentedArray, 0, componentBits.Length);
             }
 
-			try
-			{
-				componentBits.CopyTo(key);
+            componentBits.CopyTo(key);
 
-				if ((key[index] ^= bit) == 0)
-				{
-					ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
+            if ((key[index] ^= bit) == 0)
+            {
+                ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
+                key = key.Slice(0, componentTypes.Length > 1 ? componentTypes[^2].Id + 32 >> 5 : 0);
+            }
 
-                    key = key.Slice(0, componentTypes.Length > 1 ? componentTypes[^2].Id >> 5 : 0);
-				}
+            EntityTableGrouping? grouping = m_container.Find(key);
 
-				EntityTableGrouping? grouping = m_container.FindGrouping(key);
+            if (grouping == null)
+            {
+                lock (m_lock)
+                {
+                    Container container = m_container;
 
-				if (grouping == null)
-				{
-					lock (m_lock)
-					{
-						Container container = m_container;
+                    if ((grouping = container.Find(key)) == null)
+                    {
+                        if (container.Isfull)
+                        {
+                            m_container = container = container.Grow();
+                        }
 
-						if ((grouping = container.FindGrouping(key)) == null)
-						{
-							if (container.Isfull)
-							{
-								m_container = container = container.Grow();
-							}
+                        grouping = new EntityTableGrouping(archetype.Remove(componentType));
+                        container.Add(grouping);
+                    }
+                }
+            }
 
-							grouping = new EntityTableGrouping(archetype.Remove(componentType));
-							container.AddGrouping(grouping);
-						}
-					}
-				}
+            if (rentedArray != null)
+            {
+                ArrayPool<uint>.Shared.Return(rentedArray);
+            }
 
-				return grouping;
-			}
-			finally
-			{
-				if (rentedArray != null)
-				{
-					ArrayPool<uint>.Shared.Return(rentedArray);
-				}
-			}
-		}
+            return grouping;
+        }
 
 		public EntityTableGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
         {
@@ -342,48 +323,43 @@ namespace Monophyll.Entities
                 key = stackalloc uint[length];
             }
 
-            try
-			{
-				componentBits.CopyTo(key);
-				key.Slice(componentBits.Length).Clear();
-				key[index] |= bit;
+            componentBits.CopyTo(key);
+            key.Slice(componentBits.Length).Clear();
+            key[index] |= bit;
 
-				EntityTableGrouping? grouping = m_container.FindGrouping(key);
+            EntityTableGrouping? grouping = m_container.Find(key);
 
-				if (grouping == null)
-				{
-					lock (m_lock)
-					{
-						Container container = m_container;
+            if (grouping == null)
+            {
+                lock (m_lock)
+                {
+                    Container container = m_container;
 
-						if ((grouping = container.FindGrouping(key)) == null)
-						{
-							if (container.Isfull)
-							{
-								m_container = container = container.Grow();
-							}
+                    if ((grouping = container.Find(key)) == null)
+                    {
+                        if (container.Isfull)
+                        {
+                            m_container = container = container.Grow();
+                        }
 
-							grouping = new EntityTableGrouping(archetype.Add(componentType));
-							container.AddGrouping(grouping);
-						}
-					}
-				}
+                        grouping = new EntityTableGrouping(archetype.Add(componentType));
+                        container.Add(grouping);
+                    }
+                }
+            }
 
-				return grouping;
-			}
-			finally
-			{
-				if (rentedArray != null)
-				{
-					ArrayPool<uint>.Shared.Return(rentedArray);
-				}
-			}
-		}
+            if (rentedArray != null)
+            {
+                ArrayPool<uint>.Shared.Return(rentedArray);
+            }
+
+            return grouping;
+        }
 
 		public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityTableGrouping? grouping)
 		{
 			ArgumentNullException.ThrowIfNull(key);
-			return (grouping = m_container.FindGrouping(key.ComponentBits)) != null;
+			return (grouping = m_container.Find(key.ComponentBits)) != null;
 		}
 
 		public struct Enumerator : IEnumerator<EntityTableGrouping>
@@ -445,13 +421,12 @@ namespace Monophyll.Entities
 				m_size = 0;
 			}
 
-			public void Dispose()
+			public readonly void Dispose()
 			{
 				uint[]? arrayToReturn = m_rentedArray;
 
 				if (arrayToReturn != null)
 				{
-					this = default;
 					ArrayPool<uint>.Shared.Return(arrayToReturn);
 				}
 			}
@@ -473,16 +448,16 @@ namespace Monophyll.Entities
 				if (capacity > m_bits.Length)
 				{
 					uint[]? rentedArray = m_rentedArray;
-					uint[] array = ArrayPool<uint>.Shared.Rent(capacity);
+					uint[] newArray = ArrayPool<uint>.Shared.Rent(capacity);
 
-					m_bits.CopyTo(array);
+					m_bits.CopyTo(newArray);
 
 					if (rentedArray != null)
 					{
 						ArrayPool<uint>.Shared.Return(rentedArray);
 					}
 
-					m_bits = m_rentedArray = array;
+					m_bits = m_rentedArray = newArray;
 				}
 
 				m_bits.Slice(m_size, capacity).Clear();
@@ -499,7 +474,7 @@ namespace Monophyll.Entities
 		{
 			private readonly int[] m_buckets;
 			private readonly Entry[] m_entries;
-			private int m_count;
+			private int m_size;
 
 			public Container()
 			{
@@ -507,16 +482,11 @@ namespace Monophyll.Entities
 				m_entries = new Entry[DefaultCapacity];
 			}
 
-			private Container(int capacity, int count)
+			private Container(int capacity, int size)
 			{
 				m_buckets = new int[capacity];
 				m_entries = new Entry[capacity];
-				m_count = count;
-			}
-
-			public EntityTableGrouping this[int index]
-			{
-				get => m_entries[index].Grouping;
+				m_size = size;
 			}
 
 			public int Capacity
@@ -526,25 +496,32 @@ namespace Monophyll.Entities
 
 			public int Count
 			{
-				get => m_count;
+				get => m_size;
 			}
 
 			public bool Isfull
 			{
-				get => m_count == m_entries.Length;
-			}
+				get => m_size == m_entries.Length;
+            }
 
-			public void AddGrouping(EntityTableGrouping grouping)
+            public EntityTableGrouping this[int index]
+            {
+                get => m_entries[index].Grouping;
+            }
+
+            public void Add(EntityTableGrouping grouping)
 			{
+				int size = m_size;
 				int hashCode = BitSetOperations.GetHashCode(grouping.Key.ComponentBits) & int.MaxValue;
 				ref int bucket = ref m_buckets[hashCode & (m_buckets.Length - 1)];
-				ref Entry entry = ref m_entries[m_count];
+				ref Entry entry = ref m_entries[size];
 
 				entry.Grouping = grouping;
 				entry.HashCode = hashCode;
 				entry.Next = bucket;
+				m_size = size + 1;
 
-				Volatile.Write(ref bucket, ~m_count++);
+				Volatile.Write(ref bucket, ~size);
 			}
 
 			public void CopyTo(EntityTableGrouping[] array, int index)
@@ -557,17 +534,18 @@ namespace Monophyll.Entities
                         "Index was out of range. Must be non-negative and less than the length of the array.");
                 }
 
-                if (array.Length - index < m_count)
+                if (array.Length - index < m_size)
 				{
 					throw new ArgumentOutOfRangeException(nameof(index), index,
 						"Count exceeds the length of the array.");
 				}
 
-				int count = m_count;
+				int size = m_size;
+				Entry[] entries = m_entries;
 
-				for (int i = 0; i < count; i++)
+				for (int i = 0; i < size; i++)
 				{
-					array[index++] = m_entries[i].Grouping;
+					array[index++] = entries[i].Grouping;
 				}
 			}
 
@@ -599,7 +577,7 @@ namespace Monophyll.Entities
                         "Index was out of range. Must be non-negative and less than the length of the array.");
                 }
 
-				if (array.Length - index < m_count)
+				if (array.Length - index < m_size)
 				{
 					throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Count exceeds the length of the array.");
@@ -613,9 +591,12 @@ namespace Monophyll.Entities
 
                 try
                 {
-                    for (int i = 0, count = m_count; i < count; i++)
+					int size = m_size;
+					Entry[] entries = m_entries;
+
+                    for (int i = 0; i < size; i++)
                     {
-                        objects[index++] = m_entries[i].Grouping;
+                        objects[index++] = entries[i].Grouping;
                     }
                 }
                 catch (ArrayTypeMismatchException)
@@ -625,14 +606,15 @@ namespace Monophyll.Entities
                 }
             }
 
-			public EntityTableGrouping? FindGrouping(ReadOnlySpan<uint> key)
+			public EntityTableGrouping? Find(ReadOnlySpan<uint> key)
 			{
+				Entry[] entries = m_entries;
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 				int hashCode = BitSetOperations.GetHashCode(key) & int.MaxValue;
 
 				for (int i = Volatile.Read(ref m_buckets[hashCode & (m_buckets.Length - 1)]); i < 0; i = entry.Next)
 				{
-					EntityTableGrouping grouping = (entry = ref m_entries[~i]).Grouping;
+					EntityTableGrouping grouping = (entry = ref entries[~i]).Grouping;
 
 					if (entry.HashCode == hashCode && grouping.Key.ComponentBits.SequenceEqual(key))
 					{
@@ -644,14 +626,18 @@ namespace Monophyll.Entities
 			}
 
 			public Container Grow()
-			{
-				Container newTable = new Container(m_entries.Length * 2, m_count);
+            {
+				int size = m_size;
+                Entry[] oldEntries = m_entries;
+                Container container = new Container(oldEntries.Length * 2, size);
+				int[] newBuckets = container.m_buckets;
+				Entry[] newEntries = container.m_entries;
 
-				for (int i = 0; i < m_count; i++)
+				for (int i = 0; i < size; i++)
 				{
-					ref Entry oldEntry = ref m_entries[i];
-					ref Entry newEntry = ref newTable.m_entries[i];
-					ref int newBucket = ref newTable.m_buckets[oldEntry.HashCode & (newTable.m_buckets.Length - 1)];
+					ref Entry oldEntry = ref oldEntries[i];
+					ref Entry newEntry = ref newEntries[i];
+					ref int newBucket = ref newBuckets[oldEntry.HashCode & (newBuckets.Length - 1)];
 
 					newEntry.Grouping = oldEntry.Grouping;
 					newEntry.HashCode = oldEntry.HashCode;
@@ -659,7 +645,7 @@ namespace Monophyll.Entities
 					newBucket = ~i;
 				}
 
-				return newTable;
+				return container;
 			}
 
 			private struct Entry

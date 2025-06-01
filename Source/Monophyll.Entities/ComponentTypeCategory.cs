@@ -2,7 +2,7 @@
 {
 	public enum ComponentTypeCategory
 	{
-		Null,
+		None,
 		Managed,
 		Unmanaged,
 		Tag

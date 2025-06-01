@@ -101,29 +101,31 @@ namespace Monophyll.Entities
 
 		public Span<T> GetComponents<T>()
 		{
-			return new Span<T>((T[])GetComponents(ComponentType.TypeOf<T>(), true)!, 0, m_size);
+			return new Span<T>(
+				(T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!, 0, m_size);
         }
 
         public ref T GetComponentDataReference<T>()
         {
-            return ref MemoryMarshal.GetArrayDataReference((T[])GetComponents(ComponentType.TypeOf<T>(), true)!);
+            return ref MemoryMarshal.GetArrayDataReference(
+				(T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!);
         }
 
         public bool TryGetComponents<T>(out Span<T> result)
 		{
-			Array? components = GetComponents(ComponentType.TypeOf<T>(), false);
+			Array? components = FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: false);
 
-			if (components != null)
-			{
-				result = new Span<T>((T[])components, 0, m_size);
-				return true;
-			}
+			if (components == null)
+            {
+                result = Span<T>.Empty;
+                return false;
+            }
 
-			result = Span<T>.Empty;
-			return false;
-		}
+            result = new Span<T>((T[])components, 0, m_size);
+            return true;
+        }
 
-		private Array? GetComponents(ComponentType componentType, bool throwIfNotFound)
+		private Array? FindComponents(ComponentType componentType, bool throwIfNotFound)
 		{
 			int index = m_archetype.ComponentTypes.BinarySearch(componentType);
 			Array[] components = m_components;
