@@ -198,7 +198,7 @@ namespace Monophyll.Entities
 
 		public override string ToString()
 		{
-			return $"ComponentType {{ Type = {m_type.Name} Id = {m_id} }}";
+			return $"ComponentType {{ Type = {m_type.Name}, Id = {m_id} }}";
 		}
 
 		private static class ComponentTypeLookup<T>
