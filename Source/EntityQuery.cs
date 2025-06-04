@@ -1,4 +1,4 @@
-﻿using Monophyll.Utilities;
+﻿using Monophyll.Entities.Collections;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -125,14 +125,14 @@ namespace Monophyll.Entities
 			private readonly EntityQuery m_query;
 			private readonly int m_count;
 			private int m_index;
-			private ArrayEnumerator<EntityTable> m_enumerator;
+			private EntityTableGrouping.Enumerator m_enumerator;
 
 			internal Enumerator(EntityQuery query)
 			{
 				m_query = query;
 				m_count = query.m_size;
 				m_index = 0;
-				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
+				m_enumerator = default;
 			}
 
 			public readonly EntityTable Current
@@ -166,14 +166,14 @@ namespace Monophyll.Entities
 					}
 				}
 
-				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
+				m_enumerator = default;
 				return false;
 			}
 
 			void IEnumerator.Reset()
 			{
 				m_index = 0;
-				m_enumerator = ArrayEnumerator<EntityTable>.Empty;
+				m_enumerator = default;
 			}
 		}
 	}

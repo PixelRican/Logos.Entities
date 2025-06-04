@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Monophyll.Utilities
+namespace Monophyll.Entities.Collections
 {
 	public static class BitSetOperations
 	{

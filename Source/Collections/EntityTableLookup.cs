@@ -1,5 +1,4 @@
-﻿using Monophyll.Utilities;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Monophyll.Entities
+namespace Monophyll.Entities.Collections
 {
 	public class EntityTableLookup : ILookup<EntityArchetype, EntityTable>, IReadOnlyList<EntityTableGrouping>, ICollection
 	{
@@ -513,7 +512,7 @@ namespace Monophyll.Entities
 			{
 				int size = m_size;
 				int hashCode = BitSetOperations.GetHashCode(grouping.Key.ComponentBits) & int.MaxValue;
-				ref int bucket = ref m_buckets[hashCode & (m_buckets.Length - 1)];
+				ref int bucket = ref m_buckets[hashCode & m_buckets.Length - 1];
 				ref Entry entry = ref m_entries[size];
 
 				entry.Grouping = grouping;
@@ -612,7 +611,7 @@ namespace Monophyll.Entities
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
 				int hashCode = BitSetOperations.GetHashCode(key) & int.MaxValue;
 
-				for (int i = Volatile.Read(ref m_buckets[hashCode & (m_buckets.Length - 1)]); i < 0; i = entry.Next)
+				for (int i = Volatile.Read(ref m_buckets[hashCode & m_buckets.Length - 1]); i < 0; i = entry.Next)
 				{
 					EntityTableGrouping grouping = (entry = ref entries[~i]).Grouping;
 
@@ -637,7 +636,7 @@ namespace Monophyll.Entities
 				{
 					ref Entry oldEntry = ref oldEntries[i];
 					ref Entry newEntry = ref newEntries[i];
-					ref int newBucket = ref newBuckets[oldEntry.HashCode & (newBuckets.Length - 1)];
+					ref int newBucket = ref newBuckets[oldEntry.HashCode & newBuckets.Length - 1];
 
 					newEntry.Grouping = oldEntry.Grouping;
 					newEntry.HashCode = oldEntry.HashCode;

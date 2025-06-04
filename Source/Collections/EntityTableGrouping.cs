@@ -1,10 +1,9 @@
-﻿using Monophyll.Utilities;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Monophyll.Entities
+namespace Monophyll.Entities.Collections
 {
 	public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IReadOnlyList<EntityTable>, IList
 	{
@@ -172,7 +171,7 @@ namespace Monophyll.Entities
 
 		void ICollection.CopyTo(Array array, int index)
 		{
-			if ((array != null) && (array.Rank != 1))
+			if (array != null && array.Rank != 1)
 			{
 				throw new ArgumentException("Multi-dimensional arrays are not supported.", nameof(array));
 			}
@@ -188,19 +187,19 @@ namespace Monophyll.Entities
 			}
 		}
 
-		public ArrayEnumerator<EntityTable> GetEnumerator()
+		public Enumerator GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityTable>(m_tables);
+			return new Enumerator(m_tables);
 		}
 
 		IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityTable>(m_tables);
+			return new Enumerator(m_tables);
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			return new ArrayEnumerator<EntityTable>(m_tables);
+			return new Enumerator(m_tables);
 		}
 
 		public int IndexOf(EntityTable item)
@@ -313,5 +312,54 @@ namespace Monophyll.Entities
 
 			return newTables;
 		}
+
+		public struct Enumerator : IEnumerator<EntityTable>
+		{
+            private readonly EntityTable[] m_tables;
+            private readonly int m_length;
+            private int m_index;
+
+            internal Enumerator(EntityTable[] tables)
+            {
+                m_tables = tables;
+                m_length = tables.Length;
+                m_index = -1;
+            }
+
+            public readonly EntityTable Current
+            {
+                get => m_tables[m_index];
+            }
+
+            readonly object IEnumerator.Current
+            {
+                get => m_tables[m_index]!;
+            }
+
+            public readonly void Dispose()
+            {
+            }
+
+            public bool MoveNext()
+            {
+                int index = m_index + 1;
+
+                if (index < m_length)
+                {
+                    m_index = index;
+                    return true;
+                }
+
+                return false;
+            }
+
+            void IEnumerator.Reset()
+            {
+				if (m_tables != null)
+				{
+					m_index = -1;
+				}
+            }
+        }
 	}
 }

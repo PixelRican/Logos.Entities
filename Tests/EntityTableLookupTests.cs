@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 
+using Monophyll.Entities.Collections;
+
 namespace Monophyll.Entities.Tests
 {
     [TestClass]

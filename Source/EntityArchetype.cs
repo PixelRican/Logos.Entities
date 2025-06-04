@@ -1,4 +1,4 @@
-﻿using Monophyll.Utilities;
+﻿using Monophyll.Entities.Collections;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
