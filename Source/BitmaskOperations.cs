@@ -12,7 +12,7 @@ namespace Monophyll.Entities
 			int bitmaskIndex;
 			return (bitmaskIndex = index >> 5) < bitmask.Length
 				&& (bitmask[bitmaskIndex] & 1u << index) != 0;
-        }
+		}
 
 		public static bool Requires(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
 		{
@@ -21,37 +21,37 @@ namespace Monophyll.Entities
 				return false;
 			}
 
-            for (int i = 0; i < filter.Length; i++)
+			for (int i = 0; i < filter.Length; i++)
 			{
-                if ((filter[i] & ~bitmask[i]) != 0)
-                {
-                    return false;
-                }
-            }
+				if ((filter[i] & ~bitmask[i]) != 0)
+				{
+					return false;
+				}
+			}
 
 			return true;
-        }
+		}
 
-        public static bool Excludes(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
-        {
-            int length = Math.Min(filter.Length, bitmask.Length);
-
-            for (int i = 0; i < length; i++)
-            {
-                if ((filter[i] & bitmask[i]) != 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public static bool Includes(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
+		public static bool Excludes(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
 		{
 			int length = Math.Min(filter.Length, bitmask.Length);
 
-            for (int i = 0; i < length; i++)
+			for (int i = 0; i < length; i++)
+			{
+				if ((filter[i] & bitmask[i]) != 0)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		public static bool Includes(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
+		{
+			int length = Math.Min(filter.Length, bitmask.Length);
+
+			for (int i = 0; i < length; i++)
 			{
 				if ((filter[i] & bitmask[i]) != 0)
 				{
@@ -60,18 +60,18 @@ namespace Monophyll.Entities
 			}
 
 			return filter.Length == 0;
-        }
+		}
 
-        public static int GetHashCode(ReadOnlySpan<uint> bitmask)
-        {
-            int result = 0;
+		public static int GetHashCode(ReadOnlySpan<uint> bitmask)
+		{
+			int result = 0;
 
-            for (int i = bitmask.Length > 8 ? bitmask.Length - 8 : 0; i < bitmask.Length; i++)
-            {
-                result = (result << 5) + result ^ (int)bitmask[i];
-            }
+			for (int i = bitmask.Length > 8 ? bitmask.Length - 8 : 0; i < bitmask.Length; i++)
+			{
+				result = (result << 5) + result ^ (int)bitmask[i];
+			}
 
-            return result;
-        }
-    }
+			return result;
+		}
+	}
 }
