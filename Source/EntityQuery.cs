@@ -8,74 +8,121 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
-	public class EntityQuery : IReadOnlyCollection<EntityTable>
-	{
-		private const int DefaultCapacity = 4;
+    public class EntityQuery : IEnumerable<EntityTable>
+    {
+        private const int DefaultCapacity = 4;
 
-		private readonly object m_lock;
-		private readonly EntityTableLookup m_lookup;
-		private readonly EntityFilter m_filter;
-		private EntityTableGrouping[] m_groupings;
-		private int m_size;
-		private int m_lookupIndex;
+        private readonly object m_lock;
+        private readonly EntityTableLookup m_lookup;
+        private readonly EntityFilter m_filter;
+        private EntityTableGrouping[] m_groupings;
+        private int m_size;
+        private int m_lookupIndex;
 
         public EntityQuery(EntityTableLookup lookup) : this(lookup, EntityFilter.Universal)
-		{
-		}
+        {
+        }
 
-		public EntityQuery(EntityTableLookup lookup, EntityFilter filter)
-		{
+        public EntityQuery(EntityTableLookup lookup, EntityFilter filter)
+        {
             ArgumentNullException.ThrowIfNull(lookup);
             ArgumentNullException.ThrowIfNull(filter);
 
             m_lock = new object();
-			m_lookup = lookup;
-			m_filter = filter;
-			m_groupings = Array.Empty<EntityTableGrouping>();
+            m_lookup = lookup;
+            m_filter = filter;
+            m_groupings = Array.Empty<EntityTableGrouping>();
         }
 
-        public int Count
+        public EntityFilter Filter
+        {
+            get => m_filter;
+        }
+
+        public int ArchetypeCount
         {
             get
             {
-                int count = 0;
-
-                for (int i = 0; i < m_size; i++)
+                if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
                 {
-                    count += m_groupings[i].Count;
+                    Refresh();
+                }
+
+                return m_size;
+            }
+        }
+
+        public int TableCount
+        {
+            get
+            {
+                if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+                {
+                    Refresh();
+                }
+
+                int count = 0;
+                int size = m_size;
+                EntityTableGrouping[] groupings = m_groupings;
+
+                for (int i = 0; i < size; i++)
+                {
+                    count += groupings[i].Count;
                 }
 
                 return count;
             }
         }
 
-		public EntityFilter Filter
-		{
-			get => m_filter;
-		}
+        public int EntityCount
+        {
+            get
+            {
+                if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+                {
+                    Refresh();
+                }
+
+                int count = 0;
+                int size = m_size;
+                EntityTableGrouping[] groupings = m_groupings;
+
+                for (int i = 0; i < size; i++)
+                {
+                    ReadOnlySpan<EntityTable> tables = groupings[i].AsSpan();
+
+                    for (int j = 0; j < tables.Length; j++)
+                    {
+                        count += tables[j].Count;
+                    }
+                }
+
+                return count;
+            }
+        }
 
         public Enumerator GetEnumerator()
-		{
-			if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
-			{
-				UpdateCache();
-			}
+        {
+            if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+            {
+                Refresh();
+            }
 
-			return new Enumerator(this);
-		}
+            return new Enumerator(this);
+        }
 
-		private void UpdateCache()
-		{
-			lock (m_lock)
+        private void Refresh()
+        {
+            lock (m_lock)
             {
                 EntityTableLookup lookup = m_lookup;
                 int index = m_lookupIndex;
 
-				if (index < lookup.Count)
+                if (index < lookup.Count)
                 {
                     int size = m_size;
-					EntityTableGrouping[] groupings = m_groupings;
-					EntityFilter filter = m_filter;
+                    EntityTableGrouping[] groupings = m_groupings;
+                    EntityFilter filter = m_filter;
 
                     do
                     {
@@ -105,78 +152,78 @@ namespace Monophyll.Entities
                     }
                     while (index < lookup.Count);
 
-					m_groupings = groupings;
-					m_size = size;
+                    m_groupings = groupings;
+                    m_size = size;
                     Volatile.Write(ref m_lookupIndex, index);
                 }
             }
-		}
+        }
 
-		IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
+        IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
-		public struct Enumerator : IEnumerator<EntityTable>
-		{
-			private readonly EntityQuery m_query;
-			private readonly int m_count;
-			private int m_index;
-			private EntityTableGrouping.Enumerator m_enumerator;
+        public struct Enumerator : IEnumerator<EntityTable>
+        {
+            private readonly EntityQuery m_query;
+            private readonly int m_count;
+            private int m_index;
+            private EntityTableGrouping.Enumerator m_enumerator;
 
-			internal Enumerator(EntityQuery query)
-			{
-				m_query = query;
-				m_count = query.m_size;
-				m_index = 0;
-				m_enumerator = default;
-			}
+            internal Enumerator(EntityQuery query)
+            {
+                m_query = query;
+                m_count = query.m_size;
+                m_index = 0;
+                m_enumerator = default;
+            }
 
-			public readonly EntityTable Current
-			{
-				get => m_enumerator.Current;
-			}
+            public readonly EntityTable Current
+            {
+                get => m_enumerator.Current;
+            }
 
-			readonly object IEnumerator.Current
-			{
-				get => m_enumerator.Current;
-			}
+            readonly object IEnumerator.Current
+            {
+                get => m_enumerator.Current;
+            }
 
-			public readonly void Dispose()
-			{
-			}
+            public readonly void Dispose()
+            {
+            }
 
-			public bool MoveNext()
-			{
-				return m_enumerator.MoveNext() || MoveNextRare();
-			}
+            public bool MoveNext()
+            {
+                return m_enumerator.MoveNext() || MoveNextRare();
+            }
 
-			private bool MoveNextRare()
-			{
-				while (m_index < m_count)
-				{
-					m_enumerator = m_query.m_groupings[m_index++].GetEnumerator();
+            private bool MoveNextRare()
+            {
+                while (m_index < m_count)
+                {
+                    m_enumerator = m_query.m_groupings[m_index++].GetEnumerator();
 
-					if (m_enumerator.MoveNext())
-					{
-						return true;
-					}
-				}
+                    if (m_enumerator.MoveNext())
+                    {
+                        return true;
+                    }
+                }
 
-				m_enumerator = default;
-				return false;
-			}
+                m_enumerator = default;
+                return false;
+            }
 
-			void IEnumerator.Reset()
-			{
-				m_index = 0;
-				m_enumerator = default;
-			}
-		}
-	}
+            void IEnumerator.Reset()
+            {
+                m_index = 0;
+                m_enumerator = default;
+            }
+        }
+    }
 }
