@@ -301,23 +301,6 @@ namespace Monophyll.Entities
                 && a.ExcludedComponentBitmask.SequenceEqual(b.ExcludedComponentBitmask);
         }
 
-        public bool Equals(EntityFilter? other)
-        {
-            return Equals(this, other);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return Equals(this, obj as EntityFilter);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(BitmaskOperations.GetHashCode(RequiredComponentBitmask),
-                                    BitmaskOperations.GetHashCode(IncludedComponentBitmask),
-                                    BitmaskOperations.GetHashCode(ExcludedComponentBitmask));
-        }
-
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
@@ -348,6 +331,23 @@ namespace Monophyll.Entities
         public Builder ToBuilder()
         {
             return new Builder(this);
+        }
+
+        public bool Equals(EntityFilter? other)
+        {
+            return Equals(this, other);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(this, obj as EntityFilter);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(BitmaskOperations.GetHashCode(RequiredComponentBitmask),
+                                    BitmaskOperations.GetHashCode(IncludedComponentBitmask),
+                                    BitmaskOperations.GetHashCode(ExcludedComponentBitmask));
         }
 
         public sealed class Builder

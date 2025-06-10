@@ -8,12 +8,23 @@ using System.Linq;
 
 namespace Monophyll.Entities
 {
+    /// <summary>
+    /// Represents a collection of entity tables that have a common entity archetype.
+    /// </summary>
     public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IReadOnlyList<EntityTable>, IList
     {
         private readonly object m_lock;
         private readonly EntityArchetype m_key;
         private volatile EntityTable[] m_tables;
 
+        /// <summary>
+        /// Initializes a new instance of the entity table grouping class that groups entity tables
+        /// by a common entity archetype.
+        /// </summary>
+        /// 
+        /// <param name="key">
+        /// The entity archetype to group entity tables by.
+        /// </param>
         public EntityTableGrouping(EntityArchetype key)
         {
             ArgumentNullException.ThrowIfNull(key);
@@ -143,6 +154,13 @@ namespace Monophyll.Entities
             }
         }
 
+        /// <summary>
+        /// Creates a read-only span over the entity table grouping.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// A span over the entity table grouping.
+        /// </returns>
         public ReadOnlySpan<EntityTable> AsSpan()
         {
             return m_tables;
@@ -190,6 +208,13 @@ namespace Monophyll.Entities
             }
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the entity table grouping.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// An enumerator that can be used to iterate through the entity table grouping.
+        /// </returns>
         public Enumerator GetEnumerator()
         {
             return new Enumerator(m_tables);
