@@ -167,7 +167,7 @@ namespace Monophyll.Entities
 
         public EntityArchetype Add(ComponentType componentType)
         {
-            if (componentType == null || BitmaskOperations.Contains(ComponentBitmask, componentType.ID))
+            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.ID))
             {
                 return this;
             }
@@ -195,7 +195,7 @@ namespace Monophyll.Entities
 
         public EntityArchetype Remove(ComponentType componentType)
         {
-            if (componentType == null || !BitmaskOperations.Contains(ComponentBitmask, componentType.ID))
+            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.ID))
             {
                 return this;
             }
@@ -227,7 +227,7 @@ namespace Monophyll.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Contains(ComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(ComponentBitmask, componentType.ID);
         }
 
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)

@@ -321,19 +321,19 @@ namespace Monophyll.Entities
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Contains(RequiredComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.ID);
         }
 
         public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Contains(IncludedComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.ID);
         }
 
         public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Contains(ExcludedComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.ID);
         }
 
         public bool Matches(EntityArchetype archetype)
