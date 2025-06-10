@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Monophyll.Entities
 {
 	/// <summary>
-	/// Represents an identifier associated with a set of components.
+	/// Represents an ID associated with a set of components.
 	/// </summary>
 	public readonly struct Entity : IEquatable<Entity>, IComparable<Entity>, IComparable
 	{
@@ -14,9 +14,11 @@ namespace Monophyll.Entities
         /// <summary>
         /// Creates a new entity with an ID and a generational version.
         /// </summary>
+		/// 
         /// <param name="id">
         /// The ID of the <see cref="Entity"/>.
         /// </param>
+		/// 
         /// <param name="version">
         /// The generational version of the <see cref="Entity"/>.
         /// </param>
@@ -29,7 +31,7 @@ namespace Monophyll.Entities
 		/// <summary>
 		/// Gets the ID of the <see cref="Entity"/>.
 		/// </summary>
-		public int Id
+		public int ID
 		{
 			get => m_id;
 		}
@@ -44,7 +46,7 @@ namespace Monophyll.Entities
 
 		public int CompareTo(Entity other)
 		{
-			int comparison = m_id.CompareTo(other.Id);
+			int comparison = m_id.CompareTo(other.ID);
 
             if (comparison != 0)
 			{
@@ -56,18 +58,18 @@ namespace Monophyll.Entities
 
 		public int CompareTo(object? obj)
 		{
-			if (obj is not Entity other)
-			{
-				if (obj != null)
-				{
-					throw new ArgumentException("obj is not the same type as this instance.");
-				}
-
-				return 1;
+			if (obj is Entity other)
+            {
+                return CompareTo(other);
 			}
 
-			return CompareTo(other);
-		}
+            if (obj != null)
+            {
+                throw new ArgumentException("obj is not the same type as this instance.");
+            }
+
+            return 1;
+        }
 
 		public bool Equals(Entity other)
 		{

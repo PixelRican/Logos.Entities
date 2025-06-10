@@ -1,5 +1,4 @@
-﻿using Monophyll.Entities.Collections;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -16,7 +15,7 @@ namespace Monophyll.Entities
 		private static readonly EntityArchetype s_base = new EntityArchetype();
 
 		private readonly ComponentType[] m_componentTypes;
-		private readonly uint[] m_componentBits;
+		private readonly uint[] m_componentBitmask;
 		private readonly int m_managedPartitionLength;
 		private readonly int m_unmanagedPartitionLength;
 		private readonly int m_tagPartitionLength;
@@ -25,25 +24,25 @@ namespace Monophyll.Entities
 		private EntityArchetype()
 		{
 			m_componentTypes = Array.Empty<ComponentType>();
-			m_componentBits = Array.Empty<uint>();
+			m_componentBitmask = Array.Empty<uint>();
 			m_entitySize = Unsafe.SizeOf<Entity>();
 		}
 
 		private EntityArchetype(ComponentType[] componentTypes)
 		{
 			m_componentTypes = componentTypes;
-			m_componentBits = new uint[componentTypes[^1].Id + 32 >> 5];
+			m_componentBitmask = new uint[componentTypes[^1].ID + 32 >> 5];
 			m_entitySize = Unsafe.SizeOf<Entity>();
 
 			int freeIndex = 0;
 			ComponentType? previous = null;
 
-			foreach (ComponentType current in componentTypes)
+			foreach (ComponentType current in m_componentTypes)
 			{
 				if (!ComponentType.Equals(previous, current))
 				{
 					m_componentTypes[freeIndex++] = previous = current;
-					m_componentBits[current.Id >> 5] |= 1u << current.Id;
+					m_componentBitmask[current.ID >> 5] |= 1u << current.ID;
 					m_entitySize += current.Size;
 
 					switch (current.Category)
@@ -78,9 +77,9 @@ namespace Monophyll.Entities
 			get => m_componentTypes;
 		}
 
-		public ReadOnlySpan<uint> ComponentBits
+		public ReadOnlySpan<uint> ComponentBitmask
 		{
-			get => m_componentBits;
+			get => m_componentBitmask;
 		}
 
 		public int ManagedPartitionLength
@@ -160,12 +159,12 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& a.ComponentBits.SequenceEqual(b.ComponentBits);
+				&& a.ComponentBitmask.SequenceEqual(b.ComponentBitmask);
 		}
 
 		public EntityArchetype Add(ComponentType componentType)
 		{
-			if (componentType == null || BitSetOperations.Contains(ComponentBits, componentType.Id))
+			if (componentType == null || BitmaskOperations.Contains(ComponentBitmask, componentType.ID))
 			{
 				return this;
 			}
@@ -193,7 +192,7 @@ namespace Monophyll.Entities
 
 		public EntityArchetype Remove(ComponentType componentType)
 		{
-			if (componentType == null || !BitSetOperations.Contains(ComponentBits, componentType.Id))
+			if (componentType == null || !BitmaskOperations.Contains(ComponentBitmask, componentType.ID))
 			{
 				return this;
             }
@@ -225,7 +224,7 @@ namespace Monophyll.Entities
 		public bool Contains(ComponentType componentType)
 		{
 			return componentType != null
-				&& BitSetOperations.Contains(ComponentBits, componentType.Id);
+				&& BitmaskOperations.Contains(ComponentBitmask, componentType.ID);
 		}
 
 		public bool Equals([NotNullWhen(true)] EntityArchetype? other)
@@ -240,7 +239,7 @@ namespace Monophyll.Entities
 
 		public override int GetHashCode()
 		{
-			return BitSetOperations.GetHashCode(ComponentBits);
+			return BitmaskOperations.GetHashCode(ComponentBitmask);
 		}
 
 		public override string ToString()

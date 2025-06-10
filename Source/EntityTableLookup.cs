@@ -7,7 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Monophyll.Entities.Collections
+namespace Monophyll.Entities
 {
 	public class EntityTableLookup : ILookup<EntityArchetype, EntityTable>, IReadOnlyList<EntityTableGrouping>, ICollection
 	{
@@ -63,14 +63,14 @@ namespace Monophyll.Entities.Collections
 			get
 			{
 				ArgumentNullException.ThrowIfNull(key);
-				return m_container.Find(key.ComponentBits) ?? Enumerable.Empty<EntityTable>();
+				return m_container.Find(key.ComponentBitmask) ?? Enumerable.Empty<EntityTable>();
 			}
 		}
 
 		public bool Contains(EntityArchetype key)
         {
             ArgumentNullException.ThrowIfNull(key);
-            return m_container.Find(key.ComponentBits) != null;
+            return m_container.Find(key.ComponentBitmask) != null;
 		}
 
 		public void CopyTo(EntityTableGrouping[] array, int index)
@@ -113,11 +113,11 @@ namespace Monophyll.Entities.Collections
             {
                 if (componentType != null)
                 {
-                    buffer.Set(componentType.Id);
+                    buffer.Set(componentType.ID);
                 }
             }
 
-            EntityTableGrouping grouping = GetGrouping(componentTypes, buffer.AsSpan());
+            EntityTableGrouping grouping = GetGrouping(buffer.AsSpan(), componentTypes);
             buffer.Dispose();
 			return grouping;
 		}
@@ -143,12 +143,12 @@ namespace Monophyll.Entities.Collections
                     }
 
                     array[count++] = componentType;
-                    buffer.Set(componentType.Id);
+                    buffer.Set(componentType.ID);
                 }
             }
 
-            EntityTableGrouping grouping = GetGrouping(
-				new ReadOnlySpan<ComponentType>(array, 0, count), buffer.AsSpan());
+            EntityTableGrouping grouping = GetGrouping(buffer.AsSpan(),
+				new ReadOnlySpan<ComponentType>(array, 0, count));
             ArrayPool<ComponentType>.Shared.Return(array, clearArray: true);
             buffer.Dispose();
 			return grouping;
@@ -164,25 +164,25 @@ namespace Monophyll.Entities.Collections
 
                 if (componentType != null)
                 {
-                    buffer.Set(componentType.Id);
+                    buffer.Set(componentType.ID);
                 }
             }
 
-            EntityTableGrouping grouping = GetGrouping(componentTypes, buffer.AsSpan());
+            EntityTableGrouping grouping = GetGrouping(buffer.AsSpan(), componentTypes);
             buffer.Dispose();
 			return grouping;
 		}
 
-		private EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes, ReadOnlySpan<uint> componentBits)
+		private EntityTableGrouping GetGrouping(ReadOnlySpan<uint> key, ReadOnlySpan<ComponentType> value)
 		{
-			EntityTableGrouping? grouping = m_container.Find(componentBits);
+			EntityTableGrouping? grouping = m_container.Find(key);
 
 			if (grouping == null)
 			{
 				lock (m_lock)
 				{
 					Container container = m_container;
-					grouping = container.Find(componentBits);
+					grouping = container.Find(key);
 
                     if (grouping == null)
 					{
@@ -191,7 +191,7 @@ namespace Monophyll.Entities.Collections
 							m_container = container = container.Grow();
 						}
 
-						grouping = new EntityTableGrouping(EntityArchetype.Create(componentTypes));
+						grouping = new EntityTableGrouping(EntityArchetype.Create(value));
 						container.Add(grouping);
 					}
 				}
@@ -204,7 +204,7 @@ namespace Monophyll.Entities.Collections
 		{
 			ArgumentNullException.ThrowIfNull(archetype);
 
-			EntityTableGrouping? grouping = m_container.Find(archetype.ComponentBits);
+			EntityTableGrouping? grouping = m_container.Find(archetype.ComponentBitmask);
 
 			if (grouping == null)
 			{
@@ -212,7 +212,7 @@ namespace Monophyll.Entities.Collections
 				{
 					Container container = m_container;
 
-					if ((grouping = container.Find(archetype.ComponentBits)) == null)
+					if ((grouping = container.Find(archetype.ComponentBitmask)) == null)
 					{
 						if (container.Isfull)
 						{
@@ -233,11 +233,11 @@ namespace Monophyll.Entities.Collections
 			ArgumentNullException.ThrowIfNull(archetype);
 			ArgumentNullException.ThrowIfNull(componentType);
 
-			ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
-			int index = componentType.Id >> 5;
-			uint bit = 1u << componentType.Id;
+			ReadOnlySpan<uint> componentBitmask = archetype.ComponentBitmask;
+			int index = componentType.ID >> 5;
+			uint bit = 1u << componentType.ID;
 
-			if (index >= componentBits.Length || (bit & componentBits[index]) == 0)
+			if (index >= componentBitmask.Length || (bit & componentBitmask[index]) == 0)
 			{
 				return GetGrouping(archetype);
 			}
@@ -245,23 +245,23 @@ namespace Monophyll.Entities.Collections
 			uint[]? rentedArray;
 			scoped Span<uint> key;
 			
-			if (componentBits.Length <= DefaultCapacity)
+			if (componentBitmask.Length <= DefaultCapacity)
             {
                 rentedArray = null;
-                key = stackalloc uint[componentBits.Length];
+                key = stackalloc uint[componentBitmask.Length];
             }
 			else
 			{
-                rentedArray = ArrayPool<uint>.Shared.Rent(componentBits.Length);
-                key = new Span<uint>(rentedArray, 0, componentBits.Length);
+                rentedArray = ArrayPool<uint>.Shared.Rent(componentBitmask.Length);
+                key = new Span<uint>(rentedArray, 0, componentBitmask.Length);
             }
 
-            componentBits.CopyTo(key);
+            componentBitmask.CopyTo(key);
 
             if ((key[index] ^= bit) == 0)
             {
                 ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
-                key = key.Slice(0, componentTypes.Length > 1 ? componentTypes[^2].Id + 32 >> 5 : 0);
+                key = key.Slice(0, componentTypes.Length > 1 ? componentTypes[^2].ID + 32 >> 5 : 0);
             }
 
             EntityTableGrouping? grouping = m_container.Find(key);
@@ -298,18 +298,18 @@ namespace Monophyll.Entities.Collections
             ArgumentNullException.ThrowIfNull(archetype);
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<uint> componentBits = archetype.ComponentBits;
-			int index = componentType.Id >> 5;
-			uint bit = 1u << componentType.Id;
+            ReadOnlySpan<uint> componentBitmask = archetype.ComponentBitmask;
+			int index = componentType.ID >> 5;
+			uint bit = 1u << componentType.ID;
 
-			if (index < componentBits.Length && (componentBits[index] & bit) != 0)
+			if (index < componentBitmask.Length && (componentBitmask[index] & bit) != 0)
 			{
 				return GetGrouping(archetype);
 			}
 
 			uint[]? rentedArray;
 			scoped Span<uint> key;
-            int length = Math.Max(index + 1, componentBits.Length);
+            int length = Math.Max(index + 1, componentBitmask.Length);
 
             if (length > DefaultCapacity)
             {
@@ -322,8 +322,8 @@ namespace Monophyll.Entities.Collections
                 key = stackalloc uint[length];
             }
 
-            componentBits.CopyTo(key);
-            key.Slice(componentBits.Length).Clear();
+            componentBitmask.CopyTo(key);
+            key.Slice(componentBitmask.Length).Clear();
             key[index] |= bit;
 
             EntityTableGrouping? grouping = m_container.Find(key);
@@ -358,7 +358,7 @@ namespace Monophyll.Entities.Collections
 		public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityTableGrouping? grouping)
 		{
 			ArgumentNullException.ThrowIfNull(key);
-			return (grouping = m_container.Find(key.ComponentBits)) != null;
+			return (grouping = m_container.Find(key.ComponentBitmask)) != null;
 		}
 
 		public struct Enumerator : IEnumerator<EntityTableGrouping>
@@ -511,7 +511,7 @@ namespace Monophyll.Entities.Collections
             public void Add(EntityTableGrouping grouping)
 			{
 				int size = m_size;
-				int hashCode = BitSetOperations.GetHashCode(grouping.Key.ComponentBits) & int.MaxValue;
+				int hashCode = BitmaskOperations.GetHashCode(grouping.Key.ComponentBitmask) & int.MaxValue;
 				ref int bucket = ref m_buckets[hashCode & m_buckets.Length - 1];
 				ref Entry entry = ref m_entries[size];
 
@@ -609,13 +609,13 @@ namespace Monophyll.Entities.Collections
 			{
 				Entry[] entries = m_entries;
 				ref Entry entry = ref Unsafe.NullRef<Entry>();
-				int hashCode = BitSetOperations.GetHashCode(key) & int.MaxValue;
+				int hashCode = BitmaskOperations.GetHashCode(key) & int.MaxValue;
 
 				for (int i = Volatile.Read(ref m_buckets[hashCode & m_buckets.Length - 1]); i < 0; i = entry.Next)
 				{
 					EntityTableGrouping grouping = (entry = ref entries[~i]).Grouping;
 
-					if (entry.HashCode == hashCode && grouping.Key.ComponentBits.SequenceEqual(key))
+					if (entry.HashCode == hashCode && grouping.Key.ComponentBitmask.SequenceEqual(key))
 					{
 						return grouping;
 					}

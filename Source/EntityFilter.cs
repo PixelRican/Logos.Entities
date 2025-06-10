@@ -1,5 +1,4 @@
-﻿using Monophyll.Entities.Collections;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -13,40 +12,40 @@ namespace Monophyll.Entities
         private readonly ComponentType[] m_requiredComponentTypes;
         private readonly ComponentType[] m_includedComponentTypes;
         private readonly ComponentType[] m_excludedComponentTypes;
-        private readonly uint[] m_requiredComponentBits;
-        private readonly uint[] m_includedComponentBits;
-        private readonly uint[] m_excludedComponentBits;
+        private readonly uint[] m_requiredComponentBitmask;
+        private readonly uint[] m_includedComponentBitmask;
+        private readonly uint[] m_excludedComponentBitmask;
 
         private EntityFilter()
         {
             m_requiredComponentTypes = Array.Empty<ComponentType>();
             m_includedComponentTypes = Array.Empty<ComponentType>();
             m_excludedComponentTypes = Array.Empty<ComponentType>();
-            m_requiredComponentBits = Array.Empty<uint>();
-            m_includedComponentBits = Array.Empty<uint>();
-            m_excludedComponentBits = Array.Empty<uint>();
+            m_requiredComponentBitmask = Array.Empty<uint>();
+            m_includedComponentBitmask = Array.Empty<uint>();
+            m_excludedComponentBitmask = Array.Empty<uint>();
         }
 
-        private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBits)
+        private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBitmask)
         {
             m_requiredComponentTypes = requiredComponentTypes;
             m_includedComponentTypes = Array.Empty<ComponentType>();
             m_excludedComponentTypes = Array.Empty<ComponentType>();
-            m_requiredComponentBits = requiredComponentBits;
-            m_includedComponentBits = Array.Empty<uint>();
-            m_excludedComponentBits = Array.Empty<uint>();
+            m_requiredComponentBitmask = requiredComponentBitmask;
+            m_includedComponentBitmask = Array.Empty<uint>();
+            m_excludedComponentBitmask = Array.Empty<uint>();
         }
 
-        private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBits,
-                             ComponentType[] includedComponentTypes, uint[] includedComponentBits,
-                             ComponentType[] excludedComponentTypes, uint[] excludedComponentBits)
+        private EntityFilter(ComponentType[] requiredComponentTypes, uint[] requiredComponentBitmask,
+                             ComponentType[] includedComponentTypes, uint[] includedComponentBitmask,
+                             ComponentType[] excludedComponentTypes, uint[] excludedComponentBitmask)
         {
             m_requiredComponentTypes = requiredComponentTypes;
             m_includedComponentTypes = includedComponentTypes;
             m_excludedComponentTypes = excludedComponentTypes;
-            m_requiredComponentBits = requiredComponentBits;
-            m_includedComponentBits = includedComponentBits;
-            m_excludedComponentBits = excludedComponentBits;
+            m_requiredComponentBitmask = requiredComponentBitmask;
+            m_includedComponentBitmask = includedComponentBitmask;
+            m_excludedComponentBitmask = excludedComponentBitmask;
         }
 
 		public static EntityFilter Universal
@@ -69,28 +68,28 @@ namespace Monophyll.Entities
             get => m_excludedComponentTypes;
         }
 
-        public ReadOnlySpan<uint> RequiredComponentBits
+        public ReadOnlySpan<uint> RequiredComponentBitmask
         {
-            get => m_requiredComponentBits;
+            get => m_requiredComponentBitmask;
         }
 
-        public ReadOnlySpan<uint> IncludedComponentBits
+        public ReadOnlySpan<uint> IncludedComponentBitmask
         {
-            get => m_includedComponentBits;
+            get => m_includedComponentBitmask;
         }
 
-        public ReadOnlySpan<uint> ExcludedComponentBits
+        public ReadOnlySpan<uint> ExcludedComponentBitmask
         {
-            get => m_excludedComponentBits;
+            get => m_excludedComponentBitmask;
         }
 
         public static EntityFilter Create(ComponentType[] requiredComponentTypes)
         {
             ArgumentNullException.ThrowIfNull(requiredComponentTypes);
 
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits))
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBitmask))
             {
-                return new EntityFilter(requiredTypes, requiredBits);
+                return new EntityFilter(requiredTypes, requiredBitmask);
             }
 
             return s_universal;
@@ -104,13 +103,13 @@ namespace Monophyll.Entities
             ArgumentNullException.ThrowIfNull(includedComponentTypes);
             ArgumentNullException.ThrowIfNull(excludedComponentTypes);
 
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits) |
-                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out uint[] includedBits) |
-                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out uint[] excludedBits))
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBitmask) |
+                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out uint[] includedBitmask) |
+                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out uint[] excludedBitmask))
             {
-                return new EntityFilter(requiredTypes, requiredBits,
-                                        includedTypes, includedBits,
-                                        excludedTypes, excludedBits);
+                return new EntityFilter(requiredTypes, requiredBitmask,
+                                        includedTypes, includedBitmask,
+                                        excludedTypes, excludedBitmask);
             }
 
             return s_universal;
@@ -118,9 +117,9 @@ namespace Monophyll.Entities
 
         public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes)
         {
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits))
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBitmask))
             {
-                return new EntityFilter(requiredTypes, requiredBits);
+                return new EntityFilter(requiredTypes, requiredBitmask);
             }
 
             return s_universal;
@@ -134,13 +133,13 @@ namespace Monophyll.Entities
             ArgumentNullException.ThrowIfNull(includedComponentTypes);
             ArgumentNullException.ThrowIfNull(excludedComponentTypes);
 
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits) |
-                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out uint[] includedBits) |
-                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out uint[] excludedBits))
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBitmask) |
+                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out uint[] includedBitmask) |
+                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out uint[] excludedBitmask))
             {
-                return new EntityFilter(requiredTypes, requiredBits,
-                                        includedTypes, includedBits,
-                                        excludedTypes, excludedBits);
+                return new EntityFilter(requiredTypes, requiredBitmask,
+                                        includedTypes, includedBitmask,
+                                        excludedTypes, excludedBitmask);
             }
 
             return s_universal;
@@ -148,9 +147,9 @@ namespace Monophyll.Entities
 
         public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes)
         {
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits))
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBitmask))
             {
-                return new EntityFilter(requiredTypes, requiredBits);
+                return new EntityFilter(requiredTypes, requiredBitmask);
             }
 
             return s_universal;
@@ -160,73 +159,73 @@ namespace Monophyll.Entities
 										  ReadOnlySpan<ComponentType> includedComponentTypes,
 										  ReadOnlySpan<ComponentType> excludedComponentTypes)
         {
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBits) |
-                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out uint[] includedBits) |
-                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out uint[] excludedBits))
+            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out uint[] requiredBitmask) |
+                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out uint[] includedBitmask) |
+                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out uint[] excludedBitmask))
             {
-                return new EntityFilter(requiredTypes, requiredBits,
-                                        includedTypes, includedBits,
-                                        excludedTypes, excludedBits);
+                return new EntityFilter(requiredTypes, requiredBitmask,
+                                        includedTypes, includedBitmask,
+                                        excludedTypes, excludedBitmask);
             }
 
             return s_universal;
         }
 
         private static bool TryBuild(ComponentType[] arguments,
-            out ComponentType[] componentTypes, out uint[] componentBits)
+            out ComponentType[] componentTypes, out uint[] componentBitmask)
         {
             if (arguments.Length > 0)
             {
                 componentTypes = new ComponentType[arguments.Length];
                 Array.Copy(arguments, componentTypes, arguments.Length);
-                return TryFinalizeBuild(ref componentTypes, out componentBits);
+                return TryFinalizeBuild(ref componentTypes, out componentBitmask);
             }
 
             componentTypes = Array.Empty<ComponentType>();
-            componentBits = Array.Empty<uint>();
+            componentBitmask = Array.Empty<uint>();
             return false;
         }
 
         private static bool TryBuild(IEnumerable<ComponentType> arguments,
-            out ComponentType[] componentTypes, out uint[] componentBits)
+            out ComponentType[] componentTypes, out uint[] componentBitmask)
         {
             componentTypes = arguments.ToArray();
 
             if (componentTypes.Length > 0)
             {
-                return TryFinalizeBuild(ref componentTypes, out componentBits);
+                return TryFinalizeBuild(ref componentTypes, out componentBitmask);
             }
 
-            componentBits = Array.Empty<uint>();
+            componentBitmask = Array.Empty<uint>();
             return false;
         }
 
         private static bool TryBuild(ReadOnlySpan<ComponentType> arguments,
-            out ComponentType[] componentTypes, out uint[] componentBits)
+            out ComponentType[] componentTypes, out uint[] componentBitmask)
         {
             componentTypes = arguments.ToArray();
 
             if (componentTypes.Length > 0)
             {
-                return TryFinalizeBuild(ref componentTypes, out componentBits);
+                return TryFinalizeBuild(ref componentTypes, out componentBitmask);
             }
 
-            componentBits = Array.Empty<uint>();
+            componentBitmask = Array.Empty<uint>();
             return false;
         }
 
-        private static bool TryFinalizeBuild(ref ComponentType[] componentTypes, out uint[] componentBits)
+        private static bool TryFinalizeBuild(ref ComponentType[] componentTypes, out uint[] componentBitmask)
         {
             Array.Sort(componentTypes);
 
             if (componentTypes[^1] == null)
             {
                 componentTypes = Array.Empty<ComponentType>();
-                componentBits = Array.Empty<uint>();
+                componentBitmask = Array.Empty<uint>();
                 return false;
             }
 
-            componentBits = new uint[componentTypes[^1].Id + 32 >> 5];
+            componentBitmask = new uint[componentTypes[^1].ID + 32 >> 5];
 
             int freeIndex = 0;
             ComponentType? previous = null;
@@ -236,7 +235,7 @@ namespace Monophyll.Entities
                 if (!ComponentType.Equals(previous, current))
                 {
                     componentTypes[freeIndex++] = previous = current;
-                    componentBits[current.Id >> 5] |= 1u << current.Id;
+                    componentBitmask[current.ID >> 5] |= 1u << current.ID;
                 }
             }
 
@@ -294,9 +293,9 @@ namespace Monophyll.Entities
 			return a == b
 				|| a != null
 				&& b != null
-				&& a.RequiredComponentBits.SequenceEqual(b.RequiredComponentBits)
-                && a.IncludedComponentBits.SequenceEqual(b.IncludedComponentBits)
-                && a.ExcludedComponentBits.SequenceEqual(b.ExcludedComponentBits);
+				&& a.RequiredComponentBitmask.SequenceEqual(b.RequiredComponentBitmask)
+                && a.IncludedComponentBitmask.SequenceEqual(b.IncludedComponentBitmask)
+                && a.ExcludedComponentBitmask.SequenceEqual(b.ExcludedComponentBitmask);
         }
 
         public bool Equals(EntityFilter? other)
@@ -311,36 +310,36 @@ namespace Monophyll.Entities
 
         public override int GetHashCode()
         {
-			return HashCode.Combine(BitSetOperations.GetHashCode(RequiredComponentBits),
-									BitSetOperations.GetHashCode(IncludedComponentBits),
-									BitSetOperations.GetHashCode(ExcludedComponentBits));
+			return HashCode.Combine(BitmaskOperations.GetHashCode(RequiredComponentBitmask),
+									BitmaskOperations.GetHashCode(IncludedComponentBitmask),
+									BitmaskOperations.GetHashCode(ExcludedComponentBitmask));
         }
 
 		public bool Requires(ComponentType componentType)
 		{
             return componentType != null
-                && BitSetOperations.Contains(RequiredComponentBits, componentType.Id);
+                && BitmaskOperations.Contains(RequiredComponentBitmask, componentType.ID);
 		}
 
 		public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitSetOperations.Contains(IncludedComponentBits, componentType.Id);
+                && BitmaskOperations.Contains(IncludedComponentBitmask, componentType.ID);
         }
 
 		public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitSetOperations.Contains(ExcludedComponentBits, componentType.Id);
+                && BitmaskOperations.Contains(ExcludedComponentBitmask, componentType.ID);
         }
 
         public bool Matches(EntityArchetype archetype)
         {
-            ReadOnlySpan<uint> componentBits;
+            ReadOnlySpan<uint> bitmask;
 			return archetype != null
-				&& BitSetOperations.IsSubsetOf(RequiredComponentBits, componentBits = archetype.ComponentBits)
-				&& (m_includedComponentBits.Length == 0 || BitSetOperations.Overlaps(IncludedComponentBits, componentBits))
-				&& !BitSetOperations.Overlaps(ExcludedComponentBits, componentBits);
+				&& BitmaskOperations.Requires(RequiredComponentBitmask, bitmask = archetype.ComponentBitmask)
+				&& BitmaskOperations.Includes(IncludedComponentBitmask, bitmask)
+				&& BitmaskOperations.Excludes(ExcludedComponentBitmask, bitmask);
         }
 
         public Builder ToBuilder()
@@ -353,9 +352,9 @@ namespace Monophyll.Entities
             private ComponentType[] m_requiredComponentTypes;
             private ComponentType[] m_includedComponentTypes;
             private ComponentType[] m_excludedComponentTypes;
-            private uint[] m_requiredComponentBits;
-            private uint[] m_includedComponentBits;
-            private uint[] m_excludedComponentBits;
+            private uint[] m_requiredComponentBitmask;
+            private uint[] m_includedComponentBitmask;
+            private uint[] m_excludedComponentBitmask;
 
             public Builder()
 			{
@@ -369,78 +368,78 @@ namespace Monophyll.Entities
                 m_requiredComponentTypes = filter.m_requiredComponentTypes;
                 m_includedComponentTypes = filter.m_includedComponentTypes;
                 m_excludedComponentTypes = filter.m_excludedComponentTypes;
-                m_requiredComponentBits = filter.m_requiredComponentBits;
-                m_includedComponentBits = filter.m_includedComponentBits;
-                m_excludedComponentBits = filter.m_excludedComponentBits;
+                m_requiredComponentBitmask = filter.m_requiredComponentBitmask;
+                m_includedComponentBitmask = filter.m_includedComponentBitmask;
+                m_excludedComponentBitmask = filter.m_excludedComponentBitmask;
             }
 
-            [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBits),
-                           nameof(m_includedComponentTypes), nameof(m_includedComponentBits),
-                           nameof(m_excludedComponentTypes), nameof(m_excludedComponentBits))]
+            [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBitmask),
+                           nameof(m_includedComponentTypes), nameof(m_includedComponentBitmask),
+                           nameof(m_excludedComponentTypes), nameof(m_excludedComponentBitmask))]
             public void Reset()
             {
                 m_requiredComponentTypes = Array.Empty<ComponentType>();
                 m_includedComponentTypes = Array.Empty<ComponentType>();
                 m_excludedComponentTypes = Array.Empty<ComponentType>();
-                m_requiredComponentBits = Array.Empty<uint>();
-                m_includedComponentBits = Array.Empty<uint>();
-                m_excludedComponentBits = Array.Empty<uint>();
+                m_requiredComponentBitmask = Array.Empty<uint>();
+                m_includedComponentBitmask = Array.Empty<uint>();
+                m_excludedComponentBitmask = Array.Empty<uint>();
             }
 
             public Builder Require(ComponentType[] componentTypes)
             {
                 ArgumentNullException.ThrowIfNull(componentTypes);
-                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBits);
+                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
                 return this;
 			}
 
             public Builder Require(IEnumerable<ComponentType> componentTypes)
             {
-                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBits);
+                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
                 return this;
             }
 
             public Builder Require(ReadOnlySpan<ComponentType> componentTypes)
             {
-                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBits);
+                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
                 return this;
             }
 
 			public Builder Include(ComponentType[] componentTypes)
             {
                 ArgumentNullException.ThrowIfNull(componentTypes);
-                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBits);
+                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
                 return this;
             }
 
 			public Builder Include(IEnumerable<ComponentType> componentTypes)
             {
-                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBits);
+                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
                 return this;
             }
 
 			public Builder Include(ReadOnlySpan<ComponentType> componentTypes)
             {
-                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBits);
+                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
                 return this;
             }
 
 			public Builder Exclude(ComponentType[] componentTypes)
             {
                 ArgumentNullException.ThrowIfNull(componentTypes);
-                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBits);
+                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
                 return this;
             }
 
 			public Builder Exclude(IEnumerable<ComponentType> componentTypes)
             {
-                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBits);
+                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
                 return this;
             }
 
 			public Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
             {
-                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBits);
+                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
                 return this;
             }
 
@@ -450,9 +449,9 @@ namespace Monophyll.Entities
                     m_includedComponentTypes.Length > 0 ||
                     m_excludedComponentTypes.Length > 0)
 				{
-					return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBits,
-                                            m_includedComponentTypes, m_includedComponentBits,
-                                            m_excludedComponentTypes, m_excludedComponentBits);
+					return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBitmask,
+                                            m_includedComponentTypes, m_includedComponentBitmask,
+                                            m_excludedComponentTypes, m_excludedComponentBitmask);
 				}
 
 				return s_universal;

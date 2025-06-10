@@ -15,7 +15,7 @@ namespace Monophyll.Entities
 												 BindingFlags.NonPublic |
 												 BindingFlags.Instance;
 
-		private static int s_nextId = -1;
+		private static int s_nextID = -1;
 
 		private readonly Type m_type;
 		private readonly int m_id;
@@ -33,8 +33,7 @@ namespace Monophyll.Entities
 		}
 
 		/// <summary>
-		/// Gets the <see cref="System.Type"/> associated with the
-		/// <see cref="ComponentType"/>.
+		/// Gets the <see cref="System.Type"/> associated with the <see cref="ComponentType"/>.
 		/// </summary>
 		public Type Type
 		{
@@ -42,17 +41,15 @@ namespace Monophyll.Entities
 		}
 
 		/// <summary>
-		/// Gets the numeric ID associated with the
-		/// <see cref="ComponentType"/>.
+		/// Gets the numeric ID associated with the <see cref="ComponentType"/>.
 		/// </summary>
-		public int Id
+		public int ID
 		{
 			get => m_id;
 		}
 
 		/// <summary>
-		/// Gets the size of instances of the <see cref="ComponentType"/> in
-		/// bytes.
+		/// Gets the size of instances of the <see cref="ComponentType"/> in bytes.
 		/// </summary>
 		public int Size
 		{
@@ -80,19 +77,21 @@ namespace Monophyll.Entities
 		}
 
 		/// <summary>
-		/// Compares two specified <see cref="ComponentType"/> objects and
-		/// returns an integer that indicates their relative position in the
-		/// sort order.
+		/// Compares two specified <see cref="ComponentType"/> objects and returns an integer that
+		/// indicates their relative position in the sort order.
 		/// </summary>
+		/// 
 		/// <param name="a">
 		/// The first <see cref="ComponentType"/> to compare.
 		/// </param>
+		/// 
 		/// <param name="b">
 		/// The second <see cref="ComponentType"/> to compare.
 		/// </param>
+		/// 
 		/// <returns>
-		/// A 32-bit signed integer that indicates the lexical relationship
-		/// between the two comparands.
+		/// A 32-bit signed integer that indicates the lexical relationship between the two
+		/// comparands.
 		/// </returns>
 		public static int Compare(ComponentType? a, ComponentType? b)
 		{
@@ -122,22 +121,22 @@ namespace Monophyll.Entities
         }
 
 		/// <summary>
-		/// Determines whether two specified <see cref="ComponentType"/>
-		/// objects have the same value.
+		/// Determines whether two specified <see cref="ComponentType"/> objects have the same
+		/// value.
 		/// </summary>
+		/// 
 		/// <param name="a">
-		/// The first <see cref="ComponentType"/> to compare, or
-		/// <see langword="null"/>.
+		/// The first <see cref="ComponentType"/> to compare, or <see langword="null"/>.
 		/// </param>
+		/// 
 		/// <param name="b">
-		/// The second <see cref="ComponentType"/> to compare, or
-		/// <see langword="null"/>.
+		/// The second <see cref="ComponentType"/> to compare, or <see langword="null"/>.
 		/// </param>
+		/// 
 		/// <returns>
-		/// <see langword="true"/> if the value of <paramref name="a"/> is the
-		/// same as the value of <paramref name="b"/>; otherwise,
-		/// <see langword="false"/>. If both <paramref name="a"/> and
-		/// <paramref name="b"/> are <see langword="null"/>, the method returns
+		/// <see langword="true"/> if the value of <paramref name="a"/> is the same as the value of
+		/// <paramref name="b"/>; otherwise, <see langword="false"/>. If both <paramref name="a"/>
+		/// and <paramref name="b"/> are <see langword="null"/>, the method returns
 		/// <see langword="true"/>.
 		/// </returns>
 		public static bool Equals(ComponentType? a, ComponentType? b)
@@ -154,7 +153,11 @@ namespace Monophyll.Entities
 		/// Gets a <see cref="ComponentType"/> instance associated with
 		/// <see langword="typeof"/>(<typeparamref name="T"/>).
 		/// </summary>
-		/// <typeparam name="T">The type of the component.</typeparam>
+		/// 
+		/// <typeparam name="T">
+		/// The type of the component.
+		/// </typeparam>
+		/// 
 		/// <returns>
 		/// A <see cref="ComponentType"/> instance associated with
 		/// <see langword="typeof"/>(<typeparamref name="T"/>).
@@ -204,7 +207,7 @@ namespace Monophyll.Entities
 		private static class ComponentTypeLookup<T>
 		{
 			public static readonly ComponentType Value = new ComponentType(typeof(T),
-				Interlocked.Increment(ref s_nextId), Unsafe.SizeOf<T>(),
+				Interlocked.Increment(ref s_nextID), Unsafe.SizeOf<T>(),
 				RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 		}
 	}

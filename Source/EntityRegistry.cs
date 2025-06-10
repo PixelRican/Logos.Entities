@@ -1,5 +1,4 @@
-﻿using Monophyll.Entities.Collections;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -160,7 +159,7 @@ namespace Monophyll.Entities
 					return false;
 				}
 
-                container.Move(entity.Id, GetNextAvailableTable(grouping));
+                container.Move(entity.ID, GetNextAvailableTable(grouping));
 
                 if (table.IsEmpty)
                 {
@@ -200,7 +199,7 @@ namespace Monophyll.Entities
 
 					table = GetNextAvailableTable(grouping);
                     index = table.Count;
-                    container.Move(entity.Id, table);
+                    container.Move(entity.ID, table);
 
                     if (source.IsEmpty)
                     {
@@ -236,7 +235,7 @@ namespace Monophyll.Entities
                 }
 
 				component = table.GetComponents<T>()[index];
-                container.Move(entity.Id, GetNextAvailableTable(grouping));
+                container.Move(entity.ID, GetNextAvailableTable(grouping));
 
                 if (table.IsEmpty)
                 {
@@ -305,22 +304,22 @@ namespace Monophyll.Entities
 
 		private sealed class Container
         {
-            private readonly int[] m_freeIds;
+            private readonly int[] m_freeIDs;
             private readonly Entry[] m_entries;
-            private int m_nextId;
+            private int m_nextID;
             private int m_size;
 
 			public Container(int capacity)
             {
-                m_freeIds = new int[capacity];
+                m_freeIDs = new int[capacity];
                 m_entries = new Entry[capacity];
 			}
 
 			private Container(int capacity, int size)
             {
-                m_freeIds = new int[capacity];
+                m_freeIDs = new int[capacity];
                 m_entries = new Entry[capacity];
-				m_nextId = m_size = size;
+				m_nextID = m_size = size;
             }
 
 			public int Capacity
@@ -340,9 +339,9 @@ namespace Monophyll.Entities
 
             public Entity Create(EntityTable table)
 			{
-                int index = m_size++ < m_nextId
-					? m_freeIds[m_nextId - m_size]
-					: m_nextId++;
+                int index = m_size++ < m_nextID
+					? m_freeIDs[m_nextID - m_size]
+					: m_nextID++;
                 ref Entry entry = ref m_entries[index];
                 Entity entity = new Entity(index, entry.Version);
 
@@ -372,10 +371,10 @@ namespace Monophyll.Entities
 
                 if (index < table.Count)
                 {
-                    m_entries[table.GetEntities()[index].Id].Index = index;
+                    m_entries[table.GetEntities()[index].ID].Index = index;
                 }
 
-                m_freeIds[m_nextId - m_size--] = entity.Id;
+                m_freeIDs[m_nextID - m_size--] = entity.ID;
                 return table;
             }
 
@@ -402,8 +401,8 @@ namespace Monophyll.Entities
             {
                 ref Entry entry = ref Unsafe.NullRef<Entry>();
 
-                if ((uint)entity.Id < (uint)m_nextId &&
-                    (entry = ref m_entries[entity.Id]).Table != null &&
+                if ((uint)entity.ID < (uint)m_nextID &&
+                    (entry = ref m_entries[entity.ID]).Table != null &&
                     entity.Version == entry.Version)
                 {
                     return ref entry;
@@ -412,9 +411,9 @@ namespace Monophyll.Entities
                 return ref Unsafe.NullRef<Entry>();
             }
 
-            public void Move(int entityId, EntityTable destination)
+            public void Move(int entityID, EntityTable destination)
             {
-				ref Entry entry = ref m_entries[entityId];
+				ref Entry entry = ref m_entries[entityID];
 				EntityTable table = entry.Table;
 				int index = entry.Index;
 
@@ -426,7 +425,7 @@ namespace Monophyll.Entities
 
 				if (index < table.Count)
 				{
-                    m_entries[table.GetEntities()[index].Id].Index = index;
+                    m_entries[table.GetEntities()[index].ID].Index = index;
                 }
             }
 
