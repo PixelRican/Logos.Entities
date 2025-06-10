@@ -92,7 +92,7 @@ namespace Monophyll.Entities
 
         public override string ToString()
         {
-            return $"Entity {{ Id = {m_id}, Version = {m_version} }}";
+            return $"Entity {{ ID = {m_id}, Version = {m_version} }}";
         }
 
         public static bool operator ==(Entity left, Entity right)
