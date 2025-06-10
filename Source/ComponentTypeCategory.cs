@@ -18,7 +18,7 @@ namespace Monophyll.Entities
         /// </summary>
         Managed,
         /// <summary>
-        /// Specifies that the component type is a value type with no reference type fields.
+        /// Specifies that the component type is a value type with non-reference type fields.
         /// </summary>
         Unmanaged,
         /// <summary>

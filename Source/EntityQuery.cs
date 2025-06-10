@@ -111,6 +111,16 @@ namespace Monophyll.Entities
             return new Enumerator(this);
         }
 
+        IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
         private void Refresh()
         {
             lock (m_lock)
@@ -157,16 +167,6 @@ namespace Monophyll.Entities
                     Volatile.Write(ref m_lookupIndex, index);
                 }
             }
-        }
-
-        IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
 
         public struct Enumerator : IEnumerator<EntityTable>

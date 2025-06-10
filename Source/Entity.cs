@@ -19,11 +19,11 @@ namespace Monophyll.Entities
         /// </summary>
         /// 
         /// <param name="id">
-        /// The ID of the <see cref="Entity"/>.
+        /// The ID of the entity.
         /// </param>
         /// 
         /// <param name="version">
-        /// The generational version of the <see cref="Entity"/>.
+        /// The generational version of the entity.
         /// </param>
         public Entity(int id, int version)
         {
@@ -32,7 +32,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the ID of the <see cref="Entity"/>.
+        /// Gets the ID of the entity.
         /// </summary>
         public int ID
         {
@@ -40,7 +40,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the generational version of the <see cref="Entity"/>.
+        /// Gets the generational version of the entity.
         /// </summary>
         public int Version
         {

@@ -10,7 +10,7 @@ using System.Threading;
 namespace Monophyll.Entities
 {
     /// <summary>
-    /// Represents component type declarations associated with an ID.
+    /// Represents component type declarations associated with a unique ID.
     /// </summary>
     public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
     {
@@ -36,7 +36,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the <see cref="System.Type"/> associated with the <see cref="ComponentType"/>.
+        /// Gets the system type associated with the component type.
         /// </summary>
         public Type Type
         {
@@ -44,7 +44,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the numeric ID associated with the <see cref="ComponentType"/>.
+        /// Gets the numeric ID associated with the component type.
         /// </summary>
         public int ID
         {
@@ -52,7 +52,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the size of instances of the <see cref="ComponentType"/> in bytes.
+        /// Gets the size of the component type in bytes.
         /// </summary>
         public int Size
         {
@@ -60,8 +60,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the <see cref="ComponentTypeCategory"/> associated with the
-        /// <see cref="ComponentType"/>.
+        /// Gets the category associated with the component type.
         /// </summary>
         public ComponentTypeCategory Category
         {
@@ -80,16 +79,16 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Compares two specified <see cref="ComponentType"/> objects and returns an integer that
-        /// indicates their relative position in the sort order.
+        /// Compares two specified component type objects and returns an integer that indicates
+        /// their relative position in the sort order.
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first <see cref="ComponentType"/> to compare.
+        /// The first component type to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second <see cref="ComponentType"/> to compare.
+        /// The second component type to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
@@ -124,16 +123,15 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Determines whether two specified <see cref="ComponentType"/> objects have the same
-        /// value.
+        /// Determines whether two specified component type objects have the same value.
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first <see cref="ComponentType"/> to compare, or <see langword="null"/>.
+        /// The first component type to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second <see cref="ComponentType"/> to compare, or <see langword="null"/>.
+        /// The second component type to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
@@ -153,7 +151,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a <see cref="ComponentType"/> instance associated with
+        /// Gets a component type associated with
         /// <see langword="typeof"/>(<typeparamref name="T"/>).
         /// </summary>
         /// 
@@ -162,7 +160,7 @@ namespace Monophyll.Entities
         /// </typeparam>
         /// 
         /// <returns>
-        /// A <see cref="ComponentType"/> instance associated with
+        /// A component type associated with
         /// <see langword="typeof"/>(<typeparamref name="T"/>).
         /// </returns>
         public static ComponentType TypeOf<T>()
