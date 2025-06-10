@@ -19,7 +19,8 @@ namespace Monophyll.Entities
         private int m_size;
         private int m_lookupIndex;
 
-        public EntityQuery(EntityTableLookup lookup) : this(lookup, EntityFilter.Universal)
+        public EntityQuery(EntityTableLookup lookup)
+            : this(lookup, EntityFilter.Universal)
         {
         }
 
@@ -89,11 +90,9 @@ namespace Monophyll.Entities
 
                 for (int i = 0; i < size; i++)
                 {
-                    ReadOnlySpan<EntityTable> tables = groupings[i].AsSpan();
-
-                    for (int j = 0; j < tables.Length; j++)
+                    foreach (EntityTable table in groupings[i])
                     {
-                        count += tables[j].Count;
+                        count += table.Count;
                     }
                 }
 
