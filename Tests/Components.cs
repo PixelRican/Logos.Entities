@@ -1,4 +1,7 @@
-﻿namespace Monophyll.Entities.Tests
+﻿// Copyright (c) 2025 Roberto I. Mercado
+// Released under the MIT License. See LICENSE for more details.
+
+namespace Monophyll.Entities.Tests
 {
     public record struct Position2D
     {

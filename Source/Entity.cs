@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) 2025 Roberto I. Mercado
+// Released under the MIT License. See LICENSE for more details.
+
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Monophyll.Entities

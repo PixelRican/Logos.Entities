@@ -1,8 +1,7 @@
 ## Overview
 
-Monophyll.Entities is a simple and efficient Entity Component System for game
-development using the C# programming language. The library is still under
-development, so stay tuned for changes!
+Monophyll.Entities is a simple and efficient Entity Component System for game development using the
+C# programming language. The library is still under development, so stay tuned for changes!
 
 ## Folder Layout
 
@@ -12,10 +11,9 @@ The library's contents is organized into several folders:
 
 ## Disclaimer
 
-Currently, not much documentation exists for the library. This is something
-that will be dealt with soon.
+Currently, not much documentation exists for the library. This is something that will be dealt with
+soon.
 
 ## License
 
-Monophyll.Entities is released under the MIT License. See LICENSE for more
-details.
+Monophyll.Entities is released under the MIT License. See LICENSE for details.
