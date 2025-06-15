@@ -104,8 +104,7 @@ namespace Monophyll.Entities
 
         public Span<T> GetComponents<T>()
         {
-            return new Span<T>(
-                (T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!, 0, m_size);
+            return new Span<T>((T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!, 0, m_size);
         }
 
         public ref T GetComponentDataReference<T>()
@@ -213,48 +212,37 @@ namespace Monophyll.Entities
                 return;
             }
 
-            ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes;
-            ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes;
             Array[] sourceComponents = table.m_components;
             Array[] destinationComponents = m_components;
+            ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
+            ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
             ComponentType sourceComponentType = null!;
 
-            for (int sourceIndex = -1, destinationIndex = 0;
-                destinationIndex < destinationComponents.Length; destinationIndex++)
+            for (int sourceIndex = -1, destinationIndex = 0; destinationIndex < destinationComponentTypes.Length; destinationIndex++)
             {
                 ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
-                ComponentTypeCategory category = destinationComponentType.Category;
 
-                if (category == ComponentTypeCategory.Tag)
+                while (true)
                 {
+                    int comparison = ComponentType.Compare(sourceComponentType, destinationComponentType);
+                    int nextSourceIndex;
+
+                    if (comparison == 0)
+                    {
+                        Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex], size, count);
+                    }
+                    else if (comparison < 0 && (nextSourceIndex = sourceIndex + 1) < sourceComponentTypes.Length)
+                    {
+                        sourceIndex = nextSourceIndex;
+                        sourceComponentType = sourceComponentTypes[sourceIndex];
+                        continue;
+                    }
+                    else if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
+                    {
+                        Array.Clear(destinationComponents[destinationIndex], size, count);
+                    }
+
                     break;
-                }
-
-            Compare:
-                switch (ComponentType.Compare(sourceComponentType, destinationComponentType))
-                {
-                    case -1:
-                        int nextSourceIndex = sourceIndex + 1;
-
-                        if (nextSourceIndex < sourceComponents.Length)
-                        {
-                            sourceIndex = nextSourceIndex;
-                            sourceComponentType = sourceComponentTypes[sourceIndex];
-                            goto Compare;
-                        }
-
-                        goto default;
-                    case 0:
-                        Array.Copy(sourceComponents[sourceIndex], tableIndex,
-                            destinationComponents[destinationIndex], size, count);
-                        continue;
-                    default:
-                        if (category == ComponentTypeCategory.Unmanaged)
-                        {
-                            Array.Clear(destinationComponents[destinationIndex], size, count);
-                        }
-
-                        continue;
                 }
             }
 

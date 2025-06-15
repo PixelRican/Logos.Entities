@@ -12,7 +12,7 @@ namespace Monophyll.Entities.Tests
         [TestMethod]
         public void AddComponentTest()
         {
-            EntityRegistry registry = new EntityRegistry();
+            EntityRegistry registry = new();
             ReadOnlySpan<ComponentType> componentTypes =
             [
                 ComponentType.TypeOf<User>(),
@@ -43,7 +43,7 @@ namespace Monophyll.Entities.Tests
         [TestMethod]
         public void CreateEntityTest()
         {
-            EntityRegistry registry = new EntityRegistry();
+            EntityRegistry registry = new();
 
             for (int i = 0; i < 10; i++)
             {
@@ -77,7 +77,7 @@ namespace Monophyll.Entities.Tests
         [TestMethod]
         public void DestroyEntityTest()
         {
-            EntityRegistry registry = new EntityRegistry();
+            EntityRegistry registry = new();
 
             for (int i = 0; i < 10; i++)
             {
@@ -103,7 +103,7 @@ namespace Monophyll.Entities.Tests
         [TestMethod]
         public void RemoveComponentTest()
         {
-            EntityRegistry registry = new EntityRegistry();
+            EntityRegistry registry = new();
             ReadOnlySpan<ComponentType> componentTypes =
             [
                 ComponentType.TypeOf<User>(),

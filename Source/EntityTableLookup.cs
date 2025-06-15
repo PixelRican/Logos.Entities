@@ -110,7 +110,7 @@ namespace Monophyll.Entities
         {
             ArgumentNullException.ThrowIfNull(componentTypes);
 
-            ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
+            ValueBitArray buffer = new(stackalloc uint[DefaultCapacity]);
             
             foreach (ComponentType componentType in componentTypes)
             {
@@ -130,7 +130,7 @@ namespace Monophyll.Entities
             ComponentType[] array = componentTypes.TryGetNonEnumeratedCount(out int count)
                 ? ArrayPool<ComponentType>.Shared.Rent(count)
                 : Array.Empty<ComponentType>();
-            ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
+            ValueBitArray buffer = new(stackalloc uint[DefaultCapacity]);
             count = 0;
 
             foreach (ComponentType componentType in componentTypes)
@@ -159,7 +159,7 @@ namespace Monophyll.Entities
 
         public EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes)
         {
-            ValueBitArray buffer = new ValueBitArray(stackalloc uint[DefaultCapacity]);
+            ValueBitArray buffer = new(stackalloc uint[DefaultCapacity]);
 
             for (int i = 0; i < componentTypes.Length; i++)
             {
@@ -631,7 +631,7 @@ namespace Monophyll.Entities
             {
                 int size = m_size;
                 Entry[] oldEntries = m_entries;
-                Container container = new Container(oldEntries.Length * 2, size);
+                Container container = new(oldEntries.Length * 2, size);
                 int[] newBuckets = container.m_buckets;
                 Entry[] newEntries = container.m_entries;
 

@@ -10,7 +10,7 @@ namespace Monophyll.Entities
 {
     public sealed class EntityFilter : IEquatable<EntityFilter>
     {
-        private static readonly EntityFilter s_universal = new EntityFilter();
+        private static readonly EntityFilter s_universal = new();
 
         private readonly ComponentType[] m_requiredComponentTypes;
         private readonly ComponentType[] m_includedComponentTypes;
@@ -58,32 +58,32 @@ namespace Monophyll.Entities
 
         public ReadOnlySpan<ComponentType> RequiredComponentTypes
         {
-            get => m_requiredComponentTypes;
+            get => new(m_requiredComponentTypes);
         }
 
         public ReadOnlySpan<ComponentType> IncludedComponentTypes
         {
-            get => m_includedComponentTypes;
+            get => new(m_includedComponentTypes);
         }
 
         public ReadOnlySpan<ComponentType> ExcludedComponentTypes
         {
-            get => m_excludedComponentTypes;
+            get => new(m_excludedComponentTypes);
         }
 
         public ReadOnlySpan<uint> RequiredComponentBitmask
         {
-            get => m_requiredComponentBitmask;
+            get => new(m_requiredComponentBitmask);
         }
 
         public ReadOnlySpan<uint> IncludedComponentBitmask
         {
-            get => m_includedComponentBitmask;
+            get => new(m_includedComponentBitmask);
         }
 
         public ReadOnlySpan<uint> ExcludedComponentBitmask
         {
-            get => m_excludedComponentBitmask;
+            get => new(m_excludedComponentBitmask);
         }
 
         public static EntityFilter Create(ComponentType[] requiredComponentTypes)

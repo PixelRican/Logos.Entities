@@ -50,7 +50,7 @@ namespace Monophyll.Entities.Tests
                 new Entity(1, 0),
                 new Entity(1, 1)
             ];
-            Entity previous = new Entity(-1, -1);
+            Entity previous = new(-1, -1);
 
             foreach (Entity current in span)
             {

@@ -98,8 +98,7 @@ namespace Monophyll.Entities
                 }
             }
 
-            EntityTable table = new EntityTable(grouping.Key,
-                m_lookup, TargetTableSize / grouping.Key.EntitySize);
+            EntityTable table = new(grouping.Key, m_lookup, TargetTableSize / grouping.Key.EntitySize);
             grouping.Add(table);
             return table;
         }
@@ -193,8 +192,7 @@ namespace Monophyll.Entities
                 }
 
                 EntityArchetype archetype = table.Archetype;
-                EntityTableGrouping grouping = m_lookup.GetSupergrouping(
-                    archetype, ComponentType.TypeOf<T>());
+                EntityTableGrouping grouping = m_lookup.GetSupergrouping(archetype, ComponentType.TypeOf<T>());
 
                 if (!EntityArchetype.Equals(archetype, grouping.Key))
                 {
@@ -346,7 +344,7 @@ namespace Monophyll.Entities
                     ? m_freeIDs[m_nextID - m_size]
                     : m_nextID++;
                 ref Entry entry = ref m_entries[index];
-                Entity entity = new Entity(index, entry.Version);
+                Entity entity = new(index, entry.Version);
 
                 entry.Table = table;
                 entry.Index = table.Count;
@@ -447,7 +445,7 @@ namespace Monophyll.Entities
                     capacity = size + 1;
                 }
 
-                Container container = new Container(capacity, size);
+                Container container = new(capacity, size);
                 Array.Copy(m_entries, container.m_entries, size);
                 return container;
             }
