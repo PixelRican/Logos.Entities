@@ -12,7 +12,7 @@ namespace Monophyll.Entities.Tests
         [TestMethod]
         public void GetGroupingTest()
         {
-            EntityTableLookup lookup = new();
+            EntityTableLookup lookup = new EntityTableLookup();
             ComponentType[] arguments = new ComponentType[8];
 
             GetGroupingTestHelper(lookup, arguments);

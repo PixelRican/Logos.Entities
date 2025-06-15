@@ -54,7 +54,7 @@ namespace Monophyll.Entities.Tests
         [TestMethod]
         public void ConstructorTest()
         {
-            EntityTable table = new(EntityArchetype.Base);
+            EntityTable table = new EntityTable(EntityArchetype.Base);
 
             Assert.IsTrue(table.IsEmpty);
             Assert.IsFalse(table.IsReadOnly);

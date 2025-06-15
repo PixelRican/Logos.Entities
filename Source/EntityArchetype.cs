@@ -15,7 +15,7 @@ namespace Monophyll.Entities
     /// </summary>
     public sealed class EntityArchetype : IEquatable<EntityArchetype>
     {
-        private static readonly EntityArchetype s_base = new();
+        private static readonly EntityArchetype s_base = new EntityArchetype();
 
         private readonly ComponentType[] m_componentTypes;
         private readonly uint[] m_componentBitmask;
@@ -85,7 +85,7 @@ namespace Monophyll.Entities
         /// </remarks>
         public ReadOnlySpan<ComponentType> ComponentTypes
         {
-            get => new(m_componentTypes);
+            get => new ReadOnlySpan<ComponentType>(m_componentTypes);
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace Monophyll.Entities
         /// </remarks>
         public ReadOnlySpan<uint> ComponentBitmask
         {
-            get => new(m_componentBitmask);
+            get => new ReadOnlySpan<uint>(m_componentBitmask);
         }
 
         /// <summary>

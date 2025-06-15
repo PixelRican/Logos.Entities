@@ -14,7 +14,7 @@ namespace Monophyll.Entities
     /// </summary>
     public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
     {
-        private const BindingFlags SearchFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags Constraints = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static int s_nextID = -1;
 
@@ -27,7 +27,7 @@ namespace Monophyll.Entities
             m_type = type;
             m_id = id;
 
-            if (size > 1 || type.GetFields(SearchFlags).Length > 0)
+            if (size > 1 || type.GetFields(Constraints).Length > 0)
             {
                 m_size = isManaged ? size | int.MinValue : size;
             }
@@ -62,12 +62,22 @@ namespace Monophyll.Entities
         /// </summary>
         public ComponentTypeCategory Category
         {
-            get => m_size switch
+            get
             {
-                < 0 => ComponentTypeCategory.Managed,
-                > 0 => ComponentTypeCategory.Unmanaged,
-                _ => ComponentTypeCategory.Tag
-            };
+                int size = m_size;
+
+                if (size < 0)
+                {
+                    return ComponentTypeCategory.Managed;
+                }
+
+                if (size > 0)
+                {
+                    return ComponentTypeCategory.Unmanaged;
+                }
+
+                return ComponentTypeCategory.Tag;
+            }
         }
 
         /// <summary>
@@ -199,7 +209,7 @@ namespace Monophyll.Entities
 
         private static class ComponentTypeLookup<T>
         {
-            public static readonly ComponentType Value = new(typeof(T),
+            public static readonly ComponentType Value = new ComponentType(typeof(T),
                 Interlocked.Increment(ref s_nextID), Unsafe.SizeOf<T>(),
                 RuntimeHelpers.IsReferenceOrContainsReferences<T>());
         }

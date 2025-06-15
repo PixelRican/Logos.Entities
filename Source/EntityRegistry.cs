@@ -17,7 +17,8 @@ namespace Monophyll.Entities
         private volatile Container m_container;
         private EntityQuery? m_universalQuery;
 
-        public EntityRegistry() : this(DefaultCapacity)
+        public EntityRegistry()
+            : this(DefaultCapacity)
         {
         }
 
@@ -98,7 +99,7 @@ namespace Monophyll.Entities
                 }
             }
 
-            EntityTable table = new(grouping.Key, m_lookup, TargetTableSize / grouping.Key.EntitySize);
+            EntityTable table = new EntityTable(grouping.Key, m_lookup, TargetTableSize / grouping.Key.EntitySize);
             grouping.Add(table);
             return table;
         }
@@ -344,7 +345,7 @@ namespace Monophyll.Entities
                     ? m_freeIDs[m_nextID - m_size]
                     : m_nextID++;
                 ref Entry entry = ref m_entries[index];
-                Entity entity = new(index, entry.Version);
+                Entity entity = new Entity(index, entry.Version);
 
                 entry.Table = table;
                 entry.Index = table.Count;
@@ -445,7 +446,7 @@ namespace Monophyll.Entities
                     capacity = size + 1;
                 }
 
-                Container container = new(capacity, size);
+                Container container = new Container(capacity, size);
                 Array.Copy(m_entries, container.m_entries, size);
                 return container;
             }
