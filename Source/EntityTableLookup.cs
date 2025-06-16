@@ -234,7 +234,11 @@ namespace Monophyll.Entities
         public EntityTableGrouping GetSubgrouping(EntityArchetype archetype, ComponentType componentType)
         {
             ArgumentNullException.ThrowIfNull(archetype);
-            ArgumentNullException.ThrowIfNull(componentType);
+
+            if (componentType == null)
+            {
+                return GetGrouping(archetype);
+            }
 
             ReadOnlySpan<uint> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.ID >> 5;
@@ -264,7 +268,9 @@ namespace Monophyll.Entities
             if ((destinationBitmask[index] ^= bit) == 0)
             {
                 ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
-                destinationBitmask = destinationBitmask.Slice(0, componentTypes.Length > 1 ? componentTypes[^2].ID + 32 >> 5 : 0);
+                destinationBitmask = componentTypes.Length > 1
+                    ? destinationBitmask.Slice(0, componentTypes[^2].ID + 32 >> 5)
+                    : Span<uint>.Empty;
             }
 
             EntityTableGrouping? grouping = m_container.Find(destinationBitmask);
@@ -299,13 +305,17 @@ namespace Monophyll.Entities
         public EntityTableGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
         {
             ArgumentNullException.ThrowIfNull(archetype);
-            ArgumentNullException.ThrowIfNull(componentType);
+
+            if (componentType == null)
+            {
+                return GetGrouping(archetype);
+            }
 
             ReadOnlySpan<uint> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.ID >> 5;
             uint bit = 1u << componentType.ID;
 
-            if (index < sourceBitmask.Length && (sourceBitmask[index] & bit) != 0)
+            if (index < sourceBitmask.Length && (bit & sourceBitmask[index]) != 0)
             {
                 return GetGrouping(archetype);
             }
