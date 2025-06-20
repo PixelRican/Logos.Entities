@@ -17,8 +17,7 @@ namespace Monophyll.Entities
         private volatile Container m_container;
         private EntityQuery? m_universalQuery;
 
-        public EntityRegistry()
-            : this(DefaultCapacity)
+        public EntityRegistry() : this(DefaultCapacity)
         {
         }
 
@@ -162,7 +161,7 @@ namespace Monophyll.Entities
                     return false;
                 }
 
-                container.Move(entity.ID, GetNextAvailableTable(grouping));
+                container.Move(entity.Identifier, GetNextAvailableTable(grouping));
 
                 if (table.IsEmpty)
                 {
@@ -201,7 +200,7 @@ namespace Monophyll.Entities
 
                     table = GetNextAvailableTable(grouping);
                     index = table.Count;
-                    container.Move(entity.ID, table);
+                    container.Move(entity.Identifier, table);
 
                     if (source.IsEmpty)
                     {
@@ -237,7 +236,7 @@ namespace Monophyll.Entities
                 }
 
                 component = table.GetComponents<T>()[index];
-                container.Move(entity.ID, GetNextAvailableTable(grouping));
+                container.Move(entity.Identifier, GetNextAvailableTable(grouping));
 
                 if (table.IsEmpty)
                 {
@@ -306,22 +305,22 @@ namespace Monophyll.Entities
 
         private sealed class Container
         {
-            private readonly int[] m_freeIDs;
+            private readonly int[] m_freeIdentifiers;
             private readonly Entry[] m_entries;
-            private int m_nextID;
+            private int m_nextIdentifier;
             private int m_size;
 
             public Container(int capacity)
             {
-                m_freeIDs = new int[capacity];
+                m_freeIdentifiers = new int[capacity];
                 m_entries = new Entry[capacity];
             }
 
             private Container(int capacity, int size)
             {
-                m_freeIDs = new int[capacity];
+                m_freeIdentifiers = new int[capacity];
                 m_entries = new Entry[capacity];
-                m_nextID = m_size = size;
+                m_nextIdentifier = m_size = size;
             }
 
             public int Capacity
@@ -341,9 +340,9 @@ namespace Monophyll.Entities
 
             public Entity Create(EntityTable table)
             {
-                int index = m_size++ < m_nextID
-                    ? m_freeIDs[m_nextID - m_size]
-                    : m_nextID++;
+                int index = m_size++ < m_nextIdentifier
+                    ? m_freeIdentifiers[m_nextIdentifier - m_size]
+                    : m_nextIdentifier++;
                 ref Entry entry = ref m_entries[index];
                 Entity entity = new Entity(index, entry.Version);
 
@@ -373,10 +372,10 @@ namespace Monophyll.Entities
 
                 if (index < table.Count)
                 {
-                    m_entries[table.GetEntities()[index].ID].Index = index;
+                    m_entries[table.GetEntities()[index].Identifier].Index = index;
                 }
 
-                m_freeIDs[m_nextID - m_size--] = entity.ID;
+                m_freeIdentifiers[m_nextIdentifier - m_size--] = entity.Identifier;
                 return table;
             }
 
@@ -403,8 +402,8 @@ namespace Monophyll.Entities
             {
                 ref Entry entry = ref Unsafe.NullRef<Entry>();
 
-                if ((uint)entity.ID < (uint)m_nextID &&
-                    (entry = ref m_entries[entity.ID]).Table != null &&
+                if ((uint)entity.Identifier < (uint)m_nextIdentifier &&
+                    (entry = ref m_entries[entity.Identifier]).Table != null &&
                     entity.Version == entry.Version)
                 {
                     return ref entry;
@@ -413,11 +412,11 @@ namespace Monophyll.Entities
                 return ref Unsafe.NullRef<Entry>();
             }
 
-            public void Move(int entityID, EntityTable destination)
+            public void Move(int index, EntityTable destination)
             {
-                ref Entry entry = ref m_entries[entityID];
+                ref Entry entry = ref m_entries[index];
                 EntityTable table = entry.Table;
-                int index = entry.Index;
+                index = entry.Index;
 
                 entry.Table = destination;
                 entry.Index = destination.Count;
@@ -427,7 +426,7 @@ namespace Monophyll.Entities
 
                 if (index < table.Count)
                 {
-                    m_entries[table.GetEntities()[index].ID].Index = index;
+                    m_entries[table.GetEntities()[index].Identifier].Index = index;
                 }
             }
 

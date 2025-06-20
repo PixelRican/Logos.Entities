@@ -11,32 +11,32 @@ namespace Monophyll.Entities
     /// </summary>
     public readonly struct Entity : IEquatable<Entity>, IComparable<Entity>, IComparable
     {
-        private readonly int m_id;
+        private readonly int m_identifier;
         private readonly int m_version;
 
         /// <summary>
         /// Creates a new entity with an ID and a generational version.
         /// </summary>
         /// 
-        /// <param name="id">
+        /// <param name="identifier">
         /// The ID of the entity.
         /// </param>
         /// 
         /// <param name="version">
         /// The generational version of the entity.
         /// </param>
-        public Entity(int id, int version)
+        public Entity(int identifier, int version)
         {
-            m_id = id;
+            m_identifier = identifier;
             m_version = version;
         }
 
         /// <summary>
         /// Gets the ID of the entity.
         /// </summary>
-        public int ID
+        public int Identifier
         {
-            get => m_id;
+            get => m_identifier;
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Monophyll.Entities
 
         public int CompareTo(Entity other)
         {
-            int comparison = m_id.CompareTo(other.ID);
+            int comparison = m_identifier.CompareTo(other.Identifier);
 
             if (comparison != 0)
             {
@@ -76,7 +76,7 @@ namespace Monophyll.Entities
 
         public bool Equals(Entity other)
         {
-            return m_id == other.m_id
+            return m_identifier == other.m_identifier
                 && m_version == other.m_version;
         }
 
@@ -87,12 +87,12 @@ namespace Monophyll.Entities
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(m_id, m_version);
+            return HashCode.Combine(m_identifier, m_version);
         }
 
         public override string ToString()
         {
-            return $"Entity {{ ID = {m_id}, Version = {m_version} }}";
+            return $"Entity {{ Identifier = {m_identifier}, Version = {m_version} }}";
         }
 
         public static bool operator ==(Entity left, Entity right)

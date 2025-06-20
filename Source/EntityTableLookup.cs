@@ -116,7 +116,7 @@ namespace Monophyll.Entities
             {
                 if (componentType != null)
                 {
-                    builder.Set(componentType.ID);
+                    builder.Set(componentType.Identifier);
                 }
             }
 
@@ -146,7 +146,7 @@ namespace Monophyll.Entities
                     }
 
                     array[count++] = componentType;
-                    builder.Set(componentType.ID);
+                    builder.Set(componentType.Identifier);
                 }
             }
 
@@ -167,7 +167,7 @@ namespace Monophyll.Entities
 
                 if (componentType != null)
                 {
-                    builder.Set(componentType.ID);
+                    builder.Set(componentType.Identifier);
                 }
             }
 
@@ -241,8 +241,8 @@ namespace Monophyll.Entities
             }
 
             ReadOnlySpan<uint> sourceBitmask = archetype.ComponentBitmask;
-            int index = componentType.ID >> 5;
-            uint bit = 1u << componentType.ID;
+            int index = componentType.Identifier >> 5;
+            uint bit = 1u << componentType.Identifier;
 
             if (index >= sourceBitmask.Length || (bit & sourceBitmask[index]) == 0)
             {
@@ -269,7 +269,7 @@ namespace Monophyll.Entities
             {
                 ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
                 destinationBitmask = componentTypes.Length > 1
-                    ? destinationBitmask.Slice(0, componentTypes[^2].ID + 32 >> 5)
+                    ? destinationBitmask.Slice(0, componentTypes[^2].Identifier + 32 >> 5)
                     : Span<uint>.Empty;
             }
 
@@ -312,8 +312,8 @@ namespace Monophyll.Entities
             }
 
             ReadOnlySpan<uint> sourceBitmask = archetype.ComponentBitmask;
-            int index = componentType.ID >> 5;
-            uint bit = 1u << componentType.ID;
+            int index = componentType.Identifier >> 5;
+            uint bit = 1u << componentType.Identifier;
 
             if (index < sourceBitmask.Length && (bit & sourceBitmask[index]) != 0)
             {

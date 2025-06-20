@@ -228,7 +228,7 @@ namespace Monophyll.Entities
                 return false;
             }
 
-            componentBitmask = new uint[componentTypes[^1].ID + 32 >> 5];
+            componentBitmask = new uint[componentTypes[^1].Identifier + 32 >> 5];
 
             int freeIndex = 0;
             ComponentType? previous = null;
@@ -238,7 +238,7 @@ namespace Monophyll.Entities
                 if (!ComponentType.Equals(previous, current))
                 {
                     componentTypes[freeIndex++] = previous = current;
-                    componentBitmask[current.ID >> 5] |= 1u << current.ID;
+                    componentBitmask[current.Identifier >> 5] |= 1u << current.Identifier;
                 }
             }
 
@@ -304,19 +304,19 @@ namespace Monophyll.Entities
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.Identifier);
         }
 
         public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.Identifier);
         }
 
         public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.Identifier);
         }
 
         public bool Matches(EntityArchetype archetype)

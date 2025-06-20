@@ -34,7 +34,7 @@ namespace Monophyll.Entities
         private EntityArchetype(ComponentType[] componentTypes)
         {
             m_componentTypes = componentTypes;
-            m_componentBitmask = new uint[componentTypes[^1].ID + 32 >> 5];
+            m_componentBitmask = new uint[componentTypes[^1].Identifier + 32 >> 5];
             m_entitySize = Unsafe.SizeOf<Entity>();
 
             int freeIndex = 0;
@@ -45,7 +45,7 @@ namespace Monophyll.Entities
                 if (!ComponentType.Equals(previous, current))
                 {
                     m_componentTypes[freeIndex++] = previous = current;
-                    m_componentBitmask[current.ID >> 5] |= 1u << current.ID;
+                    m_componentBitmask[current.Identifier >> 5] |= 1u << current.Identifier;
                     m_entitySize += current.Size;
 
                     switch (current.Category)
@@ -284,7 +284,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
         {
-            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.ID))
+            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.Identifier))
             {
                 return this;
             }
@@ -325,7 +325,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
         {
-            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.ID))
+            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.Identifier))
             {
                 return this;
             }
@@ -369,7 +369,7 @@ namespace Monophyll.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ComponentBitmask, componentType.ID);
+                && BitmaskOperations.Test(ComponentBitmask, componentType.Identifier);
         }
 
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)

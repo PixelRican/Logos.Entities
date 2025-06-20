@@ -16,16 +16,16 @@ namespace Monophyll.Entities
     {
         private const BindingFlags Constraints = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static int s_nextID = -1;
+        private static int s_nextIdentifier = -1;
 
         private readonly Type m_type;
-        private readonly int m_id;
+        private readonly int m_identifier;
         private readonly int m_size;
 
-        private ComponentType(Type type, int id, int size, bool isManaged)
+        private ComponentType(Type type, int identifier, int size, bool isManaged)
         {
             m_type = type;
-            m_id = id;
+            m_identifier = identifier;
 
             if (size > 1 || type.GetFields(Constraints).Length > 0)
             {
@@ -44,9 +44,9 @@ namespace Monophyll.Entities
         /// <summary>
         /// Gets the numeric ID associated with the component type.
         /// </summary>
-        public int ID
+        public int Identifier
         {
-            get => m_id;
+            get => m_identifier;
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Monophyll.Entities
                 return comparison;
             }
 
-            return a.m_id.CompareTo(b.m_id);
+            return a.m_identifier.CompareTo(b.m_identifier);
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace Monophyll.Entities
             return a == b
                 || a != null
                 && b != null
-                && a.m_id == b.m_id
+                && a.m_identifier == b.m_identifier
                 && a.m_size == b.m_size
                 && a.m_type == b.m_type;
         }
@@ -199,18 +199,18 @@ namespace Monophyll.Entities
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(m_type, m_id, m_size);
+            return HashCode.Combine(m_type, m_identifier, m_size);
         }
 
         public override string ToString()
         {
-            return $"ComponentType {{ Type = {m_type.Name}, ID = {m_id} }}";
+            return $"ComponentType {{ Type = {m_type.Name}, Identifier = {m_identifier} }}";
         }
 
         private static class ComponentTypeLookup<T>
         {
             public static readonly ComponentType Value = new ComponentType(typeof(T),
-                Interlocked.Increment(ref s_nextID), Unsafe.SizeOf<T>(),
+                Interlocked.Increment(ref s_nextIdentifier), Unsafe.SizeOf<T>(),
                 RuntimeHelpers.IsReferenceOrContainsReferences<T>());
         }
     }

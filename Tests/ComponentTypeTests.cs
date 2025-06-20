@@ -98,9 +98,9 @@ namespace Monophyll.Entities.Tests
             TypeOfTestHelper<User>(7);
         }
 
-        private static void TypeOfTestHelper<T>(int expectedId)
+        private static void TypeOfTestHelper<T>(int expectedIdentifier)
         {
-            Assert.AreEqual(expectedId, ComponentType.TypeOf<T>().ID);
+            Assert.AreEqual(expectedIdentifier, ComponentType.TypeOf<T>().Identifier);
             Assert.AreEqual(typeof(T), ComponentType.TypeOf<T>().Type);
 
             switch (ComponentType.TypeOf<T>().Category)
