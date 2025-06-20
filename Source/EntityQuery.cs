@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace Monophyll.Entities
 {
@@ -44,9 +43,9 @@ namespace Monophyll.Entities
         {
             get
             {
-                if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+                if (m_lookup.Count > m_lookupIndex)
                 {
-                    Refresh();
+                    UpdateCache();
                 }
 
                 return m_size;
@@ -57,9 +56,9 @@ namespace Monophyll.Entities
         {
             get
             {
-                if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+                if (m_lookup.Count > m_lookupIndex)
                 {
-                    Refresh();
+                    UpdateCache();
                 }
 
                 int count = 0;
@@ -79,9 +78,9 @@ namespace Monophyll.Entities
         {
             get
             {
-                if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+                if (m_lookup.Count > m_lookupIndex)
                 {
-                    Refresh();
+                    UpdateCache();
                 }
 
                 int count = 0;
@@ -102,9 +101,9 @@ namespace Monophyll.Entities
 
         public Enumerator GetEnumerator()
         {
-            if (Volatile.Read(ref m_lookupIndex) < m_lookup.Count)
+            if (m_lookup.Count > m_lookupIndex)
             {
-                Refresh();
+                UpdateCache();
             }
 
             return new Enumerator(this);
@@ -120,7 +119,7 @@ namespace Monophyll.Entities
             return GetEnumerator();
         }
 
-        private void Refresh()
+        private void UpdateCache()
         {
             lock (m_lock)
             {
@@ -163,7 +162,7 @@ namespace Monophyll.Entities
 
                     m_groupings = groupings;
                     m_size = size;
-                    Volatile.Write(ref m_lookupIndex, index);
+                    m_lookupIndex = index;
                 }
             }
         }
