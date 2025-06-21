@@ -7,27 +7,78 @@ using System.Collections.Generic;
 
 namespace Monophyll.Entities
 {
+    /// <summary>
+    /// Represents a query that matches entity tables based on their entity archetypes.
+    /// </summary>
     public class EntityQuery : IEnumerable<EntityTable>
     {
         private readonly EntityTableLookup m_lookup;
         private readonly EntityFilter m_filter;
         private readonly Cache? m_cache;
 
+        /// <summary>
+        /// Initializes an uncached entity query that matches all entity tables from the specified
+        /// entity table lookup.
+        /// </summary>
+        /// 
+        /// <param name="lookup">
+        /// The entity table lookup.
+        /// </param>
         public EntityQuery(EntityTableLookup lookup)
             : this(lookup, EntityFilter.Universal, false)
         {
         }
 
+        /// <summary>
+        /// Initializes an entity query that matches all entity tables from the specified entity
+        /// table lookup, and optionally caches the results.
+        /// </summary>
+        /// 
+        /// <param name="lookup">
+        /// The entity table lookup.
+        /// </param>
+        /// 
+        /// <param name="cached">
+        /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
+        /// </param>
         public EntityQuery(EntityTableLookup lookup, bool cached)
             : this(lookup, EntityFilter.Universal, cached)
         {
         }
 
+        /// <summary>
+        /// Initializes an uncached entity query that matches entity tables from the specified
+        /// entity table lookup using the specified entity filter.
+        /// </summary>
+        /// 
+        /// <param name="lookup">
+        /// The entity table lookup.
+        /// </param>
+        /// 
+        /// <param name="filter">
+        /// The entity filter.
+        /// </param>
         public EntityQuery(EntityTableLookup lookup, EntityFilter? filter)
             : this(lookup, filter, false)
         {
         }
 
+        /// <summary>
+        /// Initializes an entity query that matches entity tables from the specified entity table
+        /// lookup using the specified entity filter, and optionally caches the results.
+        /// </summary>
+        /// 
+        /// <param name="lookup">
+        /// The entity table lookup.
+        /// </param>
+        /// 
+        /// <param name="filter">
+        /// The entity filter.
+        /// </param>
+        /// 
+        /// <param name="cached">
+        /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
+        /// </param>
         public EntityQuery(EntityTableLookup lookup, EntityFilter? filter, bool cached)
         {
             ArgumentNullException.ThrowIfNull(lookup);
@@ -42,11 +93,22 @@ namespace Monophyll.Entities
             }
         }
 
+        /// <summary>
+        /// Gets the entity filter used by the entity query used to match entity tables based on
+        /// their entity archetypes.
+        /// </summary>
         public EntityFilter Filter
         {
             get => m_filter;
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the entity query.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// An enumerator that can be used to iterate through the entity query.
+        /// </returns>
         public Enumerator GetEnumerator()
         {
             if (m_cache == null)
@@ -75,6 +137,9 @@ namespace Monophyll.Entities
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Enumerates through the elements of the entity query.
+        /// </summary>
         public struct Enumerator : IEnumerator<EntityTable>
         {
             private readonly EntityQuery m_query;

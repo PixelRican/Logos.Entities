@@ -341,6 +341,9 @@ namespace Monophyll.Entities
             return newTables;
         }
 
+        /// <summary>
+        /// Enumerates through the elements of the entity table grouping.
+        /// </summary>
         public struct Enumerator : IEnumerator<EntityTable>
         {
             private readonly EntityTable[] m_tables;

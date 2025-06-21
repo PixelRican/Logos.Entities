@@ -682,7 +682,7 @@ namespace Monophyll.Entities
             private uint[] m_excludedComponentBitmask;
 
             /// <summary>
-            /// Constructs an empty entity filter builder.
+            /// Initializes an empty entity filter builder.
             /// </summary>
             public Builder()
             {
@@ -690,7 +690,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Constructs an entity filter builder that contains the specified entity filter's
+            /// Initializes an entity filter builder that contains the specified entity filter's
             /// required, included, and excluded component types.
             /// </summary>
             public Builder(EntityFilter filter)
