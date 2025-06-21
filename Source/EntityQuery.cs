@@ -40,6 +40,7 @@ namespace Monophyll.Entities
             if (cached)
             {
                 m_cache = new Cache();
+                m_cache.Refresh(m_lookup, m_filter);
             }
         }
 
@@ -83,7 +84,7 @@ namespace Monophyll.Entities
                 m_query = query;
                 m_count = query.m_cache != null
                     ? query.m_cache.Count
-                    : query.m_lookup.Count | int.MinValue;
+                    : query.m_lookup.Count;
                 m_index = 0;
                 m_enumerator = default;
             }
@@ -109,18 +110,11 @@ namespace Monophyll.Entities
 
             private bool MoveNextRare()
             {
-                int count = m_count & int.MaxValue;
+                Cache? cache = m_query.m_cache;
 
-                if (count == 0)
+                if (cache != null)
                 {
-                    return false;
-                }
-
-                if (m_count > 0)
-                {
-                    Cache cache = m_query.m_cache!;
-
-                    do
+                    while (m_index < m_count)
                     {
                         m_enumerator = cache[m_index++].GetEnumerator();
 
@@ -129,14 +123,13 @@ namespace Monophyll.Entities
                             return true;
                         }
                     }
-                    while (m_index < count);
                 }
                 else
                 {
                     EntityTableLookup lookup = m_query.m_lookup;
                     EntityFilter filter = m_query.m_filter;
 
-                    do
+                    while (m_index < m_count)
                     {
                         EntityTableGrouping grouping = lookup[m_index++];
 
@@ -150,7 +143,6 @@ namespace Monophyll.Entities
                             }
                         }
                     }
-                    while (m_index < count);
                 }
 
                 m_enumerator = default;
