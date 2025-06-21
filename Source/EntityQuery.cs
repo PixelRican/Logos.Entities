@@ -9,8 +9,6 @@ namespace Monophyll.Entities
 {
     public class EntityQuery : IEnumerable<EntityTable>
     {
-        private const int DefaultCapacity = 4;
-
         private readonly EntityTableLookup m_lookup;
         private readonly EntityFilter m_filter;
         private readonly Cache? m_cache;
@@ -51,7 +49,12 @@ namespace Monophyll.Entities
 
         public Enumerator GetEnumerator()
         {
-            if (m_cache != null && m_lookup.Count > m_cache.Version)
+            if (m_cache == null)
+            {
+                return new Enumerator(this, m_lookup.Count);
+            }
+
+            if (m_lookup.Count > m_cache.Version)
             {
                 lock (m_cache)
                 {
@@ -59,7 +62,7 @@ namespace Monophyll.Entities
                 }
             }
 
-            return new Enumerator(this);
+            return new Enumerator(this, m_cache.Count);
         }
 
         IEnumerator<EntityTable> IEnumerable<EntityTable>.GetEnumerator()
@@ -79,12 +82,10 @@ namespace Monophyll.Entities
             private int m_index;
             private EntityTableGrouping.Enumerator m_enumerator;
 
-            internal Enumerator(EntityQuery query)
+            internal Enumerator(EntityQuery query, int count)
             {
                 m_query = query;
-                m_count = query.m_cache != null
-                    ? query.m_cache.Count
-                    : query.m_lookup.Count;
+                m_count = count;
                 m_index = 0;
                 m_enumerator = default;
             }
@@ -158,6 +159,8 @@ namespace Monophyll.Entities
 
         private sealed class Cache
         {
+            private const int DefaultCapacity = 4;
+
             private EntityTableGrouping[] m_items;
             private int m_size;
             private int m_version;
