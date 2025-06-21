@@ -164,7 +164,7 @@ namespace Monophyll.Entities
         /// 
         /// <returns>
         /// An entity archetype that is composed of component types from the array, or
-        /// <see cref="EntityArchetype.Base"/> if the array contains no component types.
+        /// <see cref="Base"/> if the array contains no component types.
         /// </returns>
         public static EntityArchetype Create(ComponentType[] componentTypes)
         {
@@ -196,7 +196,7 @@ namespace Monophyll.Entities
         /// 
         /// <returns>
         /// An entity archetype that is composed of component types from the sequence, or
-        /// <see cref="EntityArchetype.Base"/> if the sequence contains no component types.
+        /// <see cref="Base"/> if the sequence contains no component types.
         /// </returns>
         public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
         {
@@ -226,7 +226,7 @@ namespace Monophyll.Entities
         /// 
         /// <returns>
         /// An entity archetype that is composed of component types from the span, or
-        /// <see cref="EntityArchetype.Base"/> if the span contains no component types.
+        /// <see cref="Base"/> if the span contains no component types.
         /// </returns>
         public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -355,7 +355,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Indicates whether the entity archetype contains a specified component type.
+        /// Indicates whether the entity archetype contains the specified component type.
         /// </summary>
         /// 
         /// <param name="componentType">
