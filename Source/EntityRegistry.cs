@@ -14,8 +14,8 @@ namespace Monophyll.Entities
         private const int TargetTableSize = 16384;
 
         private readonly EntityTableLookup m_lookup;
+        private readonly EntityQuery m_universalQuery;
         private volatile Container m_container;
-        private EntityQuery? m_universalQuery;
 
         public EntityRegistry() : this(DefaultCapacity)
         {
@@ -30,6 +30,7 @@ namespace Monophyll.Entities
             }
 
             m_lookup = new EntityTableLookup();
+            m_universalQuery = new EntityQuery(m_lookup);
             m_container = new Container(capacity);
         }
 
@@ -45,7 +46,7 @@ namespace Monophyll.Entities
 
         public EntityQuery UniversalQuery
         {
-            get => m_universalQuery ??= new EntityQuery(m_lookup);
+            get => m_universalQuery;
         }
 
         public Entity CreateEntity()
@@ -293,14 +294,14 @@ namespace Monophyll.Entities
             return (table = m_container.Find(entity, out _)) != null;
         }
 
-        public EntityQuery GetQuery(EntityFilter filter)
+        public EntityQuery GetQuery(EntityFilter filter, bool cached)
         {
-            if (filter == EntityFilter.Universal)
+            if (filter == null || filter == EntityFilter.Universal && !cached)
             {
-                return UniversalQuery;
+                return m_universalQuery;
             }
 
-            return new EntityQuery(m_lookup, filter);
+            return new EntityQuery(m_lookup, filter, cached);
         }
 
         private sealed class Container
