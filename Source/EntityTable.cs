@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace Monophyll.Entities
 {
@@ -11,8 +10,8 @@ namespace Monophyll.Entities
     {
         private const int MinimumCapacity = 8;
 
-        private readonly object? m_writeLock;
         private readonly EntityArchetype m_archetype;
+        private readonly EntityRegistry? m_registry;
         private readonly Array[] m_components;
         private readonly Entity[] m_entities;
         private int m_size;
@@ -28,12 +27,12 @@ namespace Monophyll.Entities
         {
         }
 
-        public EntityTable(EntityArchetype archetype, object? writeLock)
-            : this(archetype, writeLock, MinimumCapacity)
+        public EntityTable(EntityArchetype archetype, EntityRegistry? registry)
+            : this(archetype, registry, MinimumCapacity)
         {
         }
 
-        public EntityTable(EntityArchetype archetype, object? writeLock, int capacity)
+        public EntityTable(EntityArchetype archetype, EntityRegistry? registry, int capacity)
         {
             ArgumentNullException.ThrowIfNull(archetype);
 
@@ -46,7 +45,7 @@ namespace Monophyll.Entities
             ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes.Slice(0,
                 archetype.ManagedPartitionLength + archetype.UnmanagedPartitionLength);
             m_archetype = archetype;
-            m_writeLock = writeLock;
+            m_registry = registry;
 
             if (componentTypes.Length > 0)
             {
@@ -70,6 +69,11 @@ namespace Monophyll.Entities
         public EntityArchetype Archetype
         {
             get => m_archetype;
+        }
+
+        public EntityRegistry? Registry
+        {
+            get => m_registry;
         }
 
         public int Capacity
@@ -99,7 +103,7 @@ namespace Monophyll.Entities
 
         public bool IsReadOnly
         {
-            get => m_writeLock != null && !Monitor.IsEntered(m_writeLock);
+            get => m_registry != null && !m_registry.AllowStructureChanges;
         }
 
         public Span<T> GetComponents<T>()

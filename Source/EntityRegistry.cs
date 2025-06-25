@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Monophyll.Entities
 {
@@ -32,6 +33,11 @@ namespace Monophyll.Entities
             m_lookup = new EntityTableLookup();
             m_universalQuery = new EntityQuery(m_lookup);
             m_container = new Container(capacity);
+        }
+
+        public bool AllowStructureChanges
+        {
+            get => Monitor.IsEntered(m_lookup);
         }
 
         public int Capacity
@@ -99,7 +105,7 @@ namespace Monophyll.Entities
                 }
             }
 
-            EntityTable table = new EntityTable(grouping.Key, m_lookup, TargetTableSize / grouping.Key.EntitySize);
+            EntityTable table = new EntityTable(grouping.Key, this, TargetTableSize / grouping.Key.EntitySize);
             grouping.Add(table);
             return table;
         }
