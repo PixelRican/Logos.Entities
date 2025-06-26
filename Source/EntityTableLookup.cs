@@ -12,6 +12,9 @@ using System.Threading;
 
 namespace Monophyll.Entities
 {
+    /// <summary>
+    /// Represents a collection of entity archetypes each mapped to one or more entity tables.
+    /// </summary>
     public class EntityTableLookup : ILookup<EntityArchetype, EntityTable>, IReadOnlyList<EntityTableGrouping>, ICollection
     {
         private const int DefaultCapacity = 8;
@@ -19,12 +22,19 @@ namespace Monophyll.Entities
         private readonly object m_lock;
         private volatile Container m_container;
 
+        /// <summary>
+        /// Initializes a new instance of the entity table lookup class.
+        /// </summary>
         public EntityTableLookup()
         {
             m_lock = new object();
             m_container = new Container();
         }
 
+        /// <summary>
+        /// Gets the total number of entity table groupings the internal data structure can hold
+        /// without resizing.
+        /// </summary>
         public int Capacity
         {
             get => m_container.Capacity;
@@ -76,6 +86,19 @@ namespace Monophyll.Entities
             return m_container.Find(key.ComponentBitmask) != null;
         }
 
+        /// <summary>
+        /// Copies the elements of the entity table lookup to an array, starting at a particular
+        /// array index.
+        /// </summary>
+        /// 
+        /// <param name="array">
+        /// The one-dimensional array that is the destination of the entity table groupings copied
+        /// from the entity table lookup. The array must have zero-based indexing.
+        /// </param>
+        /// 
+        /// <param name="index">
+        /// The zero-based index in the array at which copying begins.
+        /// </param>
         public void CopyTo(EntityTableGrouping[] array, int index)
         {
             m_container.CopyTo(array, index);
@@ -86,6 +109,13 @@ namespace Monophyll.Entities
             m_container.CopyTo(array, index);
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the entity table lookup.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// An enumerator that can be used to iterate through the entity table lookup.
+        /// </returns>
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
@@ -106,6 +136,18 @@ namespace Monophyll.Entities
             return new Enumerator(this);
         }
 
+        /// <summary>
+        /// Gets or creates an entity table grouping whose key is composed of component types from
+        /// the specified array.
+        /// </summary>
+        /// 
+        /// <param name="componentTypes">
+        /// The array of component types.
+        /// </param>
+        /// 
+        /// <returns>
+        /// An entity table grouping whose key is composed of component types from the array.
+        /// </returns>
         public EntityTableGrouping GetGrouping(ComponentType[] componentTypes)
         {
             ArgumentNullException.ThrowIfNull(componentTypes);
@@ -125,6 +167,18 @@ namespace Monophyll.Entities
             return grouping;
         }
 
+        /// <summary>
+        /// Gets or creates an entity table grouping whose key is composed of component types from
+        /// the specified sequence.
+        /// </summary>
+        /// 
+        /// <param name="componentTypes">
+        /// The sequence of component types.
+        /// </param>
+        /// 
+        /// <returns>
+        /// An entity table grouping whose key is composed of component types from the sequence.
+        /// </returns>
         public EntityTableGrouping GetGrouping(IEnumerable<ComponentType> componentTypes)
         {
             ComponentType[] array = componentTypes.TryGetNonEnumeratedCount(out int count)
@@ -157,6 +211,18 @@ namespace Monophyll.Entities
             return grouping;
         }
 
+        /// <summary>
+        /// Gets or creates an entity table grouping whose key is composed of component types from
+        /// the specified span.
+        /// </summary>
+        /// 
+        /// <param name="componentTypes">
+        /// The span of component types.
+        /// </param>
+        /// 
+        /// <returns>
+        /// An entity table grouping whose key is composed of component types from the span.
+        /// </returns>
         public EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes)
         {
             BitmaskBuilder builder = new BitmaskBuilder(stackalloc uint[DefaultCapacity]);
@@ -203,6 +269,18 @@ namespace Monophyll.Entities
             return grouping;
         }
 
+        /// <summary>
+        /// Gets or creates an entity table grouping whose key is equal to the specified entity
+        /// archetype.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
+        /// 
+        /// <returns>
+        /// An entity table grouping whose key is equal to the entity archetype.
+        /// </returns>
         public EntityTableGrouping GetGrouping(EntityArchetype archetype)
         {
             ArgumentNullException.ThrowIfNull(archetype);
@@ -231,6 +309,23 @@ namespace Monophyll.Entities
             return grouping;
         }
 
+        /// <summary>
+        /// Gets or creates an entity table grouping whose key is composed of component types from
+        /// the specified entity archtype, excluding the specified component type.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
+        /// 
+        /// <param name="componentType">
+        /// The component type to exclude.
+        /// </param>
+        /// 
+        /// <returns>
+        /// An entity table grouping whose key is composed of component types from the entity
+        /// archtype, excluding the component type.
+        /// </returns>
         public EntityTableGrouping GetSubgrouping(EntityArchetype archetype, ComponentType componentType)
         {
             ArgumentNullException.ThrowIfNull(archetype);
@@ -302,6 +397,23 @@ namespace Monophyll.Entities
             return grouping;
         }
 
+        /// <summary>
+        /// Gets or creates an entity table grouping whose key is composed of component types from
+        /// the specified entity archtype, including the specified component type.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
+        /// 
+        /// <param name="componentType">
+        /// The component type to include.
+        /// </param>
+        /// 
+        /// <returns>
+        /// An entity table grouping whose key is composed of component types from the entity
+        /// archtype, including the component type.
+        /// </returns>
         public EntityTableGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
         {
             ArgumentNullException.ThrowIfNull(archetype);
@@ -368,12 +480,33 @@ namespace Monophyll.Entities
             return grouping;
         }
 
-        public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityTableGrouping? grouping)
+        /// <summary>
+        /// Gets the entity table grouping associated with the specified entity archetype.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The key of the entity table grouping to get.
+        /// </param>
+        /// 
+        /// <param name="grouping">
+        /// When this method returns, contains the entity table grouping associated with the
+        /// specified entity archetype, if the entity archetype is found; otherwise,
+        /// <see langword="null"/>. This parameter is passed uninitialized.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the entity lookup table contains an entity table grouping
+        /// with the specified entity archetype; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryGetGrouping(EntityArchetype archetype, [NotNullWhen(true)] out EntityTableGrouping? grouping)
         {
-            ArgumentNullException.ThrowIfNull(key);
-            return (grouping = m_container.Find(key.ComponentBitmask)) != null;
+            ArgumentNullException.ThrowIfNull(archetype);
+            return (grouping = m_container.Find(archetype.ComponentBitmask)) != null;
         }
 
+        /// <summary>
+        /// Enumerates through the elements of the entity table lookup.
+        /// </summary>
         public struct Enumerator : IEnumerator<EntityTableGrouping>
         {
             private readonly Container m_container;

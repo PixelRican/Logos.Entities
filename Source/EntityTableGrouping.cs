@@ -11,7 +11,7 @@ namespace Monophyll.Entities
     /// <summary>
     /// Represents a collection of entity tables that have a common entity archetype.
     /// </summary>
-    public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IReadOnlyList<EntityTable>, IList
+    public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IList, IReadOnlyList<EntityTable>
     {
         private readonly object m_lock;
         private readonly EntityArchetype m_key;
