@@ -116,7 +116,7 @@ namespace Monophyll.Entities
                 return new Enumerator(this, m_lookup.Count);
             }
 
-            if (m_lookup.Count > m_cache.Version)
+            if (m_cache.ShouldRefresh(m_lookup))
             {
                 lock (m_cache)
                 {
@@ -228,7 +228,7 @@ namespace Monophyll.Entities
 
             private EntityTableGrouping[] m_items;
             private int m_size;
-            private int m_version;
+            private int m_lookupIndex;
 
             public Cache()
             {
@@ -240,21 +240,21 @@ namespace Monophyll.Entities
                 get => m_items[index];
             }
 
+            public int Capacity
+            {
+                get => m_items.Length;
+            }
+
             public int Count
             {
                 get => m_size;
             }
 
-            public int Version
-            {
-                get => m_version;
-            }
-
             public void Refresh(EntityTableLookup lookup, EntityFilter filter)
             {
-                while (lookup.Count > m_version)
+                while (lookup.Count > m_lookupIndex)
                 {
-                    EntityTableGrouping grouping = lookup[m_version++];
+                    EntityTableGrouping grouping = lookup[m_lookupIndex++];
 
                     if (filter.Matches(grouping.Key))
                     {
@@ -278,6 +278,11 @@ namespace Monophyll.Entities
                         m_items[m_size++] = grouping;
                     }
                 }
+            }
+
+            public bool ShouldRefresh(EntityTableLookup lookup)
+            {
+                return lookup.Count > m_lookupIndex;
             }
         }
     }
