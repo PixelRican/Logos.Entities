@@ -8,7 +8,6 @@ namespace Monophyll.Entities.Tests
     [TestClass]
     public sealed class EntityRegistryTests
     {
-
         [TestMethod]
         public void AddComponentTest()
         {
@@ -28,15 +27,12 @@ namespace Monophyll.Entities.Tests
 
             Assert.ThrowsException<ArgumentException>(
                 () => registry.AddComponent(new Entity(-1, -1), null!));
-            registry.TryGetTable(entity, out EntityTable? table);
 
             foreach (ComponentType componentType in componentTypes)
             {
                 Assert.IsTrue(registry.AddComponent(entity, componentType));
-                Assert.IsTrue(registry.ContainsComponent(entity, componentType));
-                Assert.IsTrue(registry.GetTables(table!.Archetype).IsEmpty);
-                Assert.IsTrue(registry.TryGetTable(entity, out table));
-                Assert.IsTrue(componentTypes.StartsWith(table.Archetype.ComponentTypes));
+                Assert.IsTrue(registry.HasComponent(entity, componentType));
+                Assert.IsTrue(componentTypes.StartsWith(registry.GetArchetype(entity).ComponentTypes));
             }
         }
 
@@ -51,24 +47,22 @@ namespace Monophyll.Entities.Tests
 
                 Assert.AreEqual(new Entity(i, 0), entity);
                 Assert.IsTrue(registry.ContainsEntity(entity));
-                Assert.IsTrue(registry.TryGetTable(entity, out EntityTable? table));
-                Assert.AreSame(table.Archetype, EntityArchetype.Base);
-                Assert.AreEqual(table.GetEntities()[i], entity);
+                Assert.AreSame(registry.GetArchetype(entity), EntityArchetype.Base);
+                Assert.AreEqual(registry.GetTable(entity).GetEntities()[i], entity);
             }
 
             Assert.AreEqual(10, registry.Count);
 
-            EntityArchetype archetype = registry.GetArchetype([ComponentType.TypeOf<User>()]);
+            EntityArchetype archetype = registry.CreateArchetype([ComponentType.TypeOf<User>()]);
 
             for (int i = 0; i < 10; i++)
             {
                 Entity entity = registry.CreateEntity(archetype);
 
                 Assert.AreEqual(new Entity(i + 10, 0), entity);
-                Assert.IsTrue(registry.ContainsComponent(entity, ComponentType.TypeOf<User>()));
-                Assert.IsTrue(registry.TryGetTable(entity, out EntityTable? table));
-                Assert.AreSame(table.Archetype, archetype);
-                Assert.AreEqual(table.GetEntities()[i], entity);
+                Assert.IsTrue(registry.HasComponent(entity, ComponentType.TypeOf<User>()));
+                Assert.AreSame(registry.GetArchetype(entity), archetype);
+                Assert.AreEqual(registry.GetTable(entity).GetEntities()[i], entity);
             }
 
             Assert.AreEqual(20, registry.Count);
@@ -84,15 +78,13 @@ namespace Monophyll.Entities.Tests
                 registry.CreateEntity();
             }
 
-            foreach (Entity entity in registry.GetTables(EntityArchetype.Base)[0].GetEntities())
+            foreach (Entity entity in registry.GetTable(new Entity()).GetEntities())
             {
                 Assert.IsTrue(registry.DestroyEntity(entity));
                 Assert.IsFalse(registry.ContainsEntity(entity));
-                Assert.IsFalse(registry.TryGetTable(entity, out _));
             }
 
             Assert.AreEqual(0, registry.Count);
-            Assert.IsTrue(registry.GetTables(EntityArchetype.Base).IsEmpty);
 
             for (int i = 9; i >= 0; i--)
             {
@@ -119,15 +111,12 @@ namespace Monophyll.Entities.Tests
 
             Assert.ThrowsException<ArgumentException>(
                 () => registry.RemoveComponent(new Entity(-1, -1), null!));
-            registry.TryGetTable(entity, out EntityTable? table);
 
             foreach (ComponentType componentType in componentTypes)
             {
                 Assert.IsTrue(registry.RemoveComponent(entity, componentType));
-                Assert.IsFalse(registry.ContainsComponent(entity, componentType));
-                Assert.IsTrue(registry.GetTables(table!.Archetype).IsEmpty);
-                Assert.IsTrue(registry.TryGetTable(entity, out table));
-                Assert.IsTrue(componentTypes.EndsWith(table.Archetype.ComponentTypes));
+                Assert.IsFalse(registry.HasComponent(entity, componentType));
+                Assert.IsTrue(componentTypes.EndsWith(registry.GetArchetype(entity).ComponentTypes));
             }
         }
     }

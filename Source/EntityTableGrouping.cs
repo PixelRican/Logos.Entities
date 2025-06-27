@@ -154,18 +154,6 @@ namespace Monophyll.Entities
             }
         }
 
-        /// <summary>
-        /// Creates a read-only span over the entity table grouping.
-        /// </summary>
-        /// 
-        /// <returns>
-        /// A span over the entity table grouping.
-        /// </returns>
-        public ReadOnlySpan<EntityTable> AsSpan()
-        {
-            return m_tables;
-        }
-
         public void Clear()
         {
             lock (m_lock)

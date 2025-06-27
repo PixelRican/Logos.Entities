@@ -9,10 +9,11 @@ The library's contents is organized into several folders:
 * See Source for the library's source code.
 * See Tests for the library's unit tests.
 
-## Disclaimer
+## Documentation
 
-Currently, not much documentation exists for the library. This is something that will be dealt with
-soon.
+Documentation is available via XML comments within the source code. It may be a little rough around
+the edges, but you should be able to deduce what the code does from reading it. However, I plan on
+improving the docs while I continue working on the library.
 
 ## License
 
