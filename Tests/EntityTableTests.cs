@@ -12,7 +12,7 @@ namespace Monophyll.Entities.Tests
         public void AddTest()
         {
             EntityTable table = CreateTable();
-            Assert.IsFalse(table.IsReadOnly);
+            Assert.IsTrue(table.CheckAccess());
 
             for (int i = 1; i <= table.Capacity; i++)
             {
@@ -28,7 +28,7 @@ namespace Monophyll.Entities.Tests
         public void ClearTest()
         {
             EntityTable table = CreateTable();
-            Assert.IsFalse(table.IsReadOnly);
+            Assert.IsTrue(table.CheckAccess());
 
             while (!table.IsFull)
             {
@@ -45,7 +45,7 @@ namespace Monophyll.Entities.Tests
             EntityTable table = new EntityTable(EntityArchetype.Base);
 
             Assert.IsTrue(table.IsEmpty);
-            Assert.IsFalse(table.IsReadOnly);
+            Assert.IsTrue(table.CheckAccess());
             Assert.AreEqual(8, table.Capacity);
             Assert.ThrowsException<ArgumentNullException>(() => new EntityTable(null!));
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new EntityTable(EntityArchetype.Base, -1));
@@ -56,7 +56,7 @@ namespace Monophyll.Entities.Tests
         {
             EntityTable table = CreateTable();
 
-            Assert.IsFalse(table.IsReadOnly);
+            Assert.IsTrue(table.CheckAccess());
             Assert.IsFalse(table.Remove(new Entity()));
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => table.RemoveAt(0));
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => table.RemoveAt(-1));

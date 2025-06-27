@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 
 namespace Monophyll.Entities
 {
+    /// <summary>
+    /// Represents a table of components each associated with an entity.
+    /// </summary>
     public class EntityTable
     {
         private const int MinimumCapacity = 8;
@@ -17,21 +20,71 @@ namespace Monophyll.Entities
         private int m_size;
         private int m_version;
 
+        /// <summary>
+        /// Initializes an entity table that contains non-tag components described by the specified
+        /// entity archetype, is not managed by an entity registry, and has the default capacity.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
         public EntityTable(EntityArchetype archetype)
             : this(archetype, null, MinimumCapacity)
         {
         }
 
+        /// <summary>
+        /// Initializes an entity table that contains non-tag components described by the specified
+        /// entity archetype, is not managed by an entity registry, and has the specified capacity.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
+        /// 
+        /// <param name="capacity">
+        /// The capacity of the entity table.
+        /// </param>
         public EntityTable(EntityArchetype archetype, int capacity)
             : this(archetype, null, capacity)
         {
         }
 
+        /// <summary>
+        /// Initializes an entity table that contains non-tag components described by the specified
+        /// entity archetype, is managed by the specified entity registry, if not
+        /// <see langword="null"/>, and has the default capacity.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
+        /// 
+        /// <param name="registry">
+        /// The entity registry that manages the entity table, if not <see langword="null"/>.
+        /// </param>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry)
             : this(archetype, registry, MinimumCapacity)
         {
         }
 
+        /// <summary>
+        /// Initializes an entity table that contains non-tag components described by the specified
+        /// entity archetype, is managed by the specified entity registry, if not
+        /// <see langword="null"/>, and has the specified capacity.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The entity archetype.
+        /// </param>
+        /// 
+        /// <param name="registry">
+        /// The entity registry that manages the entity table, if not <see langword="null"/>.
+        /// </param>
+        /// 
+        /// <param name="capacity">
+        /// The capacity of the entity table.
+        /// </param>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry, int capacity)
         {
             ArgumentNullException.ThrowIfNull(archetype);
@@ -66,68 +119,137 @@ namespace Monophyll.Entities
             m_entities = new Entity[capacity];
         }
 
+        /// <summary>
+        /// Gets the entity archetype that describes the layout of the entity table.
+        /// </summary>
         public EntityArchetype Archetype
         {
             get => m_archetype;
         }
 
+        /// <summary>
+        /// Gets the entity registry that manages the entity table, or <see langword="null"/> if
+        /// the entity table is not managed by an entity registry.
+        /// </summary>
         public EntityRegistry? Registry
         {
             get => m_registry;
         }
 
+        /// <summary>
+        /// Gets the total number of entities the entity table can hold before it becomes full.
+        /// </summary>
         public int Capacity
         {
             get => m_entities.Length;
         }
 
+        /// <summary>
+        /// Get the number of entities in the entity table.
+        /// </summary>
         public int Count
         {
             get => m_size;
         }
 
+        /// <summary>
+        /// Gets the current version of the entity table.
+        /// </summary>
         public int Version
         {
             get => m_version;
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the entity table does not contain any entities.
+        /// </summary>
         public bool IsEmpty
         {
             get => m_size == 0;
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the entity table has reach its maximum capacity.
+        /// </summary>
         public bool IsFull
         {
             get => m_size == m_entities.Length;
         }
 
-        public bool IsReadOnly
+        /// <summary>
+        /// Returns a value that indicates whether the caller has access to the entity table's
+        /// mutator methods.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the caller has access to the entity table's mutator methods;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool CheckAccess()
         {
-            get => m_registry != null && !m_registry.AllowStructureChanges;
+            return m_registry == null || m_registry.AllowStructureChanges;
         }
 
+        /// <summary>
+        /// Gets a span over the components stored by the entity table.
+        /// </summary>
+        /// 
+        /// <typeparam name="T">
+        /// The type of the components.
+        /// </typeparam>
+        /// 
+        /// <returns>
+        /// A span over the components stored by the entity table.
+        /// </returns>
         public Span<T> GetComponents<T>()
         {
             return new Span<T>((T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!, 0, m_size);
         }
 
+        /// <summary>
+        /// Gets a reference to the components stored by the entity table.
+        /// </summary>
+        /// 
+        /// <typeparam name="T">
+        /// The type of the components.
+        /// </typeparam>
+        /// 
+        /// <returns>
+        /// A reference to the components stored by the entity table.
+        /// </returns>
         public ref T GetComponentDataReference<T>()
         {
             return ref MemoryMarshal.GetArrayDataReference(
                 (T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!);
         }
 
-        public bool TryGetComponents<T>(out Span<T> result)
+        /// <summary>
+        /// Attempts to get a span over the components stored by the entity table.
+        /// </summary>
+        /// 
+        /// <typeparam name="T">
+        /// The type of the components.
+        /// </typeparam>
+        /// 
+        /// <param name="components">
+        /// A span over the components stored by the entity table.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the span was successfully obtained; otherwise,
+        /// <see langword="false"/>.
+        /// </returns>
+        public bool TryGetComponents<T>(out Span<T> components)
         {
-            Array? components = FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: false);
+            Array? array = FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: false);
 
-            if (components == null)
+            if (array == null)
             {
-                result = Span<T>.Empty;
+                components = Span<T>.Empty;
                 return false;
             }
 
-            result = new Span<T>((T[])components, 0, m_size);
+            components = new Span<T>((T[])array, 0, m_size);
             return true;
         }
 
@@ -150,19 +272,40 @@ namespace Monophyll.Entities
             return components[index];
         }
 
+        /// <summary>
+        /// Gets a read-only span over the entities stored by the entity table.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// A read-only span over the entities stored by the entity table.
+        /// </returns>
         public ReadOnlySpan<Entity> GetEntities()
         {
             return new ReadOnlySpan<Entity>(m_entities, 0, m_size);
         }
 
+        /// <summary>
+        /// Gets a read-only reference to the entities stored by the entity table.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// A read-only reference to the entities stored by the entity table.
+        /// </returns>
         public ref readonly Entity GetEntityDataReference()
         {
             return ref MemoryMarshal.GetArrayDataReference(m_entities);
         }
 
+        /// <summary>
+        /// Adds an entity to the end of the entity table.
+        /// </summary>
+        /// 
+        /// <param name="entity">
+        /// The entity to be added to the end of the entity table.
+        /// </param>
         public void Add(Entity entity)
         {
-            ThrowIfReadOnly();
+            VerifyAccess();
 
             int size = m_size;
             Entity[] entities = m_entities;
@@ -185,9 +328,25 @@ namespace Monophyll.Entities
             m_version++;
         }
 
+        /// <summary>
+        /// Copies a range of entities from the specified entity table and adds them to the end of
+        /// the entity table.
+        /// </summary>
+        /// 
+        /// <param name="table">
+        /// The entity table to copy from.
+        /// </param>
+        /// 
+        /// <param name="tableIndex">
+        /// The index at which entities will be copied from.
+        /// </param>
+        /// 
+        /// <param name="count">
+        /// The number of entities to add.
+        /// </param>
         public void AddRange(EntityTable table, int tableIndex, int count)
         {
-            ThrowIfReadOnly();
+            VerifyAccess();
             ArgumentNullException.ThrowIfNull(table);
 
             if ((uint)tableIndex >= (uint)table.m_size)
@@ -221,33 +380,42 @@ namespace Monophyll.Entities
             ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
             ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
             ComponentType sourceComponentType = null!;
+            int sourceIndex = -1;
 
-            for (int sourceIndex = -1, destinationIndex = 0; destinationIndex < destinationComponentTypes.Length; destinationIndex++)
+            for (int destinationIndex = 0; destinationIndex < destinationComponentTypes.Length; destinationIndex++)
             {
                 ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
+                bool recompare;
 
-                while (true)
+                do
                 {
-                    int comparison = ComponentType.Compare(sourceComponentType, destinationComponentType);
-                    int nextSourceIndex;
+                    switch (ComponentType.Compare(sourceComponentType, destinationComponentType))
+                    {
+                        case 0:
+                            Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex], size, count);
+                            recompare = false;
+                            continue;
+                        case 1:
+                            if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
+                            {
+                                Array.Clear(destinationComponents[destinationIndex], size, count);
+                            }
 
-                    if (comparison == 0)
-                    {
-                        Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex], size, count);
-                    }
-                    else if (comparison < 0 && (nextSourceIndex = sourceIndex + 1) < sourceComponentTypes.Length)
-                    {
-                        sourceIndex = nextSourceIndex;
-                        sourceComponentType = sourceComponentTypes[sourceIndex];
-                        continue;
-                    }
-                    else if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
-                    {
-                        Array.Clear(destinationComponents[destinationIndex], size, count);
-                    }
+                            recompare = false;
+                            continue;
+                        default:
+                            int nextSourceIndex = sourceIndex + 1;
 
-                    break;
+                            if (recompare = nextSourceIndex < sourceComponentTypes.Length)
+                            {
+                                sourceIndex = nextSourceIndex;
+                                sourceComponentType = sourceComponentTypes[sourceIndex];
+                            }
+
+                            continue;
+                    }
                 }
+                while (recompare);
             }
 
             Array.Copy(table.m_entities, tableIndex, entities, size, count);
@@ -255,9 +423,12 @@ namespace Monophyll.Entities
             m_version++;
         }
 
+        /// <summary>
+        /// Removes all entities from the entity table.
+        /// </summary>
         public void Clear()
         {
-            ThrowIfReadOnly();
+            VerifyAccess();
 
             int size = m_size;
             int managedPartitionLength = m_archetype.ManagedPartitionLength;
@@ -273,29 +444,48 @@ namespace Monophyll.Entities
             m_version++;
         }
 
+        /// <summary>
+        /// Removes the first occurance of the specified entity from the entity table.
+        /// </summary>
+        /// 
+        /// <param name="entity">
+        /// The entity to remove.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the entity was sucessfully removed; otherwise,
+        /// <see langword="false"/>.
+        /// </returns>
         public bool Remove(Entity entity)
         {
             int index;
 
-            if (IsReadOnly || (index = Array.IndexOf(m_entities, entity, 0, m_size)) == -1)
+            if (CheckAccess() && (index = Array.IndexOf(m_entities, entity, 0, m_size)) != -1)
             {
-                return false;
+                RemoveAt(index);
+                return true;
             }
 
-            RemoveAt(index);
-            return true;
+            return false;
         }
 
+        /// <summary>
+        /// Removes the entity at the specified index of the entity table.
+        /// </summary>
+        /// 
+        /// <param name="index">
+        /// The zero-based index of the entity to remove.
+        /// </param>
         public void RemoveAt(int index)
         {
-            ThrowIfReadOnly();
+            VerifyAccess();
             
             int size = m_size;
 
             if ((uint)index >= (uint)size)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index,
-                    "Index was out of range. Must be non-negative and less than the size of the EntityTable.");
+                    "Index was out of range. Must be non-negative and less than the size of the entity table.");
             }
 
             Array[] components = m_components;
@@ -323,9 +513,20 @@ namespace Monophyll.Entities
             m_version++;
         }
 
+        /// <summary>
+        /// Removes a range of entities from the entity table.
+        /// </summary>
+        /// 
+        /// <param name="index">
+        /// The zero-based starting index of the range of entities to remove.
+        /// </param>
+        /// 
+        /// <param name="count">
+        /// The number of entities to remove.
+        /// </param>
         public void RemoveRange(int index, int count)
         {
-            ThrowIfReadOnly();
+            VerifyAccess();
             ArgumentOutOfRangeException.ThrowIfNegative(index);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -354,7 +555,7 @@ namespace Monophyll.Entities
                     Array.Copy(array, copyIndex, array, index, copyLength);
                 }
 
-                m_entities[index] = m_entities[size];
+                Array.Copy(m_entities, copyIndex, m_entities, index, copyLength);
             }
 
             int managedPartitionLength = m_archetype.ManagedPartitionLength;
@@ -369,11 +570,16 @@ namespace Monophyll.Entities
             m_version++;
         }
 
-        private void ThrowIfReadOnly()
+        /// <summary>
+        /// Throws an InvalidOperationException if the caller does not have access to the entity
+        /// table's mutator methods.
+        /// </summary>
+        public void VerifyAccess()
         {
-            if (IsReadOnly)
+            if (m_registry != null && !m_registry.AllowStructureChanges)
             {
-                throw new InvalidOperationException("The EntityTable is read-only.");
+                throw new InvalidOperationException(
+                    "The entity table cannot be modified while structure changes are disallowed by its entity registry.");
             }
         }
     }
