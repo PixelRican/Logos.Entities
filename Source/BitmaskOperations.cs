@@ -11,53 +11,54 @@ namespace Monophyll.Entities
     public static class BitmaskOperations
     {
         /// <summary>
-        /// Indicates whether a specified bit index is set within a bitmask.
+        /// Determines whether the specified bit index is set within the source bitmask.
         /// </summary>
         /// 
-        /// <param name="bitmask">
+        /// <param name="source">
         /// The source bitmask.
         /// </param>
         /// 
         /// <param name="index">
-        /// The bit index to test.
+        /// The bit index to test within <paramref name="source"/>.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if set, <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the bit index is set within the source bitmask; otherwise,
+        /// <see langword="false"/>.
         /// </returns>
-        public static bool Test(ReadOnlySpan<int> bitmask, int index)
+        public static bool Test(ReadOnlySpan<int> source, int index)
         {
-            int bitmaskIndex;
-            return (bitmaskIndex = index >> 5) < bitmask.Length
-                && (bitmask[bitmaskIndex] & 1 << index) != 0;
+            int sourceIndex;
+            return (sourceIndex = index >> 5) < source.Length
+                && (source[sourceIndex] & 1 << index) != 0;
         }
 
         /// <summary>
-        /// Determines whether a bitmask is a subset of a filter using bitwise comparisons.
+        /// Determines whether the target bitmask is a bitwise superset of the source bitmask.
         /// </summary>
         /// 
-        /// <param name="filter">
-        /// The bitmask to query.
+        /// <param name="source">
+        /// The source bitmask.
         /// </param>
         /// 
-        /// <param name="bitmask">
-        /// The bitmask to test.
+        /// <param name="target">
+        /// The target bitmask.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the bitmask is a subset of the filter,
-        /// <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the target bitmask is a superset of the source bitmask;
+        /// otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool Requires(ReadOnlySpan<int> filter, ReadOnlySpan<int> bitmask)
+        public static bool Requires(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {
-            if (filter.Length > bitmask.Length)
+            if (source.Length > target.Length)
             {
                 return false;
             }
 
-            for (int i = 0; i < filter.Length; i++)
+            for (int i = 0; i < source.Length; i++)
             {
-                if ((filter[i] & ~bitmask[i]) != 0)
+                if ((source[i] & ~target[i]) != 0)
                 {
                     return false;
                 }
@@ -67,60 +68,62 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Determines whether a bitmask intersects with a filter using bitwise comparisons. If
-        /// not, the method returns a value indicating whether a filter is empty.
+        /// Determines whether there exists a bitwise intersection between the target bitmask and
+        /// the source bitmask. If not, the method returns a value indicating whether the source
+        /// bitmask is empty.
         /// </summary>
         /// 
-        /// <param name="filter">
-        /// The bitmask to query.
+        /// <param name="source">
+        /// The source bitmask.
         /// </param>
         /// 
-        /// <param name="bitmask">
-        /// The bitmask to test.
+        /// <param name="target">
+        /// The target bitmask.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the bitmask intersects with the filter or if the filter is
-        /// empty, <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the target bitmask intersects with the source bitmask or if
+        /// the source bitmask is empty; otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool Includes(ReadOnlySpan<int> filter, ReadOnlySpan<int> bitmask)
+        public static bool Includes(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {
-            int length = Math.Min(filter.Length, bitmask.Length);
+            int length = Math.Min(source.Length, target.Length);
 
             for (int i = 0; i < length; i++)
             {
-                if ((filter[i] & bitmask[i]) != 0)
+                if ((source[i] & target[i]) != 0)
                 {
                     return true;
                 }
             }
 
-            return filter.IsEmpty;
+            return source.IsEmpty;
         }
 
         /// <summary>
-        /// Determines whether a bitmask is disjoint from a filter using bitwise comparisons.
+        /// Determines whether there does not exist a bitwise intersection between the target
+        /// bitmask and the source bitmask.
         /// </summary>
         /// 
-        /// <param name="filter">
-        /// The bitmask to query.
+        /// <param name="source">
+        /// The source bitmask.
         /// </param>
         /// 
-        /// <param name="bitmask">
-        /// The bitmask to test.
+        /// <param name="target">
+        /// The target bitmask.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the bitmask is disjoint from the filter,
-        /// <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the target bitmask does not intersect with the source
+        /// bitmask; otherwise <see langword="false"/>.
         /// </returns>
-        public static bool Excludes(ReadOnlySpan<int> filter, ReadOnlySpan<int> bitmask)
+        public static bool Excludes(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {
-            int length = Math.Min(filter.Length, bitmask.Length);
+            int length = Math.Min(source.Length, target.Length);
 
             for (int i = 0; i < length; i++)
             {
-                if ((filter[i] & bitmask[i]) != 0)
+                if ((source[i] & target[i]) != 0)
                 {
                     return false;
                 }
@@ -133,20 +136,20 @@ namespace Monophyll.Entities
         /// Returns a hash code for the specified bitmask.
         /// </summary>
         /// 
-        /// <param name="bitmask">
+        /// <param name="obj">
         /// The bitmask for which a hash code is to be returned.
         /// </param>
         /// 
         /// <returns>
-        /// A hash code for the specified bitmask.
+        /// A hash code for the bitmask.
         /// </returns>
-        public static int GetHashCode(ReadOnlySpan<int> bitmask)
+        public static int GetHashCode(ReadOnlySpan<int> obj)
         {
             int result = 0;
 
-            for (int i = bitmask.Length > 8 ? bitmask.Length - 8 : 0; i < bitmask.Length; i++)
+            for (int i = obj.Length > 8 ? obj.Length - 8 : 0; i < obj.Length; i++)
             {
-                result = (result << 5) + result ^ bitmask[i];
+                result = (result << 5) + result ^ obj[i];
             }
 
             return result;
