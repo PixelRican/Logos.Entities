@@ -32,7 +32,8 @@ namespace Monophyll.Entities.Tests
             {
                 Assert.IsTrue(registry.AddComponent(entity, componentType));
                 Assert.IsTrue(registry.HasComponent(entity, componentType));
-                Assert.IsTrue(componentTypes.StartsWith(registry.GetArchetype(entity).ComponentTypes));
+                Assert.IsTrue(componentTypes.StartsWith(
+                    registry.FindEntity(entity).Archetype.ComponentTypes));
             }
         }
 
@@ -47,8 +48,8 @@ namespace Monophyll.Entities.Tests
 
                 Assert.AreEqual(new Entity(i, 0), entity);
                 Assert.IsTrue(registry.ContainsEntity(entity));
-                Assert.AreSame(registry.GetArchetype(entity), EntityArchetype.Base);
-                Assert.AreEqual(registry.GetTable(entity).GetEntities()[i], entity);
+                Assert.AreSame(registry.FindEntity(entity).Archetype, EntityArchetype.Base);
+                Assert.AreEqual(registry.FindEntity(entity).GetEntities()[i], entity);
             }
 
             Assert.AreEqual(10, registry.Count);
@@ -61,8 +62,8 @@ namespace Monophyll.Entities.Tests
 
                 Assert.AreEqual(new Entity(i + 10, 0), entity);
                 Assert.IsTrue(registry.HasComponent(entity, ComponentType.TypeOf<User>()));
-                Assert.AreSame(registry.GetArchetype(entity), archetype);
-                Assert.AreEqual(registry.GetTable(entity).GetEntities()[i], entity);
+                Assert.AreSame(registry.FindEntity(entity).Archetype, archetype);
+                Assert.AreEqual(registry.FindEntity(entity).GetEntities()[i], entity);
             }
 
             Assert.AreEqual(20, registry.Count);
@@ -78,7 +79,7 @@ namespace Monophyll.Entities.Tests
                 registry.CreateEntity();
             }
 
-            foreach (Entity entity in registry.GetTable(new Entity()).GetEntities())
+            foreach (Entity entity in registry.FindEntity(new Entity()).GetEntities())
             {
                 Assert.IsTrue(registry.DestroyEntity(entity));
                 Assert.IsFalse(registry.ContainsEntity(entity));
@@ -116,7 +117,7 @@ namespace Monophyll.Entities.Tests
             {
                 Assert.IsTrue(registry.RemoveComponent(entity, componentType));
                 Assert.IsFalse(registry.HasComponent(entity, componentType));
-                Assert.IsTrue(componentTypes.EndsWith(registry.GetArchetype(entity).ComponentTypes));
+                Assert.IsTrue(componentTypes.EndsWith(registry.FindEntity(entity).Archetype.ComponentTypes));
             }
         }
     }

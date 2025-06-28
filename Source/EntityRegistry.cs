@@ -352,22 +352,6 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the entity archetype that models the specified entity.
-        /// </summary>
-        /// 
-        /// <param name="entity">
-        /// The entity.
-        /// </param>
-        /// 
-        /// <returns>
-        /// The entity archetype that models the entity.
-        /// </returns>
-        public EntityArchetype GetArchetype(Entity entity)
-        {
-            return GetTable(entity).Archetype;
-        }
-
-        /// <summary>
         /// Gets the entity table the specified entity is stored in.
         /// </summary>
         /// 
@@ -378,7 +362,7 @@ namespace Monophyll.Entities
         /// <returns>
         /// The entity table the entity is stored in.
         /// </returns>
-        public EntityTable GetTable(Entity entity)
+        public EntityTable FindEntity(Entity entity)
         {
             EntityTable? table = m_container.Find(entity, out _);
 
@@ -392,18 +376,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Moves the specified entity to an entity table whose archetype matches the specified
-        /// entity archetype.
+        /// Modifies the specified entity to match the model represented by the specified entity
+        /// archetype.
         /// </summary>
         /// 
         /// <param name="entity">
-        /// The entity to move.
+        /// The entity to modify.
         /// </param>
         /// 
         /// <param name="archetype">
-        /// The archetype of the entity table to move to.
+        /// The entity archetype.
         /// </param>
-        public void MoveEntity(Entity entity, EntityArchetype archetype)
+        public void ModifyEntity(Entity entity, EntityArchetype archetype)
         {
             EntityTableGrouping grouping = m_lookup.GetGrouping(archetype);
 
