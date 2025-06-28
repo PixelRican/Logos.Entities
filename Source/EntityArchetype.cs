@@ -18,7 +18,7 @@ namespace Monophyll.Entities
         private static readonly EntityArchetype s_base = new EntityArchetype();
 
         private readonly ComponentType[] m_componentTypes;
-        private readonly uint[] m_componentBitmask;
+        private readonly int[] m_componentBitmask;
         private readonly int m_managedPartitionLength;
         private readonly int m_unmanagedPartitionLength;
         private readonly int m_tagPartitionLength;
@@ -27,14 +27,14 @@ namespace Monophyll.Entities
         private EntityArchetype()
         {
             m_componentTypes = Array.Empty<ComponentType>();
-            m_componentBitmask = Array.Empty<uint>();
+            m_componentBitmask = Array.Empty<int>();
             m_entitySize = Unsafe.SizeOf<Entity>();
         }
 
         private EntityArchetype(ComponentType[] componentTypes)
         {
             m_componentTypes = componentTypes;
-            m_componentBitmask = new uint[componentTypes[^1].Identifier + 32 >> 5];
+            m_componentBitmask = new int[componentTypes[^1].Identifier + 32 >> 5];
             m_entitySize = Unsafe.SizeOf<Entity>();
 
             int freeIndex = 0;
@@ -45,7 +45,7 @@ namespace Monophyll.Entities
                 if (!ComponentType.Equals(previous, current))
                 {
                     m_componentTypes[freeIndex++] = previous = current;
-                    m_componentBitmask[current.Identifier >> 5] |= 1u << current.Identifier;
+                    m_componentBitmask[current.Identifier >> 5] |= 1 << current.Identifier;
                     m_entitySize += current.Size;
 
                     switch (current.Category)
@@ -98,9 +98,9 @@ namespace Monophyll.Entities
         /// its ID. This allows entity filters to quickly match entity archetypes with large sets
         /// of component types using bitwise operations.
         /// </remarks>
-        public ReadOnlySpan<uint> ComponentBitmask
+        public ReadOnlySpan<int> ComponentBitmask
         {
-            get => new ReadOnlySpan<uint>(m_componentBitmask);
+            get => new ReadOnlySpan<int>(m_componentBitmask);
         }
 
         /// <summary>

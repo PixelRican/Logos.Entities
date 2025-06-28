@@ -61,7 +61,7 @@ namespace Monophyll.Entities
             {
                 Container container = m_container;
 
-                if ((uint)index >= (uint)container.Count)
+                if ((int)index >= (int)container.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Index was out of range. Must be non-negative and less than the size of the EntityTableLookup.");
@@ -152,7 +152,7 @@ namespace Monophyll.Entities
         {
             ArgumentNullException.ThrowIfNull(componentTypes);
 
-            BitmaskBuilder builder = new BitmaskBuilder(stackalloc uint[DefaultCapacity]);
+            BitmaskBuilder builder = new BitmaskBuilder(stackalloc int[DefaultCapacity]);
             
             foreach (ComponentType componentType in componentTypes)
             {
@@ -184,7 +184,7 @@ namespace Monophyll.Entities
             ComponentType[] array = componentTypes.TryGetNonEnumeratedCount(out int count)
                 ? ArrayPool<ComponentType>.Shared.Rent(count)
                 : Array.Empty<ComponentType>();
-            BitmaskBuilder builder = new BitmaskBuilder(stackalloc uint[DefaultCapacity]);
+            BitmaskBuilder builder = new BitmaskBuilder(stackalloc int[DefaultCapacity]);
             count = 0;
 
             foreach (ComponentType componentType in componentTypes)
@@ -225,7 +225,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes)
         {
-            BitmaskBuilder builder = new BitmaskBuilder(stackalloc uint[DefaultCapacity]);
+            BitmaskBuilder builder = new BitmaskBuilder(stackalloc int[DefaultCapacity]);
 
             for (int i = 0; i < componentTypes.Length; i++)
             {
@@ -242,7 +242,7 @@ namespace Monophyll.Entities
             return grouping;
         }
 
-        private EntityTableGrouping GetGrouping(ReadOnlySpan<uint> bitmask, ReadOnlySpan<ComponentType> componentTypes)
+        private EntityTableGrouping GetGrouping(ReadOnlySpan<int> bitmask, ReadOnlySpan<ComponentType> componentTypes)
         {
             EntityTableGrouping? grouping = m_container.Find(bitmask);
 
@@ -335,27 +335,27 @@ namespace Monophyll.Entities
                 return GetGrouping(archetype);
             }
 
-            ReadOnlySpan<uint> sourceBitmask = archetype.ComponentBitmask;
+            ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.Identifier >> 5;
-            uint bit = 1u << componentType.Identifier;
+            int bit = 1 << componentType.Identifier;
 
             if (index >= sourceBitmask.Length || (bit & sourceBitmask[index]) == 0)
             {
                 return GetGrouping(archetype);
             }
 
-            uint[]? rentedArray;
-            scoped Span<uint> destinationBitmask;
+            int[]? rentedArray;
+            scoped Span<int> destinationBitmask;
             
             if (sourceBitmask.Length <= DefaultCapacity)
             {
                 rentedArray = null;
-                destinationBitmask = stackalloc uint[sourceBitmask.Length];
+                destinationBitmask = stackalloc int[sourceBitmask.Length];
             }
             else
             {
-                rentedArray = ArrayPool<uint>.Shared.Rent(sourceBitmask.Length);
-                destinationBitmask = new Span<uint>(rentedArray, 0, sourceBitmask.Length);
+                rentedArray = ArrayPool<int>.Shared.Rent(sourceBitmask.Length);
+                destinationBitmask = new Span<int>(rentedArray, 0, sourceBitmask.Length);
             }
 
             sourceBitmask.CopyTo(destinationBitmask);
@@ -365,7 +365,7 @@ namespace Monophyll.Entities
                 ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
                 destinationBitmask = componentTypes.Length > 1
                     ? destinationBitmask.Slice(0, componentTypes[^2].Identifier + 32 >> 5)
-                    : Span<uint>.Empty;
+                    : Span<int>.Empty;
             }
 
             EntityTableGrouping? grouping = m_container.Find(destinationBitmask);
@@ -391,7 +391,7 @@ namespace Monophyll.Entities
 
             if (rentedArray != null)
             {
-                ArrayPool<uint>.Shared.Return(rentedArray);
+                ArrayPool<int>.Shared.Return(rentedArray);
             }
 
             return grouping;
@@ -423,28 +423,28 @@ namespace Monophyll.Entities
                 return GetGrouping(archetype);
             }
 
-            ReadOnlySpan<uint> sourceBitmask = archetype.ComponentBitmask;
+            ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.Identifier >> 5;
-            uint bit = 1u << componentType.Identifier;
+            int bit = 1 << componentType.Identifier;
 
             if (index < sourceBitmask.Length && (bit & sourceBitmask[index]) != 0)
             {
                 return GetGrouping(archetype);
             }
 
-            uint[]? rentedArray;
-            scoped Span<uint> destinationBitmask;
+            int[]? rentedArray;
+            scoped Span<int> destinationBitmask;
             int length = Math.Max(index + 1, sourceBitmask.Length);
 
             if (length <= DefaultCapacity)
             {
                 rentedArray = null;
-                destinationBitmask = stackalloc uint[length];
+                destinationBitmask = stackalloc int[length];
             }
             else
             {
-                rentedArray = ArrayPool<uint>.Shared.Rent(length);
-                destinationBitmask = new Span<uint>(rentedArray, 0, length);
+                rentedArray = ArrayPool<int>.Shared.Rent(length);
+                destinationBitmask = new Span<int>(rentedArray, 0, length);
             }
 
             sourceBitmask.CopyTo(destinationBitmask);
@@ -474,7 +474,7 @@ namespace Monophyll.Entities
 
             if (rentedArray != null)
             {
-                ArrayPool<uint>.Shared.Return(rentedArray);
+                ArrayPool<int>.Shared.Return(rentedArray);
             }
 
             return grouping;
@@ -555,11 +555,11 @@ namespace Monophyll.Entities
 
         private ref struct BitmaskBuilder
         {
-            private uint[]? m_rentedArray;
-            private Span<uint> m_span;
+            private int[]? m_rentedArray;
+            private Span<int> m_span;
             private int m_size;
 
-            public BitmaskBuilder(Span<uint> span)
+            public BitmaskBuilder(Span<int> span)
             {
                 m_rentedArray = null;
                 m_span = span;
@@ -568,11 +568,11 @@ namespace Monophyll.Entities
 
             public readonly void Dispose()
             {
-                uint[]? rentedArray = m_rentedArray;
+                int[]? rentedArray = m_rentedArray;
 
                 if (rentedArray != null)
                 {
-                    ArrayPool<uint>.Shared.Return(rentedArray);
+                    ArrayPool<int>.Shared.Return(rentedArray);
                 }
             }
 
@@ -585,32 +585,32 @@ namespace Monophyll.Entities
                     Grow(spanIndex + 1);
                 }
 
-                m_span[spanIndex] |= 1u << index;
+                m_span[spanIndex] |= 1 << index;
             }
 
             private void Grow(int capacity)
             {
                 if (capacity > m_span.Length)
                 {
-                    uint[]? rentedArray = m_rentedArray;
-                    uint[] newArray = ArrayPool<uint>.Shared.Rent(capacity);
+                    int[]? rentedArray = m_rentedArray;
+                    int[] newArray = ArrayPool<int>.Shared.Rent(capacity);
 
                     m_span.CopyTo(newArray);
 
                     if (rentedArray != null)
                     {
-                        ArrayPool<uint>.Shared.Return(rentedArray);
+                        ArrayPool<int>.Shared.Return(rentedArray);
                     }
 
                     m_rentedArray = newArray;
-                    m_span = new Span<uint>(newArray);
+                    m_span = new Span<int>(newArray);
                 }
 
                 m_span.Slice(m_size, capacity).Clear();
                 m_size = capacity;
             }
 
-            public readonly ReadOnlySpan<uint> Build()
+            public readonly ReadOnlySpan<int> Build()
             {
                 return m_span.Slice(0, m_size);
             }
@@ -674,7 +674,7 @@ namespace Monophyll.Entities
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if ((uint)index >= (uint)array.Length)
+                if ((int)index >= (int)array.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Index was out of range. Must be non-negative and less than the length of the array.");
@@ -717,7 +717,7 @@ namespace Monophyll.Entities
                         "Arrays with non-zero lower bounds are not supported.", nameof(array));
                 }
 
-                if ((uint)index > (uint)array.Length)
+                if ((int)index > (int)array.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Index was out of range. Must be non-negative and less than the length of the array.");
@@ -752,7 +752,7 @@ namespace Monophyll.Entities
                 }
             }
 
-            public EntityTableGrouping? Find(ReadOnlySpan<uint> bitmask)
+            public EntityTableGrouping? Find(ReadOnlySpan<int> bitmask)
             {
                 Entry[] entries = m_entries;
                 ref Entry entry = ref Unsafe.NullRef<Entry>();

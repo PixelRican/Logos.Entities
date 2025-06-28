@@ -25,11 +25,11 @@ namespace Monophyll.Entities
         /// <returns>
         /// <see langword="true"/> if set, <see langword="false"/> otherwise.
         /// </returns>
-        public static bool Test(ReadOnlySpan<uint> bitmask, int index)
+        public static bool Test(ReadOnlySpan<int> bitmask, int index)
         {
             int bitmaskIndex;
             return (bitmaskIndex = index >> 5) < bitmask.Length
-                && (bitmask[bitmaskIndex] & 1u << index) != 0;
+                && (bitmask[bitmaskIndex] & 1 << index) != 0;
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Monophyll.Entities
         /// <see langword="true"/> if the bitmask is a subset of the filter,
         /// <see langword="false"/> otherwise.
         /// </returns>
-        public static bool Requires(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
+        public static bool Requires(ReadOnlySpan<int> filter, ReadOnlySpan<int> bitmask)
         {
             if (filter.Length > bitmask.Length)
             {
@@ -83,7 +83,7 @@ namespace Monophyll.Entities
         /// <see langword="true"/> if the bitmask intersects with the filter or if the filter is
         /// empty, <see langword="false"/> otherwise.
         /// </returns>
-        public static bool Includes(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
+        public static bool Includes(ReadOnlySpan<int> filter, ReadOnlySpan<int> bitmask)
         {
             int length = Math.Min(filter.Length, bitmask.Length);
 
@@ -114,7 +114,7 @@ namespace Monophyll.Entities
         /// <see langword="true"/> if the bitmask is disjoint from the filter,
         /// <see langword="false"/> otherwise.
         /// </returns>
-        public static bool Excludes(ReadOnlySpan<uint> filter, ReadOnlySpan<uint> bitmask)
+        public static bool Excludes(ReadOnlySpan<int> filter, ReadOnlySpan<int> bitmask)
         {
             int length = Math.Min(filter.Length, bitmask.Length);
 
@@ -140,13 +140,13 @@ namespace Monophyll.Entities
         /// <returns>
         /// A hash code for the specified bitmask.
         /// </returns>
-        public static int GetHashCode(ReadOnlySpan<uint> bitmask)
+        public static int GetHashCode(ReadOnlySpan<int> bitmask)
         {
             int result = 0;
 
             for (int i = bitmask.Length > 8 ? bitmask.Length - 8 : 0; i < bitmask.Length; i++)
             {
-                result = (result << 5) + result ^ (int)bitmask[i];
+                result = (result << 5) + result ^ bitmask[i];
             }
 
             return result;
