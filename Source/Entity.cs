@@ -15,15 +15,16 @@ namespace Monophyll.Entities
         private readonly int m_version;
 
         /// <summary>
-        /// Creates a new entity with an ID and a generational version.
+        /// Initializes an new instance of the <see cref="Entity"/> structure that has the
+        /// specified ID and version.
         /// </summary>
         /// 
         /// <param name="identifier">
-        /// The ID of the entity.
+        /// The ID.
         /// </param>
         /// 
         /// <param name="version">
-        /// The generational version of the entity.
+        /// The version.
         /// </param>
         public Entity(int identifier, int version)
         {
@@ -32,7 +33,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the ID of the entity.
+        /// Gets the ID of the <see cref="Entity"/>.
         /// </summary>
         public int Identifier
         {
@@ -40,7 +41,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the generational version of the entity.
+        /// Gets the version of the <see cref="Entity"/>.
         /// </summary>
         public int Version
         {
