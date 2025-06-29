@@ -96,7 +96,7 @@ namespace Monophyll.Entities
             }
 
             ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes.Slice(0,
-                archetype.ManagedPartitionLength + archetype.UnmanagedPartitionLength);
+                archetype.ManagedComponentCount + archetype.UnmanagedComponentCount);
             m_archetype = archetype;
             m_registry = registry;
 
@@ -318,7 +318,7 @@ namespace Monophyll.Entities
             Array[] components = m_components;
 
             // Zero-initialize unmanaged components.
-            for (int i = m_archetype.ManagedPartitionLength; i < components.Length; i++)
+            for (int i = m_archetype.ManagedComponentCount; i < components.Length; i++)
             {
                 Array.Clear(components[i], size, 1);
             }
@@ -431,7 +431,7 @@ namespace Monophyll.Entities
             VerifyAccess();
 
             int size = m_size;
-            int managedPartitionLength = m_archetype.ManagedPartitionLength;
+            int managedPartitionLength = m_archetype.ManagedComponentCount;
             Array[] components = m_components;
 
             // Frees references to managed objects.
@@ -501,7 +501,7 @@ namespace Monophyll.Entities
                 m_entities[index] = m_entities[size];
             }
 
-            int managedPartitionLength = m_archetype.ManagedPartitionLength;
+            int managedPartitionLength = m_archetype.ManagedComponentCount;
 
             // Frees references to managed objects.
             for (int i = 0; i < managedPartitionLength; i++)
@@ -558,7 +558,7 @@ namespace Monophyll.Entities
                 Array.Copy(m_entities, copyIndex, m_entities, index, copyLength);
             }
 
-            int managedPartitionLength = m_archetype.ManagedPartitionLength;
+            int managedPartitionLength = m_archetype.ManagedComponentCount;
 
             // Frees references to managed objects.
             for (int i = 0; i < managedPartitionLength; i++)

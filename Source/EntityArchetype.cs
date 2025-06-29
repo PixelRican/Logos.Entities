@@ -10,8 +10,8 @@ using System.Runtime.CompilerServices;
 namespace Monophyll.Entities
 {
     /// <summary>
-    /// Represents a data model that describes how an entity's components are laid out in entity
-    /// tables.
+    /// Represents a data model that describes how an entity's components should be laid out in
+    /// memory.
     /// </summary>
     public sealed class EntityArchetype : IEquatable<EntityArchetype>
     {
@@ -19,9 +19,9 @@ namespace Monophyll.Entities
 
         private readonly ComponentType[] m_componentTypes;
         private readonly int[] m_componentBitmask;
-        private readonly int m_managedPartitionLength;
-        private readonly int m_unmanagedPartitionLength;
-        private readonly int m_tagPartitionLength;
+        private readonly int m_managedComponentCount;
+        private readonly int m_unmanagedComponentCount;
+        private readonly int m_tagComponentCount;
         private readonly int m_entitySize;
 
         private EntityArchetype()
@@ -37,37 +37,37 @@ namespace Monophyll.Entities
             m_componentBitmask = new int[componentTypes[^1].Identifier + 32 >> 5];
             m_entitySize = Unsafe.SizeOf<Entity>();
 
-            int freeIndex = 0;
+            int count = 0;
             ComponentType? previous = null;
 
             foreach (ComponentType current in m_componentTypes)
             {
                 if (!ComponentType.Equals(previous, current))
                 {
-                    m_componentTypes[freeIndex++] = previous = current;
+                    m_componentTypes[count++] = previous = current;
                     m_componentBitmask[current.Identifier >> 5] |= 1 << current.Identifier;
                     m_entitySize += current.Size;
 
                     switch (current.Category)
                     {
                         case ComponentTypeCategory.Managed:
-                            m_managedPartitionLength++;
+                            m_managedComponentCount++;
                             continue;
                         case ComponentTypeCategory.Unmanaged:
-                            m_unmanagedPartitionLength++;
+                            m_unmanagedComponentCount++;
                             continue;
-                        default:
-                            m_tagPartitionLength++;
+                        case ComponentTypeCategory.Tag:
+                            m_tagComponentCount++;
                             continue;
                     }
                 }
             }
 
-            Array.Resize(ref m_componentTypes, freeIndex);
+            Array.Resize(ref m_componentTypes, count);
         }
 
         /// <summary>
-        /// Gets an entity archetype instance that models entities without any components.
+        /// Gets an <see cref="EntityArchetype"/> that models entities with no components.
         /// </summary>
         public static EntityArchetype Base
         {
@@ -75,78 +75,61 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that compose the entity archetype.
+        /// Gets a read-only span of <see cref="ComponentType"/> instances that compose the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
-        /// 
-        /// <remarks>
-        /// The order in which the component types appear in the span is used to determine the
-        /// layout of component types in entity tables. This is done to allow entity tables to
-        /// efficiently manage component data upon the addition/removal of entities.
-        /// </remarks>
         public ReadOnlySpan<ComponentType> ComponentTypes
         {
             get => new ReadOnlySpan<ComponentType>(m_componentTypes);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores information about the component types
-        /// that compose the entity archetype.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a
+        /// <see cref="ComponentType"/> instance can be found within <see cref="ComponentTypes"/>.
         /// </summary>
-        /// 
-        /// <remarks>
-        /// Each individual bit set in the bitmask corresponds to a given component type based on
-        /// its ID. This allows entity filters to quickly match entity archetypes with large sets
-        /// of component types using bitwise operations.
-        /// </remarks>
         public ReadOnlySpan<int> ComponentBitmask
         {
             get => new ReadOnlySpan<int>(m_componentBitmask);
         }
 
         /// <summary>
-        /// Gets an integer that indicates how many managed component types compose the entity
-        /// archetype.
+        /// Gets the total number of components associated with entities modeled by the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
-        /// 
-        /// <remarks>
-        /// Managed component types precede unmanaged and tag component types within the span
-        /// returned by the <see cref="ComponentTypes"/> property.
-        /// </remarks>
-        public int ManagedPartitionLength
+        public int ComponentCount
         {
-            get => m_managedPartitionLength;
+            get => m_componentTypes.Length;
         }
 
         /// <summary>
-        /// Gets an integer that indicates how many unmanaged component types compose the entity
-        /// archetype.
+        /// Gets the number of managed components associated with entities modeled by the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
-        /// 
-        /// <remarks>
-        /// Unmanaged component types supercede managed component types and precede tag component
-        /// types within the span returned by the <see cref="ComponentTypes"/> property.
-        /// </remarks>
-        public int UnmanagedPartitionLength
+        public int ManagedComponentCount
         {
-            get => m_unmanagedPartitionLength;
+            get => m_managedComponentCount;
         }
 
         /// <summary>
-        /// Gets an integer that indicates how many tag component types compose the entity
-        /// archetype.
+        /// Gets the number of unmanaged components associated with entities modeled by the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
-        /// 
-        /// <remarks>
-        /// Tag component types supercede managed and unmanaged component types within the span
-        /// returned by the <see cref="ComponentTypes"/> property.
-        /// </remarks>
-        public int TagPartitionLength
+        public int UnmanagedComponentCount
         {
-            get => m_tagPartitionLength;
+            get => m_unmanagedComponentCount;
         }
 
         /// <summary>
-        /// Gets the total size of an entity and its components in bytes.
+        /// Gets the number of tag components associated with entities modeled by the
+        /// <see cref="EntityArchetype"/>.
+        /// </summary>
+        public int TagComponentCount
+        {
+            get => m_tagComponentCount;
+        }
+
+        /// <summary>
+        /// Gets the size of entities modeled by the <see cref="EntityArchetype"/>.
         /// </summary>
         public int EntitySize
         {
@@ -154,17 +137,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity archetype that is composed of component types from the specified
-        /// array.
+        /// Creates an <see cref="EntityArchetype"/> that is composed of
+        /// <see cref="ComponentType"/> instances from the specified array.
         /// </summary>
         /// 
         /// <param name="componentTypes">
-        /// The array of component types.
+        /// The array of <see cref="ComponentType"/> instances.
         /// </param>
         /// 
         /// <returns>
-        /// An entity archetype that is composed of component types from the array, or
-        /// <see cref="Base"/> if the array contains no component types.
+        /// An <see cref="EntityArchetype"/> that is composed of <see cref="ComponentType"/>
+        /// instances from the array, or <see cref="Base"/> if the array contains no
+        /// <see cref="ComponentType"/> instances.
         /// </returns>
         public static EntityArchetype Create(ComponentType[] componentTypes)
         {
@@ -186,17 +170,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity archetype that is composed of component types from the specified
-        /// sequence.
+        /// Creates an <see cref="EntityArchetype"/> that is composed of
+        /// <see cref="ComponentType"/> instances from the specified sequence.
         /// </summary>
         /// 
         /// <param name="componentTypes">
-        /// The sequence of component types.
+        /// The sequence of <see cref="ComponentType"/> instances.
         /// </param>
         /// 
         /// <returns>
-        /// An entity archetype that is composed of component types from the sequence, or
-        /// <see cref="Base"/> if the sequence contains no component types.
+        /// An <see cref="EntityArchetype"/> that is composed of <see cref="ComponentType"/>
+        /// instances from the sequence, or <see cref="Base"/> if the sequence contains no
+        /// <see cref="ComponentType"/> instances.
         /// </returns>
         public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
         {
@@ -216,17 +201,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity archetype that is composed of component types from the specified
-        /// span.
+        /// Creates an <see cref="EntityArchetype"/> that is composed of
+        /// <see cref="ComponentType"/> instances from the specified span.
         /// </summary>
         /// 
         /// <param name="componentTypes">
-        /// The span of component types.
+        /// The span of <see cref="ComponentType"/> instances.
         /// </param>
         /// 
         /// <returns>
-        /// An entity archetype that is composed of component types from the span, or
-        /// <see cref="Base"/> if the span contains no component types.
+        /// An <see cref="EntityArchetype"/> that is composed of <see cref="ComponentType"/>
+        /// instances from the span, or <see cref="Base"/> if the span contains no
+        /// <see cref="ComponentType"/> instances.
         /// </returns>
         public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -245,15 +231,16 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Determines whether two specified entity archetype objects have the same value.
+        /// Determines whether two specified <see cref="EntityArchetype"/> objects have the same
+        /// value.
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first entity archetype to compare, or <see langword="null"/>.
+        /// The first <see cref="EntityArchetype"/> to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second entity archetype to compare, or <see langword="null"/>.
+        /// The second <see cref="EntityArchetype"/> to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
@@ -271,16 +258,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity archetype with a component type added to it.
+        /// Creates an <see cref="EntityArchetype"/> with the specified <see cref="ComponentType"/>
+        /// added to it.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The component type to add.
+        /// The <see cref="ComponentType"/> to add.
         /// </param>
         /// 
         /// <returns>
-        /// An entity archetype with the component type added, or the calling entity archetype if
-        /// it contains the component type or if the component type is <see langword="null"/>.
+        /// An <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> added, or the
+        /// calling <see cref="EntityArchetype"/> if it contains the <see cref="ComponentType"/> or
+        /// if the <see cref="ComponentType"/> is <see langword="null"/>.
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
         {
@@ -311,16 +300,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity archetype with a component type removed from it.
+        /// Creates an <see cref="EntityArchetype"/> with the specified <see cref="ComponentType"/>
+        /// removed from it.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The component type to remove.
+        /// The <see cref="ComponentType"/> to remove.
         /// </param>
         /// 
         /// <returns>
-        /// An entity archetype with the component type removed, or the calling entity archetype if
-        /// it does not contain the component type or if the component type is
+        /// An <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> removed, or the
+        /// calling <see cref="EntityArchetype"/> if it does not contain the
+        /// <see cref="ComponentType"/> or if the <see cref="ComponentType"/> is
         /// <see langword="null"/>.
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
@@ -355,16 +346,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Indicates whether the entity archetype contains the specified component type.
+        /// Indicates whether the <see cref="EntityArchetype"/> contains the specified
+        /// <see cref="ComponentType"/>.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The <see cref="ComponentType"/> to search for.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity archetype contains the component type,
-        /// <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains the
+        /// <see cref="ComponentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Contains(ComponentType componentType)
         {
