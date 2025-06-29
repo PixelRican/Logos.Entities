@@ -23,7 +23,7 @@ namespace Monophyll.Entities
         private volatile Container m_container;
 
         /// <summary>
-        /// Initializes a new instance of the entity table lookup class.
+        /// Initializes a new instance of the <see cref="EntityTableLookup"/> class.
         /// </summary>
         public EntityTableLookup()
         {
@@ -87,8 +87,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Copies the elements of the entity table lookup to an array, starting at a particular
-        /// array index.
+        /// Copies the elements of the <see cref="EntityTableLookup"/> to an array, starting at a
+        /// particular array index.
         /// </summary>
         /// 
         /// <param name="array">
@@ -110,11 +110,11 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through the entity table lookup.
+        /// Returns an enumerator that iterates through the <see cref="EntityTableLookup"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// An enumerator that can be used to iterate through the entity table lookup.
+        /// An enumerator that can be used to iterate through the <see cref="EntityTableLookup"/>.
         /// </returns>
         public Enumerator GetEnumerator()
         {
@@ -505,7 +505,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Enumerates through the elements of the entity table lookup.
+        /// Enumerates through the elements of the <see cref="EntityTableLookup"/>.
         /// </summary>
         public struct Enumerator : IEnumerator<EntityTableGrouping>
         {

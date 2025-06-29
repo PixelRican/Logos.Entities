@@ -9,7 +9,7 @@ using System.Linq;
 namespace Monophyll.Entities
 {
     /// <summary>
-    /// Represents a collection of entity tables that have a common entity archetype.
+    /// Represents a collection of entity tables that share a common entity archetype.
     /// </summary>
     public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IList, IReadOnlyList<EntityTable>
     {
@@ -18,8 +18,8 @@ namespace Monophyll.Entities
         private volatile EntityTable[] m_tables;
 
         /// <summary>
-        /// Initializes a new instance of the entity table grouping class that groups entity tables
-        /// by a common entity archetype.
+        /// Initializes a new instance of the <see cref="EntityTableGrouping"/> class that groups
+        /// entity tables by the specified entity archetype.
         /// </summary>
         /// 
         /// <param name="key">
@@ -197,11 +197,12 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through the entity table grouping.
+        /// Returns an enumerator that iterates through the <see cref="EntityTableGrouping"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// An enumerator that can be used to iterate through the entity table grouping.
+        /// An enumerator that can be used to iterate through the
+        /// <see cref="EntityTableGrouping"/>.
         /// </returns>
         public Enumerator GetEnumerator()
         {
@@ -330,7 +331,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Enumerates through the elements of the entity table grouping.
+        /// Enumerates through the elements of the <see cref="EntityTableGrouping"/>.
         /// </summary>
         public struct Enumerator : IEnumerator<EntityTable>
         {
