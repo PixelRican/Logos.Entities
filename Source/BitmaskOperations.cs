@@ -115,7 +115,7 @@ namespace Monophyll.Entities
         /// 
         /// <returns>
         /// <see langword="true"/> if the target bitmask does not intersect with the source
-        /// bitmask; otherwise <see langword="false"/>.
+        /// bitmask; otherwise, <see langword="false"/>.
         /// </returns>
         public static bool Excludes(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {

@@ -9,8 +9,8 @@ using System.Linq;
 namespace Monophyll.Entities
 {
     /// <summary>
-    /// Represents a predicate that determines whether entity archetypes meet a set of criteria
-    /// based on the component types they contain.
+    /// Represents a predicate that determines whether entities match a set of criteria in terms of
+    /// required, included, and excluded component types.
     /// </summary>
     public sealed class EntityFilter : IEquatable<EntityFilter>
     {
@@ -56,7 +56,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets an entity filter instance that matches all entity archetypes.
+        /// Gets an <see cref="EntityFilter"/> that matches all entities.
         /// </summary>
         public static EntityFilter Universal
         {
@@ -64,8 +64,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that entity archetypes must contain in order
-        /// to match with the entity filter.
+        /// Gets a read-only span of component types that entities must have in order to match with
+        /// the <see cref="EntityFilter"/>.
         /// </summary>
         public ReadOnlySpan<ComponentType> RequiredComponentTypes
         {
@@ -73,21 +73,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that entity archetypes must contain at least
-        /// one instance of in order to match with the entity filter.
+        /// Gets a read-only span of component types that, if non-empty, entities must have at
+        /// least one instance of in order to match with the <see cref="EntityFilter"/>.
         /// </summary>
-        /// 
-        /// <remarks>
-        /// If the read-only span is empty, this criteria will not be considered during matching.
-        /// </remarks>
         public ReadOnlySpan<ComponentType> IncludedComponentTypes
         {
             get => new ReadOnlySpan<ComponentType>(m_includedComponentTypes);
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that entity archetypes must not contain in
-        /// order to match with the entity filter.
+        /// Gets a read-only span of component types that entities must not have in order to match
+        /// with the <see cref="EntityFilter"/>.
         /// </summary>
         public ReadOnlySpan<ComponentType> ExcludedComponentTypes
         {
@@ -95,8 +91,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores information about the required component
-        /// types defined by the entity filter.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
+        /// type can be found within <see cref="RequiredComponentTypes"/>.
         /// </summary>
         public ReadOnlySpan<int> RequiredComponentBitmask
         {
@@ -104,8 +100,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores information about the included component
-        /// types defined by the entity filter.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
+        /// type can be found within <see cref="IncludedComponentTypes"/>.
         /// </summary>
         public ReadOnlySpan<int> IncludedComponentBitmask
         {
@@ -113,8 +109,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores information about the excluded component
-        /// types defined by the entity filter.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
+        /// type can be found within <see cref="ExcludedComponentTypes"/>.
         /// </summary>
         public ReadOnlySpan<int> ExcludedComponentBitmask
         {
@@ -122,7 +118,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter that requires component types from the specified array.
+        /// Creates an <see cref="EntityFilter"/> that requires component types from the specified
+        /// array.
         /// </summary>
         /// 
         /// <param name="requiredComponentTypes">
@@ -130,8 +127,8 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter that requires component types from the array, or
-        /// <see cref="Universal"/> if the array contains no component types.
+        /// An <see cref="EntityFilter"/> that requires component types from the array, or
+        /// <see cref="Universal"/> if the array does not contain component types.
         /// </returns>
         public static EntityFilter Create(ComponentType[] requiredComponentTypes)
         {
@@ -146,8 +143,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter that requires, includes, and excludes component types from the
-        /// specified arrays.
+        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes component
+        /// types from the specified arrays.
         /// </summary>
         /// 
         /// <param name="requiredComponentTypes">
@@ -163,8 +160,9 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter that requires, includes, and excludes component types from the arrays,
-        /// or <see cref="Universal"/> if the arrays contain no component types.
+        /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
+        /// from the arrays, or <see cref="Universal"/> if the arrays do not contain component
+        /// types.
         /// </returns>
         public static EntityFilter Create(ComponentType[] requiredComponentTypes,
                                           ComponentType[] includedComponentTypes,
@@ -187,7 +185,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter that requires component types from the specified sequence.
+        /// Creates an <see cref="EntityFilter"/> that requires component types from the specified
+        /// sequence.
         /// </summary>
         /// 
         /// <param name="requiredComponentTypes">
@@ -195,8 +194,8 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter that requires component types from the sequence, or
-        /// <see cref="Universal"/> if the sequence contains no component types.
+        /// An <see cref="EntityFilter"/> that requires component types from the sequence, or
+        /// <see cref="Universal"/> if the sequence does not contain component types.
         /// </returns>
         public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes)
         {
@@ -209,8 +208,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter that requires, includes, and excludes component types from the
-        /// specified sequences.
+        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes component
+        /// types from the specified sequences.
         /// </summary>
         /// 
         /// <param name="requiredComponentTypes">
@@ -226,8 +225,9 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter that requires, includes, and excludes component types from the
-        /// sequences, or <see cref="Universal"/> if the sequences contain no component types.
+        /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
+        /// from the sequences, or <see cref="Universal"/> if the sequences do not contain
+        /// component types.
         /// </returns>
         public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes,
                                           IEnumerable<ComponentType> includedComponentTypes,
@@ -250,7 +250,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter that requires component types from the specified span.
+        /// Creates an <see cref="EntityFilter"/> that requires component types from the specified
+        /// span.
         /// </summary>
         /// 
         /// <param name="requiredComponentTypes">
@@ -258,8 +259,8 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter that requires component types from the span, or
-        /// <see cref="Universal"/> if the span contains no component types.
+        /// An <see cref="EntityFilter"/> that requires component types from the span, or
+        /// <see cref="Universal"/> if the span does not contain component types.
         /// </returns>
         public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes)
         {
@@ -272,8 +273,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter that requires, includes, and excludes component types from the
-        /// specified spans.
+        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes component
+        /// types from the specified spans.
         /// </summary>
         /// 
         /// <param name="requiredComponentTypes">
@@ -289,8 +290,8 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter that requires, includes, and excludes component types from the spans,
-        /// or <see cref="Universal"/> if the spans contain no component types.
+        /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
+        /// from the spans, or <see cref="Universal"/> if the spans do not contain component types.
         /// </returns>
         public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes,
                                           ReadOnlySpan<ComponentType> includedComponentTypes,
@@ -381,7 +382,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the required component types from the
+        /// Creates an <see cref="Builder"/> that contains the required component types from the
         /// specified array, if any.
         /// </summary>
         /// 
@@ -390,15 +391,15 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the required component types from the array.
+        /// An <see cref="Builder"/> that contains the required component types from the array.
         /// </returns>
         public static Builder Require(ComponentType[] componentTypes)
         {
             return new Builder().Require(componentTypes);
         }
-        
+
         /// <summary>
-        /// Creates an entity filter builder that contains the required component types from the
+        /// Creates an <see cref="Builder"/> that contains the required component types from the
         /// specified sequence, if any.
         /// </summary>
         /// 
@@ -407,7 +408,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the required component types from the sequence.
+        /// An <see cref="Builder"/> that contains the required component types from the sequence.
         /// </returns>
         public static Builder Require(IEnumerable<ComponentType> componentTypes)
         {
@@ -415,7 +416,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the required component types from the
+        /// Creates an <see cref="Builder"/> that contains the required component types from the
         /// specified span, if any.
         /// </summary>
         /// 
@@ -424,7 +425,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the required component types from the span.
+        /// An <see cref="Builder"/> that contains the required component types from the span.
         /// </returns>
         public static Builder Require(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -432,7 +433,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the included component types from the
+        /// Creates an <see cref="Builder"/> that contains the included component types from the
         /// specified array, if any.
         /// </summary>
         /// 
@@ -441,7 +442,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the included component types from the array.
+        /// An <see cref="Builder"/> that contains the included component types from the array.
         /// </returns>
         public static Builder Include(ComponentType[] componentTypes)
         {
@@ -449,7 +450,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the included component types from the
+        /// Creates an <see cref="Builder"/> that contains the included component types from the
         /// specified sequence, if any.
         /// </summary>
         /// 
@@ -458,7 +459,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the included component types from the sequence.
+        /// An <see cref="Builder"/> that contains the included component types from the sequence.
         /// </returns>
         public static Builder Include(IEnumerable<ComponentType> componentTypes)
         {
@@ -466,7 +467,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the included component types from the
+        /// Creates an <see cref="Builder"/> that contains the included component types from the
         /// specified span, if any.
         /// </summary>
         /// 
@@ -475,7 +476,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the included component types from the span.
+        /// An <see cref="Builder"/> that contains the included component types from the span.
         /// </returns>
         public static Builder Include(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -483,7 +484,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the excluded component types from the
+        /// Creates an <see cref="Builder"/> that contains the excluded component types from the
         /// specified array, if any.
         /// </summary>
         /// 
@@ -492,7 +493,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the excluded component types from the array.
+        /// An <see cref="Builder"/> that contains the excluded component types from the array.
         /// </returns>
         public static Builder Exclude(ComponentType[] componentTypes)
         {
@@ -500,7 +501,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the excluded component types from the
+        /// Creates an <see cref="Builder"/> that contains the excluded component types from the
         /// specified sequence, if any.
         /// </summary>
         /// 
@@ -509,7 +510,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the excluded component types from the sequence.
+        /// An <see cref="Builder"/> that contains the excluded component types from the sequence.
         /// </returns>
         public static Builder Exclude(IEnumerable<ComponentType> componentTypes)
         {
@@ -517,7 +518,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the excluded component types from the
+        /// Creates an <see cref="Builder"/> that contains the excluded component types from the
         /// specified span, if any.
         /// </summary>
         /// 
@@ -526,7 +527,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the excluded component types from the span.
+        /// An <see cref="Builder"/> that contains the excluded component types from the span.
         /// </returns>
         public static Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -534,15 +535,16 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Determines whether two specified entity filter objects have the same value.
+        /// Determines whether two specified <see cref="EntityFilter"/> objects have the same
+        /// value.
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first entity filter to compare, or <see langword="null"/>.
+        /// The first object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second entity filter to compare, or <see langword="null"/>.
+        /// The second object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
@@ -562,16 +564,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Indicates whether the entity filter requires the specified component type.
+        /// Determines whether the <see cref="EntityFilter"/> requires the specified component
+        /// type.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The component type.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity archetype requires the component type,
-        /// <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the <see cref="EntityFilter"/> requires the component type;
+        /// otherwise, <see langword="false"/>.
         /// </returns>
         public bool Requires(ComponentType componentType)
         {
@@ -580,16 +583,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Indicates whether the entity filter includes the specified component type.
+        /// Determines whether the <see cref="EntityFilter"/> includes the specified component
+        /// type.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The component type.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity archetype includes the component type,
-        /// <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the <see cref="EntityFilter"/> includes the component type;
+        /// otherwise, <see langword="false"/>.
         /// </returns>
         public bool Includes(ComponentType componentType)
         {
@@ -598,16 +602,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Indicates whether the entity filter excludes the specified component type.
+        /// Determines whether the <see cref="EntityFilter"/> excludes the specified component
+        /// type.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The component type.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity archetype excludes the component type,
-        /// <see langword="false"/> otherwise.
+        /// <see langword="true"/> if the <see cref="EntityFilter"/> excludes the component type;
+        /// otherwise, <see langword="false"/>.
         /// </returns>
         public bool Excludes(ComponentType componentType)
         {
@@ -617,16 +622,17 @@ namespace Monophyll.Entities
 
         /// <summary>
         /// Determines whether the specified entity archetype meets the criteria defined by the
-        /// entity filter.
+        /// <see cref="EntityFilter"/>.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype to compare against the criteria defined by the entity filter.
+        /// The entity archetype to compare against the criteria defined by the
+        /// <see cref="EntityFilter"/>.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity archtype meets the criteria defined by the entity
-        /// filter; otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the entity archtype meets the criteria defined by the
+        /// <see cref="EntityFilter"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Matches(EntityArchetype archetype)
         {
@@ -638,13 +644,13 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity filter builder that contains the entity filter's required, included,
-        /// and excluded component types.
+        /// Creates an <see cref="Builder"/> that contains required, included, and excluded
+        /// component types from the <see cref="EntityFilter"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// An entity filter builder that contains the entity filter's required, included, and
-        /// excluded component types.
+        /// An <see cref="Builder"/> that contains required, included, and excluded component types
+        /// from the <see cref="EntityFilter"/>.
         /// </returns>
         public Builder ToBuilder()
         {
@@ -669,8 +675,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Represents a writable buffer that can be converted into an entity filter instance
-        /// without allocating extra memory.
+        /// Represents a writable buffer that can be converted into instances of the
+        /// <see cref="EntityFilter"/> class without allocating extra memory.
         /// </summary>
         public sealed class Builder
         {
@@ -682,7 +688,7 @@ namespace Monophyll.Entities
             private int[] m_excludedComponentBitmask;
 
             /// <summary>
-            /// Initializes an empty entity filter builder.
+            /// Initializes an new instance of the <see cref="Builder"/> class.
             /// </summary>
             public Builder()
             {
@@ -690,9 +696,13 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Initializes an entity filter builder that contains the specified entity filter's
-            /// required, included, and excluded component types.
+            /// Initializes an new instance of the <see cref="Builder"/> class that contains
+            /// required, included, and excluded component types from the specified entity filter.
             /// </summary>
+            /// 
+            /// <param name="filter">
+            /// The entity filter to draw required, included, and excluded component types from.
+            /// </param>
             public Builder(EntityFilter filter)
             {
                 ArgumentNullException.ThrowIfNull(filter);
@@ -706,7 +716,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Resets the entity filter builder's state.
+            /// Resets the state of the <see cref="Builder"/>.
             /// </summary>
             [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBitmask),
                            nameof(m_includedComponentTypes), nameof(m_includedComponentBitmask),
@@ -722,7 +732,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the required component types from the
+            /// Modifies the <see cref="Builder"/> to contain the required component types from the
             /// specified array, if any.
             /// </summary>
             /// 
@@ -731,7 +741,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Require(ComponentType[] componentTypes)
             {
@@ -741,7 +751,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the required component types from the
+            /// Modifies the <see cref="Builder"/> to contain the required component types from the
             /// specified sequence, if any.
             /// </summary>
             /// 
@@ -750,7 +760,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Require(IEnumerable<ComponentType> componentTypes)
             {
@@ -759,7 +769,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the required component types from the
+            /// Modifies the <see cref="Builder"/> to contain the required component types from the
             /// specified span, if any.
             /// </summary>
             /// 
@@ -768,7 +778,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Require(ReadOnlySpan<ComponentType> componentTypes)
             {
@@ -777,7 +787,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the included component types from the
+            /// Modifies the <see cref="Builder"/> to contain the included component types from the
             /// specified array, if any.
             /// </summary>
             /// 
@@ -786,7 +796,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Include(ComponentType[] componentTypes)
             {
@@ -796,7 +806,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the included component types from the
+            /// Modifies the <see cref="Builder"/> to contain the included component types from the
             /// specified sequence, if any.
             /// </summary>
             /// 
@@ -805,7 +815,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Include(IEnumerable<ComponentType> componentTypes)
             {
@@ -814,7 +824,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the included component types from the
+            /// Modifies the <see cref="Builder"/> to contain the included component types from the
             /// specified span, if any.
             /// </summary>
             /// 
@@ -823,7 +833,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Include(ReadOnlySpan<ComponentType> componentTypes)
             {
@@ -832,7 +842,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the excluded component types from the
+            /// Modifies the <see cref="Builder"/> to contain the excluded component types from the
             /// specified array, if any.
             /// </summary>
             /// 
@@ -841,7 +851,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Exclude(ComponentType[] componentTypes)
             {
@@ -851,7 +861,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the excluded component types from the
+            /// Modifies the <see cref="Builder"/> to contain the excluded component types from the
             /// specified sequence, if any.
             /// </summary>
             /// 
@@ -860,7 +870,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Exclude(IEnumerable<ComponentType> componentTypes)
             {
@@ -869,7 +879,7 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Modifies the entity filter builder to contain the excluded component types from the
+            /// Modifies the <see cref="Builder"/> to contain the excluded component types from the
             /// specified span, if any.
             /// </summary>
             /// 
@@ -878,7 +888,7 @@ namespace Monophyll.Entities
             /// </param>
             /// 
             /// <returns>
-            /// The calling entity builder instance.
+            /// The <see cref="Builder"/>.
             /// </returns>
             public Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
             {
@@ -887,13 +897,14 @@ namespace Monophyll.Entities
             }
 
             /// <summary>
-            /// Creates an entity filter that requires, includes, and excludes component types
-            /// specified by the entity filter builder.
+            /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes
+            /// component types specified by the <see cref="Builder"/>.
             /// </summary>
             /// 
             /// <returns>
-            /// An entity filter that requires, includes, and excludes component types specified by
-            /// the entity filter builder.
+            /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
+            /// specified by the <see cref="Builder"/>, or <see cref="Universal"/> if the
+            /// <see cref="Builder"/> does not specify any component types.
             /// </returns>
             public EntityFilter Build()
             {
