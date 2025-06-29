@@ -75,8 +75,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span of <see cref="ComponentType"/> instances that compose the
-        /// <see cref="EntityArchetype"/>.
+        /// Gets a read-only span of component types that compose the <see cref="EntityArchetype"/>.
         /// </summary>
         public ReadOnlySpan<ComponentType> ComponentTypes
         {
@@ -84,8 +83,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether a
-        /// <see cref="ComponentType"/> instance can be found within <see cref="ComponentTypes"/>.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
+        /// type can be found within <see cref="ComponentTypes"/>.
         /// </summary>
         public ReadOnlySpan<int> ComponentBitmask
         {
@@ -137,18 +136,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> that is composed of
-        /// <see cref="ComponentType"/> instances from the specified array.
+        /// Creates an <see cref="EntityArchetype"/> that is composed of component types from the
+        /// specified array.
         /// </summary>
         /// 
         /// <param name="componentTypes">
-        /// The array of <see cref="ComponentType"/> instances.
+        /// The array of component types.
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that is composed of <see cref="ComponentType"/>
-        /// instances from the array, or <see cref="Base"/> if the array contains no
-        /// <see cref="ComponentType"/> instances.
+        /// An <see cref="EntityArchetype"/> that is composed of component types from the array, or
+        /// <see cref="Base"/> if the array does not contain component types.
         /// </returns>
         public static EntityArchetype Create(ComponentType[] componentTypes)
         {
@@ -170,18 +168,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> that is composed of
-        /// <see cref="ComponentType"/> instances from the specified sequence.
+        /// Creates an <see cref="EntityArchetype"/> that is composed of component types from the
+        /// specified sequence.
         /// </summary>
         /// 
         /// <param name="componentTypes">
-        /// The sequence of <see cref="ComponentType"/> instances.
+        /// The sequence of component types.
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that is composed of <see cref="ComponentType"/>
-        /// instances from the sequence, or <see cref="Base"/> if the sequence contains no
-        /// <see cref="ComponentType"/> instances.
+        /// An <see cref="EntityArchetype"/> that is composed of component types from the sequence,
+        /// or <see cref="Base"/> if the sequence does not contain component types.
         /// </returns>
         public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
         {
@@ -201,18 +198,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> that is composed of
-        /// <see cref="ComponentType"/> instances from the specified span.
+        /// Creates an <see cref="EntityArchetype"/> that is composed of component types from the
+        /// specified span.
         /// </summary>
         /// 
         /// <param name="componentTypes">
-        /// The span of <see cref="ComponentType"/> instances.
+        /// The span of component types.
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that is composed of <see cref="ComponentType"/>
-        /// instances from the span, or <see cref="Base"/> if the span contains no
-        /// <see cref="ComponentType"/> instances.
+        /// An <see cref="EntityArchetype"/> that is composed of component types from the span, or
+        /// <see cref="Base"/> if the span does not contain component types.
         /// </returns>
         public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -236,11 +232,11 @@ namespace Monophyll.Entities
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first <see cref="EntityArchetype"/> to compare, or <see langword="null"/>.
+        /// The first object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second <see cref="EntityArchetype"/> to compare, or <see langword="null"/>.
+        /// The second object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
@@ -258,18 +254,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> with the specified <see cref="ComponentType"/>
-        /// added to it.
+        /// Creates an <see cref="EntityArchetype"/> with the specified component type added to it.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The <see cref="ComponentType"/> to add.
+        /// The component type to add.
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> added, or the
-        /// calling <see cref="EntityArchetype"/> if it contains the <see cref="ComponentType"/> or
-        /// if the <see cref="ComponentType"/> is <see langword="null"/>.
+        /// An <see cref="EntityArchetype"/> with the component type added, or the
+        /// <see cref="EntityArchetype"/> itself if it contains the component type or if the
+        /// component type is <see langword="null"/>.
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
         {
@@ -300,19 +295,18 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> with the specified <see cref="ComponentType"/>
-        /// removed from it.
+        /// Creates an <see cref="EntityArchetype"/> with the specified component type removed from
+        /// it.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The <see cref="ComponentType"/> to remove.
+        /// The component type to remove.
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> removed, or the
-        /// calling <see cref="EntityArchetype"/> if it does not contain the
-        /// <see cref="ComponentType"/> or if the <see cref="ComponentType"/> is
-        /// <see langword="null"/>.
+        /// An <see cref="EntityArchetype"/> with the component type removed, or the
+        /// <see cref="EntityArchetype"/> itself if it does not contain the component type or if
+        /// the component type is <see langword="null"/>.
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
         {
@@ -346,17 +340,17 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Indicates whether the <see cref="EntityArchetype"/> contains the specified
-        /// <see cref="ComponentType"/>.
+        /// Determines whether the <see cref="EntityArchetype"/> contains the specified component
+        /// type.
         /// </summary>
         /// 
         /// <param name="componentType">
-        /// The <see cref="ComponentType"/> to search for.
+        /// The component type to search for.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains the
-        /// <see cref="ComponentType"/>; otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains the component
+        /// type; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Contains(ComponentType componentType)
         {

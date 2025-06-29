@@ -34,7 +34,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the <see cref="System.Type"/> associated with the <see cref="ComponentType"/>.
+        /// Gets the runtime type associated with the <see cref="ComponentType"/>.
         /// </summary>
         public Type Type
         {
@@ -58,8 +58,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the <see cref="ComponentTypeCategory"/> associated with the
-        /// <see cref="ComponentType"/>.
+        /// Gets the category associated with the <see cref="ComponentType"/>.
         /// </summary>
         public ComponentTypeCategory Category
         {
@@ -87,11 +86,11 @@ namespace Monophyll.Entities
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first component type to compare, or <see langword="null"/>.
+        /// The first object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second component type to compare, or <see langword="null"/>.
+        /// The second object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
@@ -131,11 +130,11 @@ namespace Monophyll.Entities
         /// </summary>
         /// 
         /// <param name="a">
-        /// The first <see cref="ComponentType"/> to compare, or <see langword="null"/>.
+        /// The first object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <param name="b">
-        /// The second <see cref="ComponentType"/> to compare, or <see langword="null"/>.
+        /// The second object to compare, or <see langword="null"/>.
         /// </param>
         /// 
         /// <returns>
