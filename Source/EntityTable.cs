@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace Monophyll.Entities
 {
     /// <summary>
-    /// Represents a table of components each associated with an entity.
+    /// Represents a table of entities each associated with a set of components.
     /// </summary>
     public class EntityTable
     {
@@ -21,8 +21,8 @@ namespace Monophyll.Entities
         private int m_version;
 
         /// <summary>
-        /// Initializes an entity table that contains non-tag components described by the specified
-        /// entity archetype, is not managed by an entity registry, and has the default capacity.
+        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
+        /// components described by the specified entity archetype and has the default capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
@@ -34,8 +34,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Initializes an entity table that contains non-tag components described by the specified
-        /// entity archetype, is not managed by an entity registry, and has the specified capacity.
+        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
+        /// components described by the specified entity archetype and has the specified capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
@@ -51,9 +51,9 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Initializes an entity table that contains non-tag components described by the specified
-        /// entity archetype, is managed by the specified entity registry, if not
-        /// <see langword="null"/>, and has the default capacity.
+        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
+        /// components described by the specified entity archetype, is managed by the specified
+        /// entity registry, and has the default capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
@@ -69,9 +69,9 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Initializes an entity table that contains non-tag components described by the specified
-        /// entity archetype, is managed by the specified entity registry, if not
-        /// <see langword="null"/>, and has the specified capacity.
+        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
+        /// components described by the specified entity archetype, is managed by the specified
+        /// entity registry, and has the specified capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
@@ -120,7 +120,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the entity archetype that describes the layout of the entity table.
+        /// Gets the entity archetype that describes the layout of the <see cref="EntityTable"/>.
         /// </summary>
         public EntityArchetype Archetype
         {
@@ -128,8 +128,9 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the entity registry that manages the entity table, or <see langword="null"/> if
-        /// the entity table is not managed by an entity registry.
+        /// Gets the entity registry that manages the <see cref="EntityTable"/>, or
+        /// <see langword="null"/> if the <see cref="EntityTable"/> is not managed by an entity
+        /// registry.
         /// </summary>
         public EntityRegistry? Registry
         {
@@ -137,7 +138,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the total number of entities the entity table can hold before it becomes full.
+        /// Gets the total number of entities the <see cref="EntityTable"/> can hold before it
+        /// becomes full.
         /// </summary>
         public int Capacity
         {
@@ -145,7 +147,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Get the number of entities in the entity table.
+        /// Get the number of entities in the <see cref="EntityTable"/>.
         /// </summary>
         public int Count
         {
@@ -153,7 +155,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the current version of the entity table.
+        /// Gets the current version of the <see cref="EntityTable"/>.
         /// </summary>
         public int Version
         {
@@ -161,7 +163,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a value that indicates whether the entity table does not contain any entities.
+        /// Gets a value that indicates whether the <see cref="EntityTable"/> does not contain any
+        /// entities.
         /// </summary>
         public bool IsEmpty
         {
@@ -169,7 +172,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a value that indicates whether the entity table has reach its maximum capacity.
+        /// Gets a value that indicates whether the <see cref="EntityTable"/> has reach its
+        /// maximum capacity.
         /// </summary>
         public bool IsFull
         {
@@ -177,13 +181,13 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the caller has access to the entity table's
-        /// mutator methods.
+        /// Returns a value that indicates whether the caller is allowed to make structure changes
+        /// to the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the caller has access to the entity table's mutator methods;
-        /// otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the caller is allowed to make structure changes to the
+        /// <see cref="EntityTable"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool CheckAccess()
         {
@@ -191,7 +195,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a span over the components stored by the entity table.
+        /// Gets a span over the components stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <typeparam name="T">
@@ -199,7 +203,7 @@ namespace Monophyll.Entities
         /// </typeparam>
         /// 
         /// <returns>
-        /// A span over the components stored by the entity table.
+        /// A span over the components stored by the <see cref="EntityTable"/>.
         /// </returns>
         public Span<T> GetComponents<T>()
         {
@@ -207,7 +211,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a reference to the components stored by the entity table.
+        /// Gets a reference to the components stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <typeparam name="T">
@@ -215,7 +219,7 @@ namespace Monophyll.Entities
         /// </typeparam>
         /// 
         /// <returns>
-        /// A reference to the components stored by the entity table.
+        /// A reference to the components stored by the <see cref="EntityTable"/>.
         /// </returns>
         public ref T GetComponentDataReference<T>()
         {
@@ -224,7 +228,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Attempts to get a span over the components stored by the entity table.
+        /// Attempts to get a span over the components stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <typeparam name="T">
@@ -232,7 +236,7 @@ namespace Monophyll.Entities
         /// </typeparam>
         /// 
         /// <param name="components">
-        /// A span over the components stored by the entity table.
+        /// A span over the components stored by the <see cref="EntityTable"/>.
         /// </param>
         /// 
         /// <returns>
@@ -273,11 +277,11 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span over the entities stored by the entity table.
+        /// Gets a read-only span over the entities stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// A read-only span over the entities stored by the entity table.
+        /// A read-only span over the entities stored by the <see cref="EntityTable"/>.
         /// </returns>
         public ReadOnlySpan<Entity> GetEntities()
         {
@@ -285,11 +289,11 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets a read-only reference to the entities stored by the entity table.
+        /// Gets a read-only reference to the entities stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// A read-only reference to the entities stored by the entity table.
+        /// A read-only reference to the entities stored by the <see cref="EntityTable"/>.
         /// </returns>
         public ref readonly Entity GetEntityDataReference()
         {
@@ -297,11 +301,11 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Adds an entity to the end of the entity table.
+        /// Adds an entity to the end of the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="entity">
-        /// The entity to be added to the end of the entity table.
+        /// The entity to be added to the end of the <see cref="EntityTable"/>.
         /// </param>
         public void Add(Entity entity)
         {
@@ -330,7 +334,7 @@ namespace Monophyll.Entities
 
         /// <summary>
         /// Copies a range of entities from the specified entity table and adds them to the end of
-        /// the entity table.
+        /// the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="table">
@@ -424,7 +428,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Removes all entities from the entity table.
+        /// Removes all entities from the <see cref="EntityTable"/>.
         /// </summary>
         public void Clear()
         {
@@ -445,7 +449,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Removes the first occurance of the specified entity from the entity table.
+        /// Removes the first occurance of the specified entity from the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -470,7 +474,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Removes the entity at the specified index of the entity table.
+        /// Removes the entity at the specified index of the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="index">
@@ -514,7 +518,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Removes a range of entities from the entity table.
+        /// Removes a range of entities from the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="index">
@@ -571,8 +575,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Throws an InvalidOperationException if the caller does not have access to the entity
-        /// table's mutator methods.
+        /// Throws an InvalidOperationException if the caller is not allowed to make structure
+        /// changes to the <see cref="EntityTable"/>.
         /// </summary>
         public void VerifyAccess()
         {
