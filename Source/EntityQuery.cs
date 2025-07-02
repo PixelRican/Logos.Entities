@@ -17,8 +17,8 @@ namespace Monophyll.Entities
         private readonly Cache? m_cache;
 
         /// <summary>
-        /// Initializes an uncached entity query that matches all entity tables from the specified
-        /// entity table lookup.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
+        /// tables from the specified entity table lookup.
         /// </summary>
         /// 
         /// <param name="lookup">
@@ -30,25 +30,27 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Initializes an entity query that matches all entity tables from the specified entity
-        /// table lookup, and optionally caches the results.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
+        /// tables from the specified entity table lookup and, if enabled, stores them in a cache
+        /// for faster iteration speeds.
         /// </summary>
         /// 
         /// <param name="lookup">
         /// The entity table lookup.
         /// </param>
         /// 
-        /// <param name="cached">
+        /// <param name="enableCache">
         /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
         /// </param>
-        public EntityQuery(EntityTableLookup lookup, bool cached)
-            : this(lookup, EntityFilter.Universal, cached)
+        public EntityQuery(EntityTableLookup lookup, bool enableCache)
+            : this(lookup, EntityFilter.Universal, enableCache)
         {
         }
 
         /// <summary>
-        /// Initializes an uncached entity query that matches entity tables from the specified
-        /// entity table lookup using the specified entity filter.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
+        /// tables from the specified entity table lookup and skips over any entity tables whose
+        /// entity archetypes do not match the specified entity filter.
         /// </summary>
         /// 
         /// <param name="lookup">
@@ -64,8 +66,10 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Initializes an entity query that matches entity tables from the specified entity table
-        /// lookup using the specified entity filter, and optionally caches the results.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
+        /// tables from the specified entity table lookup, skips over any entity tables whose
+        /// entity archetypes do not match the specified entity filter, and, if enabled, stores
+        /// them in a cache for faster iteration speeds.
         /// </summary>
         /// 
         /// <param name="lookup">
@@ -76,17 +80,17 @@ namespace Monophyll.Entities
         /// The entity filter.
         /// </param>
         /// 
-        /// <param name="cached">
+        /// <param name="enableCache">
         /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
         /// </param>
-        public EntityQuery(EntityTableLookup lookup, EntityFilter? filter, bool cached)
+        public EntityQuery(EntityTableLookup lookup, EntityFilter? filter, bool enableCache)
         {
             ArgumentNullException.ThrowIfNull(lookup);
 
             m_lookup = lookup;
             m_filter = filter ?? EntityFilter.Universal;
 
-            if (cached)
+            if (enableCache)
             {
                 m_cache = new Cache();
                 m_cache.Refresh(m_lookup, m_filter);
@@ -94,8 +98,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets the entity filter used by the entity query used to match entity tables based on
-        /// their entity archetypes.
+        /// Gets the entity filter used by the <see cref="EntityQuery"/> to match entity tables.
         /// </summary>
         public EntityFilter Filter
         {
@@ -103,11 +106,11 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through the entity query.
+        /// Returns an enumerator that iterates through the <see cref="EntityQuery"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// An enumerator that can be used to iterate through the entity query.
+        /// An enumerator that can be used to iterate through the <see cref="EntityQuery"/>.
         /// </returns>
         public Enumerator GetEnumerator()
         {
@@ -138,7 +141,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Enumerates through the elements of the entity query.
+        /// Enumerates through the elements of the <see cref="EntityQuery"/>.
         /// </summary>
         public struct Enumerator : IEnumerator<EntityTable>
         {
