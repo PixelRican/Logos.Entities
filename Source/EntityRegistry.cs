@@ -23,19 +23,20 @@ namespace Monophyll.Entities
         private volatile Container m_container;
 
         /// <summary>
-        /// Initializes a new instance of the entity registry class that has the default capacity.
+        /// Initializes a new instance of the <see cref="EntityRegistry"/> class that has the
+        /// default capacity.
         /// </summary>
         public EntityRegistry() : this(DefaultCapacity)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the entity registry class that has the specified
-        /// capacity.
+        /// Initializes a new instance of the <see cref="EntityRegistry"/> class that has the
+        /// specified capacity.
         /// </summary>
         /// 
         /// <param name="capacity">
-        /// The capacity of the entity registry.
+        /// The capacity of the <see cref="EntityRegistry"/>.
         /// </param>
         public EntityRegistry(int capacity)
         {
@@ -77,7 +78,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets an entity query that matches all entity tables stored within the entity registry.
+        /// Gets an entity query that matches all entity tables stored by the
+        /// <see cref="EntityRegistry"/>.
         /// </summary>
         public EntityQuery UniversalQuery
         {
@@ -136,30 +138,31 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity query that matches entity tables stored within the entity registry
-        /// using the specified entity filter, and optionally caches the results.
+        /// Creates an entity query that matches entity tables stored by the
+        /// <see cref="EntityRegistry"/> using the specified entity filter, and, if enabled, stores
+        /// them in a cache for faster iteration speeds.
         /// </summary>
         /// 
         /// <param name="filter">
         /// The entity filter.
         /// </param>
         /// 
-        /// <param name="cached">
+        /// <param name="enableCache">
         /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
         /// </param>
         /// 
         /// <returns>
-        /// An entity query that matches entity tables stored within the entity registry using the
-        /// specified entity filter.
+        /// An entity query that matches entity tables stored by the <see cref="EntityRegistry"/>
+        /// using the entity filter.
         /// </returns>
-        public EntityQuery CreateQuery(EntityFilter filter, bool cached)
+        public EntityQuery CreateQuery(EntityFilter filter, bool enableCache)
         {
-            if (filter == null || filter == EntityFilter.Universal && !cached)
+            if (filter == null || filter == EntityFilter.Universal && !enableCache)
             {
                 return m_universalQuery;
             }
 
-            return new EntityQuery(m_lookup, filter, cached);
+            return new EntityQuery(m_lookup, filter, enableCache);
         }
 
         /// <summary>
@@ -175,8 +178,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity with components described by the component types from the specified
-        /// array.
+        /// Creates an entity that is composed of component types from the specified array.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -184,7 +186,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity with components described by the component types from the array.
+        /// An entity that is composed of component types from the array.
         /// </returns>
         public Entity CreateEntity(ComponentType[] componentTypes)
         {
@@ -192,8 +194,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity with components described by the component types from the specified
-        /// sequence.
+        /// Creates an entity that is composed of component types from the specified sequence.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -201,7 +202,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity with components described by the component types from the sequence.
+        /// An entity that is composed of component types from the sequence.
         /// </returns>
         public Entity CreateEntity(IEnumerable<ComponentType> componentTypes)
         {
@@ -209,8 +210,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity with components described by the component types from the specified
-        /// span.
+        /// Creates an entity that is composed of component types from the specified span.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -218,7 +218,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity with components described by the component types from the span.
+        /// An entity that is composed of component types from the span.
         /// </returns>
         public Entity CreateEntity(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -226,8 +226,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Creates an entity with components described by the components from the specified
-        /// entity archetype.
+        /// Creates an entity that is modelled by the specified entity archetype.
         /// </summary>
         /// 
         /// <param name="archetype">
@@ -235,7 +234,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity with components described by the components from the entity archetype.
+        /// An entity that is modelled by the entity archetype.
         /// </returns>
         public Entity CreateEntity(EntityArchetype archetype)
         {
@@ -258,7 +257,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Adds a new entity managed by the entity registry to the specified entity table.
+        /// Creates an entity managed by the <see cref="EntityRegistry"/> and adds it to the
+        /// specified entity table.
         /// </summary>
         /// 
         /// <param name="table">
@@ -266,7 +266,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity managed by the entity registry.
+        /// An entity managed by the <see cref="EntityRegistry"/>.
         /// </returns>
         public Entity CreateEntity(EntityTable table)
         {
@@ -275,7 +275,7 @@ namespace Monophyll.Entities
             if (table.Registry != this)
             {
                 throw new ArgumentException(
-                    "The entity table cannot be modified by the entity registry.", nameof(table));
+                    "The entity table cannot be modified by the EntityRegistry.", nameof(table));
             }
 
             lock (m_lookup)
@@ -302,15 +302,15 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Determines whether the specified entity exists within the entity registry.
+        /// Determines whether the internal data structure contains the specified entity.
         /// </summary>
         /// 
         /// <param name="entity">
-        /// The entity to search for in the entity registry.
+        /// The entity to search for.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity is in the entity registry; otherwise,
+        /// <see langword="true"/> if the entity is in the internal data structure; otherwise,
         /// <see langword="false"/>.
         /// </returns>
         public bool ContainsEntity(Entity entity)
@@ -319,8 +319,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Removes the specified entity and its components from the entity table they are stored
-        /// in.
+        /// Removes the specified entity from the entity table it is stored in and invalidates its
+        /// reference.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -376,8 +376,8 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Modifies the specified entity to match the model represented by the specified entity
-        /// archetype.
+        /// Adds and removes components from the specified entity to match the model represented by
+        /// the specified entity archetype.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -432,7 +432,7 @@ namespace Monophyll.Entities
             if (destination.Registry != this)
             {
                 throw new ArgumentException(
-                    "The entity table cannot be modified by the entity registry.", nameof(destination));
+                    "The entity table cannot be modified by the EntityRegistry.", nameof(destination));
             }
 
             lock (m_lookup)
@@ -555,8 +555,8 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity has a component described by the component type;
-        /// otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the entity has a component of the component type; otherwise,
+        /// <see langword="false"/>.
         /// </returns>
         public bool HasComponent(Entity entity, ComponentType componentType)
         {
@@ -599,7 +599,7 @@ namespace Monophyll.Entities
         /// 
         /// <returns>
         /// <see langword="true"/> if the component was successfully removed from the entity;
-        /// otherwise <see langword="false"/>.
+        /// otherwise, <see langword="false"/>.
         /// </returns>
         public bool RemoveComponent(Entity entity, ComponentType componentType)
         {
@@ -620,7 +620,7 @@ namespace Monophyll.Entities
         /// 
         /// <returns>
         /// <see langword="true"/> if the component was successfully removed from the entity;
-        /// otherwise <see langword="false"/>.
+        /// otherwise, <see langword="false"/>.
         /// </returns>
         public bool RemoveComponent<T>(Entity entity)
         {

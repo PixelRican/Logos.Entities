@@ -43,7 +43,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <param name="capacity">
-        /// The capacity of the entity table.
+        /// The capacity of the <see cref="EntityTable"/>.
         /// </param>
         public EntityTable(EntityArchetype archetype, int capacity)
             : this(archetype, null, capacity)
@@ -83,7 +83,7 @@ namespace Monophyll.Entities
         /// </param>
         /// 
         /// <param name="capacity">
-        /// The capacity of the entity table.
+        /// The capacity of the <see cref="EntityTable"/>.
         /// </param>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry, int capacity)
         {
