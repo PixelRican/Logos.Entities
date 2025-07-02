@@ -6,11 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class ComponentTypeTests
     {
-        [AssemblyInitialize]
-        public static void Initialize(TestContext testContext)
+        static ComponentTypeTests()
         {
             ComponentType.TypeOf<Position2D>();
             ComponentType.TypeOf<Position3D>();
@@ -22,7 +21,7 @@ namespace Monophyll.Entities.Tests
             ComponentType.TypeOf<User>();
         }
 
-        [TestMethod]
+        [Test]
         public void ComparableTest()
         {
             ReadOnlySpan<ComponentType> expectedSpan =
@@ -56,11 +55,11 @@ namespace Monophyll.Entities.Tests
 
                 Assert.AreEqual(0, actual.CompareTo(expectedSpan[i]));
                 Assert.AreEqual(1, actual.CompareTo(null));
-                Assert.ThrowsException<ArgumentException>(() => actual.CompareTo(this));
+                Assert.Throws<ArgumentException>(() => actual.CompareTo(this));
             }
         }
 
-        [TestMethod]
+        [Test]
         public void EquatableTest()
         {
             ReadOnlySpan<ComponentType> span =
@@ -85,7 +84,7 @@ namespace Monophyll.Entities.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void TypeOfTest()
         {
             TypeOfTestHelper<Position2D>(0);

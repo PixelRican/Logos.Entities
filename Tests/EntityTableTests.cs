@@ -5,10 +5,10 @@ using System;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class EntityTableTests
     {
-        [TestMethod]
+        [Test]
         public void AddTest()
         {
             EntityTable table = CreateTable();
@@ -21,10 +21,10 @@ namespace Monophyll.Entities.Tests
             }
 
             Assert.IsTrue(table.IsFull);
-            Assert.ThrowsException<InvalidOperationException>(() => table.Add(new Entity()));
+            Assert.Throws<InvalidOperationException>(() => table.Add(new Entity()));
         }
 
-        [TestMethod]
+        [Test]
         public void ClearTest()
         {
             EntityTable table = CreateTable();
@@ -39,7 +39,7 @@ namespace Monophyll.Entities.Tests
             Assert.IsTrue(table.IsEmpty);
         }
 
-        [TestMethod]
+        [Test]
         public void ConstructorTest()
         {
             EntityTable table = new EntityTable(EntityArchetype.Base);
@@ -47,19 +47,19 @@ namespace Monophyll.Entities.Tests
             Assert.IsTrue(table.IsEmpty);
             Assert.IsTrue(table.CheckAccess());
             Assert.AreEqual(8, table.Capacity);
-            Assert.ThrowsException<ArgumentNullException>(() => new EntityTable(null!));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new EntityTable(EntityArchetype.Base, -1));
+            Assert.Throws<ArgumentNullException>(() => new EntityTable(null!));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new EntityTable(EntityArchetype.Base, -1));
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveTest()
         {
             EntityTable table = CreateTable();
 
             Assert.IsTrue(table.CheckAccess());
             Assert.IsFalse(table.Remove(new Entity()));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => table.RemoveAt(0));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => table.RemoveAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => table.RemoveAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => table.RemoveAt(-1));
 
             for (int i = 1; i <= table.Capacity; i++)
             {

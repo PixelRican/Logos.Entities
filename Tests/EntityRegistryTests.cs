@@ -5,10 +5,10 @@ using System;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class EntityRegistryTests
     {
-        [TestMethod]
+        [Test]
         public void AddComponentTest()
         {
             EntityRegistry registry = new EntityRegistry();
@@ -25,7 +25,7 @@ namespace Monophyll.Entities.Tests
             ];
             Entity entity = registry.CreateEntity();
 
-            Assert.ThrowsException<ArgumentException>(
+            Assert.Throws<ArgumentException>(
                 () => registry.AddComponent(new Entity(-1, -1), null!));
 
             foreach (ComponentType componentType in componentTypes)
@@ -37,7 +37,7 @@ namespace Monophyll.Entities.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void CreateEntityTest()
         {
             EntityRegistry registry = new EntityRegistry();
@@ -69,7 +69,7 @@ namespace Monophyll.Entities.Tests
             Assert.AreEqual(20, registry.Count);
         }
 
-        [TestMethod]
+        [Test]
         public void DestroyEntityTest()
         {
             EntityRegistry registry = new EntityRegistry();
@@ -93,7 +93,7 @@ namespace Monophyll.Entities.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveComponentTest()
         {
             EntityRegistry registry = new EntityRegistry();
@@ -110,7 +110,7 @@ namespace Monophyll.Entities.Tests
             ];
             Entity entity = registry.CreateEntity(componentTypes);
 
-            Assert.ThrowsException<ArgumentException>(
+            Assert.Throws<ArgumentException>(
                 () => registry.RemoveComponent(new Entity(-1, -1), null!));
 
             foreach (ComponentType componentType in componentTypes)

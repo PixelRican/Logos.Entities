@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class EntityArchetypeTests
     {
-        [TestMethod]
+        [Test]
         public void AddTest()
         {
             Span<ComponentType> types =
@@ -61,7 +61,7 @@ namespace Monophyll.Entities.Tests
             Assert.AreSame(superarchetype, superarchetype.Add(type));
         }
 
-        [TestMethod]
+        [Test]
         public void CreateTest()
         {
             ComponentType[] expected = new ComponentType[8];
@@ -169,7 +169,7 @@ namespace Monophyll.Entities.Tests
             Array.Clear(actualArray, 0, actualLength);
         }
 
-        [TestMethod]
+        [Test]
         public void EquatableTest()
         {
             ReadOnlySpan<EntityArchetype> span =
@@ -205,7 +205,7 @@ namespace Monophyll.Entities.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void RemoveTest()
         {
             Span<ComponentType> types =

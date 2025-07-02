@@ -5,10 +5,10 @@ using System;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class EntityTests
     {
-        [TestMethod]
+        [Test]
         public void ComparableTest()
         {
             ReadOnlySpan<Entity> expectedSpan =
@@ -36,11 +36,11 @@ namespace Monophyll.Entities.Tests
 
                 Assert.AreEqual(0, actual.CompareTo(expectedSpan[i]));
                 Assert.AreEqual(1, actual.CompareTo(null));
-                Assert.ThrowsException<ArgumentException>(() => actual.CompareTo(this));
+                Assert.Throws<ArgumentException>(() => actual.CompareTo(this));
             }
         }
 
-        [TestMethod]
+        [Test]
         public void EquatableTest()
         {
             ReadOnlySpan<Entity> span =

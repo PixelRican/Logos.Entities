@@ -7,10 +7,10 @@ using System.Linq;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class EntityFilterTests
     {
-        [TestMethod]
+        [Test]
         public void CreateTest()
         {
             ComponentType[] expected = new ComponentType[8];
@@ -92,7 +92,7 @@ namespace Monophyll.Entities.Tests
             Array.Clear(actualArray, 0, actualLength);
         }
 
-        [TestMethod]
+        [Test]
         public void EquatableTest()
         {
             ReadOnlySpan<ComponentType[]> arguments =
@@ -143,7 +143,7 @@ namespace Monophyll.Entities.Tests
             }
         }
 
-        [TestMethod]
+        [Test]
         public void MatchesTest()
         {
             EntityFilter filter = EntityFilter.Require([ComponentType.TypeOf<Position2D>(),

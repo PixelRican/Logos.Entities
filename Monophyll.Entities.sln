@@ -10,7 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monophyll.Entities", "Source\Monophyll.Entities.csproj", "{6D9547AB-AEF8-A23C-4F6F-DB3E46F9CF2D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monophyll.Entities.Tests", "Tests\Monophyll.Entities.Tests.csproj", "{A4A6B621-9947-2E31-95BE-EF86148FC289}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monophyll.Entities.Tests", "Tests\Monophyll.Entities.Tests.csproj", "{B5C708C1-69FC-48EA-8DD8-BAE0AB129E83}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,10 +22,10 @@ Global
 		{6D9547AB-AEF8-A23C-4F6F-DB3E46F9CF2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D9547AB-AEF8-A23C-4F6F-DB3E46F9CF2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D9547AB-AEF8-A23C-4F6F-DB3E46F9CF2D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A4A6B621-9947-2E31-95BE-EF86148FC289}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A4A6B621-9947-2E31-95BE-EF86148FC289}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A4A6B621-9947-2E31-95BE-EF86148FC289}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A4A6B621-9947-2E31-95BE-EF86148FC289}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5C708C1-69FC-48EA-8DD8-BAE0AB129E83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5C708C1-69FC-48EA-8DD8-BAE0AB129E83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5C708C1-69FC-48EA-8DD8-BAE0AB129E83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5C708C1-69FC-48EA-8DD8-BAE0AB129E83}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

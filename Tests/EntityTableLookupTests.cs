@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestClass]
+    [TestFixture]
     public sealed class EntityTableLookupTests
     {
-        [TestMethod]
+        [Test]
         public void GetGroupingTest()
         {
             EntityTableLookup lookup = new EntityTableLookup();
