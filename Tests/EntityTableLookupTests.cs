@@ -32,23 +32,23 @@ namespace Monophyll.Entities.Tests
             GetGroupingTestHelper(lookup, arguments);
             Assert.AreEqual(3, lookup.Count);
 
-            arguments[0] = ComponentType.TypeOf<User>();
+            arguments[0] = ComponentType.TypeOf<Name>();
             arguments[1] = ComponentType.TypeOf<Position2D>();
             arguments[2] = ComponentType.TypeOf<Rotation2D>();
             arguments[3] = ComponentType.TypeOf<Scale2D>();
-            arguments[4] = ComponentType.TypeOf<Tag>();
+            arguments[4] = ComponentType.TypeOf<Enabled>();
 
             GetGroupingTestHelper(lookup, arguments);
             Assert.AreEqual(4, lookup.Count);
 
-            arguments[0] = ComponentType.TypeOf<User>();
+            arguments[0] = ComponentType.TypeOf<Name>();
             arguments[1] = ComponentType.TypeOf<Position2D>();
             arguments[2] = ComponentType.TypeOf<Position3D>();
             arguments[3] = ComponentType.TypeOf<Rotation2D>();
             arguments[4] = ComponentType.TypeOf<Rotation3D>();
             arguments[5] = ComponentType.TypeOf<Scale2D>();
             arguments[6] = ComponentType.TypeOf<Scale3D>();
-            arguments[7] = ComponentType.TypeOf<Tag>();
+            arguments[7] = ComponentType.TypeOf<Enabled>();
 
             GetGroupingTestHelper(lookup, arguments);
             Assert.AreEqual(5, lookup.Count);

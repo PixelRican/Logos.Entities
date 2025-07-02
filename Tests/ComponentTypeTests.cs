@@ -2,124 +2,148 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
     [TestFixture]
-    public sealed class ComponentTypeTests
+    public static class ComponentTypeTests
     {
         static ComponentTypeTests()
         {
+            ComponentType.TypeOf<Enabled>();
+            ComponentType.TypeOf<Name>();
             ComponentType.TypeOf<Position2D>();
             ComponentType.TypeOf<Position3D>();
             ComponentType.TypeOf<Rotation2D>();
             ComponentType.TypeOf<Rotation3D>();
             ComponentType.TypeOf<Scale2D>();
             ComponentType.TypeOf<Scale3D>();
-            ComponentType.TypeOf<Tag>();
-            ComponentType.TypeOf<User>();
         }
 
-        [Test]
-        public void ComparableTest()
+        private static IEnumerable CompareEqualsTestCases
         {
-            ReadOnlySpan<ComponentType> expectedSpan =
-            [
-                ComponentType.TypeOf<User>(),
-                ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Position3D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Rotation3D>(),
-                ComponentType.TypeOf<Scale2D>(),
-                ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Tag>()
-            ];
-            Span<ComponentType> actualSpan =
-            [
-                ComponentType.TypeOf<Tag>(),
-                ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Scale2D>(),
-                ComponentType.TypeOf<User>(),
-                ComponentType.TypeOf<Position3D>(),
-                ComponentType.TypeOf<Rotation3D>(),
-                ComponentType.TypeOf<Scale3D>()
-            ];
-
-            actualSpan.Sort();
-
-            for (int i = 0; i < 8; i++)
+            get
             {
-                ComponentType actual = actualSpan[i];
+                yield return new object[]
+                {
+                    null!, ComponentType.TypeOf<Enabled>()
+                };
 
-                Assert.AreEqual(0, actual.CompareTo(expectedSpan[i]));
-                Assert.AreEqual(1, actual.CompareTo(null));
-                Assert.Throws<ArgumentException>(() => actual.CompareTo(this));
+                yield return new object[]
+                {
+                    null!, ComponentType.TypeOf<Name>()
+                };
+
+                yield return new object[]
+                {
+                    null!, ComponentType.TypeOf<Position2D>()
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>()
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Position3D>()
+                };
             }
         }
 
-        [Test]
-        public void EquatableTest()
+        private static IEnumerable TypeOfTestCases
         {
-            ReadOnlySpan<ComponentType> span =
-            [
-                ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Position3D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Rotation3D>(),
-                ComponentType.TypeOf<Scale2D>(),
-                ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Tag>(),
-                ComponentType.TypeOf<User>()
-            ];
-            ComponentType previous = null!;
-
-            foreach (ComponentType current in span)
+            get
             {
-                Assert.AreEqual(current, current);
-                Assert.AreNotEqual(previous, current);
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Enabled>(), typeof(Enabled), 0, 0, ComponentTypeCategory.Tag
+                };
 
-                previous = current;
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Name>(), typeof(Name), 1, Unsafe.SizeOf<Name>(), ComponentTypeCategory.Managed
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Position2D>(), typeof(Position2D), 2, Unsafe.SizeOf<Position2D>(), ComponentTypeCategory.Unmanaged
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Position3D>(), typeof(Position3D), 3, Unsafe.SizeOf<Position3D>(), ComponentTypeCategory.Unmanaged
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Rotation2D>(), typeof(Rotation2D), 4, Unsafe.SizeOf<Rotation2D>(), ComponentTypeCategory.Unmanaged
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Rotation3D>(), typeof(Rotation3D), 5, Unsafe.SizeOf<Rotation3D>(), ComponentTypeCategory.Unmanaged
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Scale2D>(), typeof(Scale2D), 6, Unsafe.SizeOf<Scale2D>(), ComponentTypeCategory.Unmanaged
+                };
+
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Scale3D>(), typeof(Scale3D), 7, Unsafe.SizeOf<Scale3D>(), ComponentTypeCategory.Unmanaged
+                };
             }
         }
 
-        [Test]
-        public void TypeOfTest()
+        [TestCaseSource(nameof(CompareEqualsTestCases))]
+        public static void CompareTest(ComponentType? lesser, ComponentType? greater)
         {
-            TypeOfTestHelper<Position2D>(0);
-            TypeOfTestHelper<Position3D>(1);
-            TypeOfTestHelper<Rotation2D>(2);
-            TypeOfTestHelper<Rotation3D>(3);
-            TypeOfTestHelper<Scale2D>(4);
-            TypeOfTestHelper<Scale3D>(5);
-            TypeOfTestHelper<Tag>(6);
-            TypeOfTestHelper<User>(7);
+            Assert.Multiple(() =>
+            {
+                Assert.That(ComponentType.Compare(lesser, lesser), Is.EqualTo(0));
+                Assert.That(ComponentType.Compare(greater, greater), Is.EqualTo(0));
+                Assert.That(ComponentType.Compare(lesser, greater), Is.EqualTo(-1));
+                Assert.That(ComponentType.Compare(greater, lesser), Is.EqualTo(1));
+            });
         }
 
-        private static void TypeOfTestHelper<T>(int expectedIdentifier)
+        [TestCaseSource(nameof(CompareEqualsTestCases))]
+        public static void EqualsTest(ComponentType? a, ComponentType? b)
         {
-            Assert.AreEqual(expectedIdentifier, ComponentType.TypeOf<T>().Identifier);
-            Assert.AreEqual(typeof(T), ComponentType.TypeOf<T>().Type);
-
-            switch (ComponentType.TypeOf<T>().Category)
+            Assert.Multiple(() =>
             {
-                case ComponentTypeCategory.Managed:
-                    Assert.IsTrue(RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-                    Assert.AreEqual(Unsafe.SizeOf<T>(), ComponentType.TypeOf<T>().Size);
-                    return;
-                case ComponentTypeCategory.Unmanaged:
-                    Assert.IsFalse(RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-                    Assert.AreEqual(Unsafe.SizeOf<T>(), ComponentType.TypeOf<T>().Size);
-                    return;
-                case ComponentTypeCategory.Tag:
-                    Assert.IsFalse(RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-                    Assert.AreEqual(Unsafe.SizeOf<T>() - 1, ComponentType.TypeOf<T>().Size);
-                    return;
-                default:
-                    Assert.Fail("Invalid ComponentTypeCategory found.");
-                    return;
-            }
+                Assert.That(ComponentType.Equals(a, a), Is.True);
+                Assert.That(ComponentType.Equals(b, b), Is.True);
+                Assert.That(ComponentType.Equals(a, b), Is.False);
+                Assert.That(ComponentType.Equals(b, a), Is.False);
+            });
+        }
+
+        [TestCaseSource(nameof(TypeOfTestCases))]
+        public static void TypeOfTest(ComponentType componentType, Type expectedType,
+            int expectedIdentifier, int expectedSize, ComponentTypeCategory expectedCategory)
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(componentType.Type, Is.EqualTo(expectedType));
+                Assert.That(componentType.Identifier, Is.EqualTo(expectedIdentifier));
+                Assert.That(componentType.Size, Is.EqualTo(expectedSize));
+                Assert.That(componentType.Category, Is.EqualTo(expectedCategory));
+            });
         }
     }
 }

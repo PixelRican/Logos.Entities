@@ -81,9 +81,9 @@ namespace Monophyll.Entities.Tests
 
         private static EntityTable CreateTable()
         {
-            EntityArchetype archetype = EntityArchetype.Create([ComponentType.TypeOf<User>(),
+            EntityArchetype archetype = EntityArchetype.Create([ComponentType.TypeOf<Name>(),
                                                                 ComponentType.TypeOf<Position2D>(),
-                                                                ComponentType.TypeOf<Tag>()]);
+                                                                ComponentType.TypeOf<Enabled>()]);
             return new EntityTable(archetype, 16);
         }
     }

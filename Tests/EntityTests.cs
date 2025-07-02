@@ -34,8 +34,8 @@ namespace Monophyll.Entities.Tests
             {
                 Entity actual = actualSpan[i];
 
-                Assert.AreEqual(0, actual.CompareTo(expectedSpan[i]));
-                Assert.AreEqual(1, actual.CompareTo(null));
+                Assert.That(actual.CompareTo(expectedSpan[i]), Is.EqualTo(0));
+                Assert.That(actual.CompareTo(null), Is.EqualTo(1));
                 Assert.Throws<ArgumentException>(() => actual.CompareTo(this));
             }
         }
@@ -54,8 +54,8 @@ namespace Monophyll.Entities.Tests
 
             foreach (Entity current in span)
             {
-                Assert.AreEqual(current, current);
-                Assert.AreNotEqual(previous, current);
+                Assert.That(current, Is.EqualTo(current));
+                Assert.That(current, Is.Not.EqualTo(previous));
 
                 previous = current;
             }

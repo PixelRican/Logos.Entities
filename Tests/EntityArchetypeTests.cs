@@ -14,14 +14,14 @@ namespace Monophyll.Entities.Tests
         {
             Span<ComponentType> types =
             [
-                ComponentType.TypeOf<User>(),
+                ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Position3D>(),
                 ComponentType.TypeOf<Rotation2D>(),
                 ComponentType.TypeOf<Rotation3D>(),
                 ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Tag>(),
+                ComponentType.TypeOf<Enabled>(),
             ];
 
             AddTestHelper(types);
@@ -81,22 +81,22 @@ namespace Monophyll.Entities.Tests
 
             CreateTestHelper(expected, 3, actual,6);
 
-            expected[0] = actual[4] = ComponentType.TypeOf<User>();
+            expected[0] = actual[4] = ComponentType.TypeOf<Name>();
             expected[1] = actual[2] = ComponentType.TypeOf<Position2D>();
             expected[2] = actual[1] = ComponentType.TypeOf<Rotation2D>();
             expected[3] = actual[3] = ComponentType.TypeOf<Scale2D>();
-            expected[4] = actual[0] = ComponentType.TypeOf<Tag>();
+            expected[4] = actual[0] = ComponentType.TypeOf<Enabled>();
 
             CreateTestHelper(expected, 5, actual, 5);
 
-            expected[0] = actual[1] = ComponentType.TypeOf<User>();
+            expected[0] = actual[1] = ComponentType.TypeOf<Name>();
             expected[1] = actual[3] = ComponentType.TypeOf<Position2D>();
             expected[2] = actual[5] = ComponentType.TypeOf<Position3D>();
             expected[3] = actual[7] = ComponentType.TypeOf<Rotation2D>();
             expected[4] = actual[0] = ComponentType.TypeOf<Rotation3D>();
             expected[5] = actual[2] = ComponentType.TypeOf<Scale2D>();
             expected[6] = actual[4] = ComponentType.TypeOf<Scale3D>();
-            expected[7] = actual[6] = ComponentType.TypeOf<Tag>();
+            expected[7] = actual[6] = ComponentType.TypeOf<Enabled>();
 
             CreateTestHelper(expected, 8, actual, 8);
         }
@@ -178,20 +178,20 @@ namespace Monophyll.Entities.Tests
                 EntityArchetype.Create([ComponentType.TypeOf<Position2D>(),
                                         ComponentType.TypeOf<Rotation2D>(),
                                         ComponentType.TypeOf<Scale2D>()]),
-                EntityArchetype.Create([ComponentType.TypeOf<User>(),
+                EntityArchetype.Create([ComponentType.TypeOf<Name>(),
                                         ComponentType.TypeOf<Position2D>(),
                                         ComponentType.TypeOf<Rotation2D>(),
                                         ComponentType.TypeOf<Scale2D>()]),
-                EntityArchetype.Create([ComponentType.TypeOf<User>(),
+                EntityArchetype.Create([ComponentType.TypeOf<Name>(),
                                         ComponentType.TypeOf<Position2D>(),
                                         ComponentType.TypeOf<Rotation2D>(),
                                         ComponentType.TypeOf<Scale2D>(),
-                                        ComponentType.TypeOf<Tag>()]),
-                EntityArchetype.Create([ComponentType.TypeOf<User>(),
+                                        ComponentType.TypeOf<Enabled>()]),
+                EntityArchetype.Create([ComponentType.TypeOf<Name>(),
                                         ComponentType.TypeOf<Position3D>(),
                                         ComponentType.TypeOf<Rotation3D>(),
                                         ComponentType.TypeOf<Scale3D>(),
-                                        ComponentType.TypeOf<Tag>()])
+                                        ComponentType.TypeOf<Enabled>()])
             ];
             EntityArchetype previous = null!;
 
@@ -210,14 +210,14 @@ namespace Monophyll.Entities.Tests
         {
             Span<ComponentType> types =
             [
-                ComponentType.TypeOf<User>(),
+                ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Position3D>(),
                 ComponentType.TypeOf<Rotation2D>(),
                 ComponentType.TypeOf<Rotation3D>(),
                 ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Tag>(),
+                ComponentType.TypeOf<Enabled>(),
             ];
 
             RemoveTestHelper(types);

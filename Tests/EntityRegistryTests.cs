@@ -14,14 +14,14 @@ namespace Monophyll.Entities.Tests
             EntityRegistry registry = new EntityRegistry();
             ReadOnlySpan<ComponentType> componentTypes =
             [
-                ComponentType.TypeOf<User>(),
+                ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Position3D>(),
                 ComponentType.TypeOf<Rotation2D>(),
                 ComponentType.TypeOf<Rotation3D>(),
                 ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Tag>()
+                ComponentType.TypeOf<Enabled>()
             ];
             Entity entity = registry.CreateEntity();
 
@@ -54,14 +54,14 @@ namespace Monophyll.Entities.Tests
 
             Assert.AreEqual(10, registry.Count);
 
-            EntityArchetype archetype = registry.CreateArchetype([ComponentType.TypeOf<User>()]);
+            EntityArchetype archetype = registry.CreateArchetype([ComponentType.TypeOf<Name>()]);
 
             for (int i = 0; i < 10; i++)
             {
                 Entity entity = registry.CreateEntity(archetype);
 
                 Assert.AreEqual(new Entity(i + 10, 0), entity);
-                Assert.IsTrue(registry.HasComponent(entity, ComponentType.TypeOf<User>()));
+                Assert.IsTrue(registry.HasComponent(entity, ComponentType.TypeOf<Name>()));
                 Assert.AreSame(registry.FindEntity(entity).Archetype, archetype);
                 Assert.AreEqual(registry.FindEntity(entity).GetEntities()[i], entity);
             }
@@ -99,14 +99,14 @@ namespace Monophyll.Entities.Tests
             EntityRegistry registry = new EntityRegistry();
             ReadOnlySpan<ComponentType> componentTypes =
             [
-                ComponentType.TypeOf<User>(),
+                ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Position3D>(),
                 ComponentType.TypeOf<Rotation2D>(),
                 ComponentType.TypeOf<Rotation3D>(),
                 ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Tag>()
+                ComponentType.TypeOf<Enabled>()
             ];
             Entity entity = registry.CreateEntity(componentTypes);
 
