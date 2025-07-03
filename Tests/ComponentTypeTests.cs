@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections;
-using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
@@ -12,6 +11,7 @@ namespace Monophyll.Entities.Tests
     {
         static ComponentTypeTests()
         {
+            // Initialize component types in a predefined order for test consistency.
             ComponentType.TypeOf<Enabled>();
             ComponentType.TypeOf<Name>();
             ComponentType.TypeOf<Position2D>();
@@ -53,12 +53,17 @@ namespace Monophyll.Entities.Tests
 
                 yield return new object[]
                 {
+                    ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Rotation2D>()
+                };
+
+                yield return new object[]
+                {
                     ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Position3D>()
+                    ComponentType.TypeOf<Position3D>(), ComponentType.TypeOf<Rotation3D>()
                 };
             }
         }
@@ -74,37 +79,37 @@ namespace Monophyll.Entities.Tests
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Name>(), typeof(Name), 1, Unsafe.SizeOf<Name>(), ComponentTypeCategory.Managed
+                    ComponentType.TypeOf<Name>(), typeof(Name), 1, nint.Size, ComponentTypeCategory.Managed
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Position2D>(), typeof(Position2D), 2, Unsafe.SizeOf<Position2D>(), ComponentTypeCategory.Unmanaged
+                    ComponentType.TypeOf<Position2D>(), typeof(Position2D), 2, 8, ComponentTypeCategory.Unmanaged
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Position3D>(), typeof(Position3D), 3, Unsafe.SizeOf<Position3D>(), ComponentTypeCategory.Unmanaged
+                    ComponentType.TypeOf<Position3D>(), typeof(Position3D), 3, 12, ComponentTypeCategory.Unmanaged
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Rotation2D>(), typeof(Rotation2D), 4, Unsafe.SizeOf<Rotation2D>(), ComponentTypeCategory.Unmanaged
+                    ComponentType.TypeOf<Rotation2D>(), typeof(Rotation2D), 4, 4, ComponentTypeCategory.Unmanaged
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Rotation3D>(), typeof(Rotation3D), 5, Unsafe.SizeOf<Rotation3D>(), ComponentTypeCategory.Unmanaged
+                    ComponentType.TypeOf<Rotation3D>(), typeof(Rotation3D), 5, 12, ComponentTypeCategory.Unmanaged
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Scale2D>(), typeof(Scale2D), 6, Unsafe.SizeOf<Scale2D>(), ComponentTypeCategory.Unmanaged
+                    ComponentType.TypeOf<Scale2D>(), typeof(Scale2D), 6, 8, ComponentTypeCategory.Unmanaged
                 };
 
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Scale3D>(), typeof(Scale3D), 7, Unsafe.SizeOf<Scale3D>(), ComponentTypeCategory.Unmanaged
+                    ComponentType.TypeOf<Scale3D>(), typeof(Scale3D), 7, 12, ComponentTypeCategory.Unmanaged
                 };
             }
         }
@@ -112,38 +117,38 @@ namespace Monophyll.Entities.Tests
         [TestCaseSource(nameof(CompareEqualsTestCases))]
         public static void CompareTest(ComponentType? lesser, ComponentType? greater)
         {
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
-                Assert.That(ComponentType.Compare(lesser, lesser), Is.EqualTo(0));
-                Assert.That(ComponentType.Compare(greater, greater), Is.EqualTo(0));
+                Assert.That(ComponentType.Compare(lesser, lesser), Is.Zero);
+                Assert.That(ComponentType.Compare(greater, greater), Is.Zero);
                 Assert.That(ComponentType.Compare(lesser, greater), Is.EqualTo(-1));
                 Assert.That(ComponentType.Compare(greater, lesser), Is.EqualTo(1));
-            });
+            }
         }
 
         [TestCaseSource(nameof(CompareEqualsTestCases))]
-        public static void EqualsTest(ComponentType? a, ComponentType? b)
+        public static void EqualsTest(ComponentType? lesser, ComponentType? greater)
         {
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
-                Assert.That(ComponentType.Equals(a, a), Is.True);
-                Assert.That(ComponentType.Equals(b, b), Is.True);
-                Assert.That(ComponentType.Equals(a, b), Is.False);
-                Assert.That(ComponentType.Equals(b, a), Is.False);
-            });
+                Assert.That(ComponentType.Equals(lesser, lesser), Is.True);
+                Assert.That(ComponentType.Equals(greater, greater), Is.True);
+                Assert.That(ComponentType.Equals(lesser, greater), Is.False);
+                Assert.That(ComponentType.Equals(greater, lesser), Is.False);
+            }
         }
 
         [TestCaseSource(nameof(TypeOfTestCases))]
         public static void TypeOfTest(ComponentType componentType, Type expectedType,
             int expectedIdentifier, int expectedSize, ComponentTypeCategory expectedCategory)
         {
-            Assert.Multiple(() =>
+            using (Assert.EnterMultipleScope())
             {
                 Assert.That(componentType.Type, Is.EqualTo(expectedType));
                 Assert.That(componentType.Identifier, Is.EqualTo(expectedIdentifier));
                 Assert.That(componentType.Size, Is.EqualTo(expectedSize));
                 Assert.That(componentType.Category, Is.EqualTo(expectedCategory));
-            });
+            }
         }
     }
 }
