@@ -12,15 +12,15 @@ namespace Monophyll.Entities.Tests
         public void AddTest()
         {
             EntityTable table = CreateTable();
-            Assert.IsTrue(table.CheckAccess());
+            Assert.That(table.CheckAccess());
 
             for (int i = 1; i <= table.Capacity; i++)
             {
                 table.Add(new Entity(i, 0));
-                Assert.AreEqual(table.Count, i);
+                Assert.That(table.Count, Is.EqualTo(i));
             }
 
-            Assert.IsTrue(table.IsFull);
+            Assert.That(table.IsFull);
             Assert.Throws<InvalidOperationException>(() => table.Add(new Entity()));
         }
 
@@ -28,7 +28,7 @@ namespace Monophyll.Entities.Tests
         public void ClearTest()
         {
             EntityTable table = CreateTable();
-            Assert.IsTrue(table.CheckAccess());
+            Assert.That(table.CheckAccess());
 
             while (!table.IsFull)
             {
@@ -36,7 +36,7 @@ namespace Monophyll.Entities.Tests
             }
 
             table.Clear();
-            Assert.IsTrue(table.IsEmpty);
+            Assert.That(table.IsEmpty);
         }
 
         [Test]
@@ -44,9 +44,9 @@ namespace Monophyll.Entities.Tests
         {
             EntityTable table = new EntityTable(EntityArchetype.Base);
 
-            Assert.IsTrue(table.IsEmpty);
-            Assert.IsTrue(table.CheckAccess());
-            Assert.AreEqual(8, table.Capacity);
+            Assert.That(table.IsEmpty);
+            Assert.That(table.CheckAccess());
+            Assert.That(8, Is.EqualTo(table.Capacity));
             Assert.Throws<ArgumentNullException>(() => new EntityTable(null!));
             Assert.Throws<ArgumentOutOfRangeException>(() => new EntityTable(EntityArchetype.Base, -1));
         }
@@ -56,8 +56,8 @@ namespace Monophyll.Entities.Tests
         {
             EntityTable table = CreateTable();
 
-            Assert.IsTrue(table.CheckAccess());
-            Assert.IsFalse(table.Remove(new Entity()));
+            Assert.That(table.CheckAccess());
+            Assert.That(table.Remove(new Entity()), Is.False);
             Assert.Throws<ArgumentOutOfRangeException>(() => table.RemoveAt(0));
             Assert.Throws<ArgumentOutOfRangeException>(() => table.RemoveAt(-1));
 
@@ -71,12 +71,12 @@ namespace Monophyll.Entities.Tests
             for (int i = entities.Length; i > 1; i--)
             {
                 table.RemoveAt(0);
-                Assert.AreEqual(new Entity(i, 0), entities[0]);
+                Assert.That(new Entity(i, 0), Is.EqualTo(entities[0]));
             }
 
             table.RemoveAt(0);
-            Assert.AreEqual(new Entity(2, 0), entities[0]);
-            Assert.IsTrue(table.IsEmpty);
+            Assert.That(new Entity(2, 0), Is.EqualTo(entities[0]));
+            Assert.That(table.IsEmpty);
         }
 
         private static EntityTable CreateTable()

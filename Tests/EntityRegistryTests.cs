@@ -30,9 +30,9 @@ namespace Monophyll.Entities.Tests
 
             foreach (ComponentType componentType in componentTypes)
             {
-                Assert.IsTrue(registry.AddComponent(entity, componentType));
-                Assert.IsTrue(registry.HasComponent(entity, componentType));
-                Assert.IsTrue(componentTypes.StartsWith(
+                Assert.That(registry.AddComponent(entity, componentType));
+                Assert.That(registry.HasComponent(entity, componentType));
+                Assert.That(componentTypes.StartsWith(
                     registry.FindEntity(entity).Archetype.ComponentTypes));
             }
         }
@@ -46,13 +46,13 @@ namespace Monophyll.Entities.Tests
             {
                 Entity entity = registry.CreateEntity();
 
-                Assert.AreEqual(new Entity(i, 0), entity);
-                Assert.IsTrue(registry.ContainsEntity(entity));
-                Assert.AreSame(registry.FindEntity(entity).Archetype, EntityArchetype.Base);
-                Assert.AreEqual(registry.FindEntity(entity).GetEntities()[i], entity);
+                Assert.That(new Entity(i, 0), Is.EqualTo(entity));
+                Assert.That(registry.ContainsEntity(entity));
+                Assert.That(registry.FindEntity(entity).Archetype, Is.SameAs(EntityArchetype.Base));
+                Assert.That(registry.FindEntity(entity).GetEntities()[i], Is.EqualTo(entity));
             }
 
-            Assert.AreEqual(10, registry.Count);
+            Assert.That(10, Is.EqualTo(registry.Count));
 
             EntityArchetype archetype = registry.CreateArchetype([ComponentType.TypeOf<Name>()]);
 
@@ -60,13 +60,13 @@ namespace Monophyll.Entities.Tests
             {
                 Entity entity = registry.CreateEntity(archetype);
 
-                Assert.AreEqual(new Entity(i + 10, 0), entity);
-                Assert.IsTrue(registry.HasComponent(entity, ComponentType.TypeOf<Name>()));
-                Assert.AreSame(registry.FindEntity(entity).Archetype, archetype);
-                Assert.AreEqual(registry.FindEntity(entity).GetEntities()[i], entity);
+                Assert.That(new Entity(i + 10, 0), Is.EqualTo(entity));
+                Assert.That(registry.HasComponent(entity, ComponentType.TypeOf<Name>()));
+                Assert.That(registry.FindEntity(entity).Archetype, Is.SameAs(archetype));
+                Assert.That(registry.FindEntity(entity).GetEntities()[i], Is.EqualTo(entity));
             }
 
-            Assert.AreEqual(20, registry.Count);
+            Assert.That(20, Is.EqualTo(registry.Count));
         }
 
         [Test]
@@ -81,15 +81,15 @@ namespace Monophyll.Entities.Tests
 
             foreach (Entity entity in registry.FindEntity(new Entity()).GetEntities())
             {
-                Assert.IsTrue(registry.DestroyEntity(entity));
-                Assert.IsFalse(registry.ContainsEntity(entity));
+                Assert.That(registry.DestroyEntity(entity));
+                Assert.That(registry.ContainsEntity(entity), Is.False);
             }
 
-            Assert.AreEqual(0, registry.Count);
+            Assert.That(0, Is.EqualTo(registry.Count));
 
             for (int i = 9; i >= 0; i--)
             {
-                Assert.AreEqual(new Entity(i, 1), registry.CreateEntity());
+                Assert.That(new Entity(i, 1), Is.EqualTo(registry.CreateEntity()));
             }
         }
 
@@ -115,9 +115,9 @@ namespace Monophyll.Entities.Tests
 
             foreach (ComponentType componentType in componentTypes)
             {
-                Assert.IsTrue(registry.RemoveComponent(entity, componentType));
-                Assert.IsFalse(registry.HasComponent(entity, componentType));
-                Assert.IsTrue(componentTypes.EndsWith(registry.FindEntity(entity).Archetype.ComponentTypes));
+                Assert.That(registry.RemoveComponent(entity, componentType));
+                Assert.That(registry.HasComponent(entity, componentType), Is.False);
+                Assert.That(componentTypes.EndsWith(registry.FindEntity(entity).Archetype.ComponentTypes));
             }
         }
     }

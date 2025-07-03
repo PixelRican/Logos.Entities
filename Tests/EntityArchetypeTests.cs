@@ -52,13 +52,13 @@ namespace Monophyll.Entities.Tests
             ReadOnlySpan<ComponentType> superset = superarchetype.ComponentTypes;
             int index = ~subset.BinarySearch(type);
 
-            Assert.AreEqual(index, superset.BinarySearch(type));
-            Assert.IsFalse(subarchetype.Contains(type));
-            Assert.IsTrue(superarchetype.Contains(type));
-            Assert.IsTrue(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)));
-            Assert.IsTrue(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)));
-            Assert.AreSame(subarchetype, subarchetype.Add(null!));
-            Assert.AreSame(superarchetype, superarchetype.Add(type));
+            Assert.That(index, Is.EqualTo(superset.BinarySearch(type)));
+            Assert.That(subarchetype.Contains(type), Is.False);
+            Assert.That(superarchetype.Contains(type));
+            Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)));
+            Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)));
+            Assert.That(subarchetype, Is.SameAs(subarchetype.Add(null!)));
+            Assert.That(superarchetype, Is.SameAs(superarchetype.Add(type)));
         }
 
         [Test]
@@ -137,14 +137,14 @@ namespace Monophyll.Entities.Tests
                 int actualUnmanagedCount = 0;
                 int actualTagCount = 0;
 
-                Assert.AreEqual(expectedLength, componentTypes.Length);
+                Assert.That(expectedLength, Is.EqualTo(componentTypes.Length));
 
                 for (int i = 0; i < expectedLength; i++)
                 {
                     ComponentType componentType = expectedArray[i];
 
-                    Assert.IsTrue(archetype.Contains(componentType));
-                    Assert.AreEqual(componentType, componentTypes[i]);
+                    Assert.That(archetype.Contains(componentType));
+                    Assert.That(componentType, Is.EqualTo(componentTypes[i]));
 
                     switch (componentType.Category)
                     {
@@ -160,9 +160,9 @@ namespace Monophyll.Entities.Tests
                     }
                 }
 
-                Assert.AreEqual(expectedManagedCount, actualManagedCount);
-                Assert.AreEqual(expectedUnmanagedCount, actualUnmanagedCount);
-                Assert.AreEqual(expectedTagCount, actualTagCount);
+                Assert.That(expectedManagedCount, Is.EqualTo(actualManagedCount));
+                Assert.That(expectedUnmanagedCount, Is.EqualTo(actualUnmanagedCount));
+                Assert.That(expectedTagCount, Is.EqualTo(actualTagCount));
             }
 
             Array.Clear(expectedArray, 0, expectedLength);
@@ -197,9 +197,9 @@ namespace Monophyll.Entities.Tests
 
             foreach (EntityArchetype current in span)
             {
-                Assert.AreEqual(current, current);
-                Assert.AreEqual(current, EntityArchetype.Create(current.ComponentTypes));
-                Assert.AreNotEqual(previous, current);
+                Assert.That(current, Is.EqualTo(current));
+                Assert.That(current, Is.EqualTo(EntityArchetype.Create(current.ComponentTypes)));
+                Assert.That(previous, Is.Not.EqualTo(current));
 
                 previous = current;
             }

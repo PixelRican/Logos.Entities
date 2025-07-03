@@ -71,20 +71,20 @@ namespace Monophyll.Entities.Tests
                 ReadOnlySpan<ComponentType> includedComponentTypes = filter.IncludedComponentTypes;
                 ReadOnlySpan<ComponentType> excludedComponentTypes = filter.ExcludedComponentTypes;
 
-                Assert.AreEqual(expectedLength, requiredComponentTypes.Length);
-                Assert.AreEqual(expectedLength, includedComponentTypes.Length);
-                Assert.AreEqual(expectedLength, excludedComponentTypes.Length);
+                Assert.That(expectedLength, Is.EqualTo(requiredComponentTypes.Length));
+                Assert.That(expectedLength, Is.EqualTo(includedComponentTypes.Length));
+                Assert.That(expectedLength, Is.EqualTo(excludedComponentTypes.Length));
 
                 for (int i = 0; i < expectedLength; i++)
                 {
                     ComponentType componentType = expectedArray[i];
 
-                    Assert.IsTrue(filter.Requires(componentType));
-                    Assert.IsTrue(filter.Includes(componentType));
-                    Assert.IsTrue(filter.Excludes(componentType));
-                    Assert.AreEqual(componentType, requiredComponentTypes[i]);
-                    Assert.AreEqual(componentType, includedComponentTypes[i]);
-                    Assert.AreEqual(componentType, excludedComponentTypes[i]);
+                    Assert.That(filter.Requires(componentType));
+                    Assert.That(filter.Includes(componentType));
+                    Assert.That(filter.Excludes(componentType));
+                    Assert.That(componentType, Is.EqualTo(requiredComponentTypes[i]));
+                    Assert.That(componentType, Is.EqualTo(includedComponentTypes[i]));
+                    Assert.That(componentType, Is.EqualTo(excludedComponentTypes[i]));
                 }
             }
 
@@ -135,9 +135,9 @@ namespace Monophyll.Entities.Tests
 
             foreach (EntityFilter current in span)
             {
-                Assert.AreEqual(current, current);
-                Assert.AreEqual(current, current.ToBuilder().Build());
-                Assert.AreNotEqual(previous, current);
+                Assert.That(current, Is.EqualTo(current));
+                Assert.That(current, Is.EqualTo(current.ToBuilder().Build()));
+                Assert.That(previous, Is.Not.EqualTo(current));
 
                 previous = current;
             }
@@ -192,12 +192,12 @@ namespace Monophyll.Entities.Tests
 
             foreach (EntityArchetype match in matches)
             {
-                Assert.IsTrue(filter.Matches(match));
+                Assert.That(filter.Matches(match));
             }
 
             foreach (EntityArchetype mismatch in mismatches)
             {
-                Assert.IsFalse(filter.Matches(mismatch));
+                Assert.That(filter.Matches(mismatch), Is.False);
             }
         }
     }
