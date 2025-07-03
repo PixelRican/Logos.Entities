@@ -16,42 +16,50 @@ namespace Monophyll.Entities.Tests
             {
                 yield return new object[]
                 {
-                    EntityArchetype.Base, ComponentType.TypeOf<Enabled>()
+                    EntityArchetype.Base,
+                    ComponentType.TypeOf<Enabled>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Base, ComponentType.TypeOf<Name>()
+                    EntityArchetype.Base,
+                    ComponentType.TypeOf<Name>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Base, ComponentType.TypeOf<Position2D>()
+                    EntityArchetype.Base,
+                    ComponentType.TypeOf<Position2D>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>()]), ComponentType.TypeOf<Enabled>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>()]),
+                    ComponentType.TypeOf<Enabled>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Name>()
                 };
                 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Position2D>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Position2D>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>()]), ComponentType.TypeOf<Enabled>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>()]),
+                    ComponentType.TypeOf<Enabled>()
                 };
             }
         }
@@ -155,42 +163,50 @@ namespace Monophyll.Entities.Tests
             {
                 yield return new object[]
                 {
-                    EntityArchetype.Base, null!
+                    EntityArchetype.Base,
+                    null!
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Base, EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
+                    EntityArchetype.Base,
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]),
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Name>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]),
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>()])
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position2D>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]),
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position2D>()])
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Rotation2D>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]),
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Rotation2D>()])
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Rotation2D>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]),
+                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Rotation2D>()])
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position3D>(), ComponentType.TypeOf<Name>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Name>()]),
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position3D>(), ComponentType.TypeOf<Name>()])
                 };
             }
         }
@@ -201,42 +217,50 @@ namespace Monophyll.Entities.Tests
             {
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Position2D>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Position2D>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Enabled>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Enabled>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Enabled>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Enabled>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Name>()]), ComponentType.TypeOf<Name>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>()]),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>()]), ComponentType.TypeOf<Position2D>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>()]),
+                    ComponentType.TypeOf<Position2D>()
                 };
 
                 yield return new object[]
                 {
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Enabled>()
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()]),
+                    ComponentType.TypeOf<Enabled>()
                 };
             }
         }
