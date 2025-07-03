@@ -2,242 +2,340 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
-using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Monophyll.Entities.Tests
 {
     [TestFixture]
-    public sealed class EntityArchetypeTests
+    public static class EntityArchetypeTests
     {
-        [Test]
-        public void AddTest()
+        private static IEnumerable AddTestCases
         {
-            Span<ComponentType> types =
-            [
-                ComponentType.TypeOf<Name>(),
-                ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Position3D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Rotation3D>(),
-                ComponentType.TypeOf<Scale2D>(),
-                ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Enabled>(),
-            ];
-
-            AddTestHelper(types);
-
-            types.Reverse();
-            AddTestHelper(types);
-
-            Random.Shared.Shuffle(types);
-            AddTestHelper(types);
-        }
-
-        private static void AddTestHelper(ReadOnlySpan<ComponentType> types)
-        {
-            EntityArchetype subarchetype = EntityArchetype.Base;
-
-            foreach (ComponentType type in types)
+            get
             {
-                EntityArchetype superarchetype = subarchetype.Add(type);
-                AddRemoveAssertHelper(subarchetype, superarchetype, type);
-                subarchetype = superarchetype;
+                yield return new object[]
+                {
+                    EntityArchetype.Base, ComponentType.TypeOf<Enabled>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Base, ComponentType.TypeOf<Name>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Base, ComponentType.TypeOf<Position2D>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>()]), ComponentType.TypeOf<Enabled>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                };
+                
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Position2D>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>()]), ComponentType.TypeOf<Enabled>()
+                };
             }
         }
 
-        private static void AddRemoveAssertHelper(EntityArchetype subarchetype,
-            EntityArchetype superarchetype, ComponentType type)
+        private static IEnumerable CreateTestCases
         {
-            ReadOnlySpan<ComponentType> subset = subarchetype.ComponentTypes;
-            ReadOnlySpan<ComponentType> superset = superarchetype.ComponentTypes;
+            get
+            {
+                yield return new object[]
+                {
+                    Array.Empty<ComponentType>(),
+                    Array.Empty<ComponentType>()
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        null!
+                    },
+                    Array.Empty<ComponentType>()
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>(), null!
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        null!, ComponentType.TypeOf<Enabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Enabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(), null!, ComponentType.TypeOf<Enabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()
+                    }
+                };
+            }
+        }
+
+        private static IEnumerable EqualsTestCases
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    EntityArchetype.Base, null!
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Base, EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Name>()])
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position2D>()])
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Rotation2D>()])
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Rotation2D>()])
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Name>()]), EntityArchetype.Create([ComponentType.TypeOf<Enabled>(), ComponentType.TypeOf<Position3D>(), ComponentType.TypeOf<Name>()])
+                };
+            }
+        }
+
+        private static IEnumerable RemoveTestCases
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Position2D>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Enabled>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Name>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Enabled>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Name>()]), ComponentType.TypeOf<Name>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Position2D>()]), ComponentType.TypeOf<Position2D>()
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()]), ComponentType.TypeOf<Enabled>()
+                };
+            }
+        }
+
+        [TestCaseSource(nameof(AddTestCases))]
+        public static void AddTest(EntityArchetype archetype, ComponentType type)
+        {
+            EntityArchetype result = archetype.Add(type);
+            ReadOnlySpan<ComponentType> subset = archetype.ComponentTypes;
+            ReadOnlySpan<ComponentType> superset = result.ComponentTypes;
             int index = ~subset.BinarySearch(type);
 
-            Assert.That(index, Is.EqualTo(superset.BinarySearch(type)));
-            Assert.That(subarchetype.Contains(type), Is.False);
-            Assert.That(superarchetype.Contains(type));
-            Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)));
-            Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)));
-            Assert.That(subarchetype, Is.SameAs(subarchetype.Add(null!)));
-            Assert.That(superarchetype, Is.SameAs(superarchetype.Add(type)));
-        }
-
-        [Test]
-        public void CreateTest()
-        {
-            ComponentType[] expected = new ComponentType[8];
-            ComponentType[] actual = new ComponentType[8];
-
-            CreateTestHelper(expected, 0, actual, 0);
-
-            expected[0] = actual[2] = ComponentType.TypeOf<Position2D>();
-            expected[1] = actual[0] = ComponentType.TypeOf<Rotation2D>();
-            expected[2] = actual[1] = ComponentType.TypeOf<Scale2D>();
-
-            CreateTestHelper(expected, 3, actual, 3);
-
-            expected[0] = actual[2] = actual[3] = ComponentType.TypeOf<Position3D>();
-            expected[1] = actual[1] = actual[4] = ComponentType.TypeOf<Rotation3D>();
-            expected[2] = actual[0] = actual[5] = ComponentType.TypeOf<Scale3D>();
-
-            CreateTestHelper(expected, 3, actual,6);
-
-            expected[0] = actual[4] = ComponentType.TypeOf<Name>();
-            expected[1] = actual[2] = ComponentType.TypeOf<Position2D>();
-            expected[2] = actual[1] = ComponentType.TypeOf<Rotation2D>();
-            expected[3] = actual[3] = ComponentType.TypeOf<Scale2D>();
-            expected[4] = actual[0] = ComponentType.TypeOf<Enabled>();
-
-            CreateTestHelper(expected, 5, actual, 5);
-
-            expected[0] = actual[1] = ComponentType.TypeOf<Name>();
-            expected[1] = actual[3] = ComponentType.TypeOf<Position2D>();
-            expected[2] = actual[5] = ComponentType.TypeOf<Position3D>();
-            expected[3] = actual[7] = ComponentType.TypeOf<Rotation2D>();
-            expected[4] = actual[0] = ComponentType.TypeOf<Rotation3D>();
-            expected[5] = actual[2] = ComponentType.TypeOf<Scale2D>();
-            expected[6] = actual[4] = ComponentType.TypeOf<Scale3D>();
-            expected[7] = actual[6] = ComponentType.TypeOf<Enabled>();
-
-            CreateTestHelper(expected, 8, actual, 8);
-        }
-
-        private static void CreateTestHelper(ComponentType[] expectedArray,
-            int expectedLength, ComponentType[] actualArray, int actualLength)
-        {
-            ReadOnlySpan<EntityArchetype> archetypes =
-            [
-                EntityArchetype.Create(actualArray),
-                EntityArchetype.Create(actualArray.Take(actualLength)),
-                EntityArchetype.Create(actualArray.AsSpan(0, actualLength))
-            ];
-            int expectedManagedCount = 0;
-            int expectedUnmanagedCount = 0;
-            int expectedTagCount = 0;
-
-            for (int i = 0; i < expectedLength; i++)
+            using (Assert.EnterMultipleScope())
             {
-                switch (expectedArray[i].Category)
+                Assert.That(superset.BinarySearch(type), Is.EqualTo(index));
+                Assert.That(archetype.Contains(type), Is.False);
+                Assert.That(result.Contains(type), Is.True);
+                Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
+                Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
+                Assert.That(archetype, Is.SameAs(archetype.Add(null!)));
+                Assert.That(result, Is.SameAs(result.Add(type)));
+            }
+        }
+
+        [TestCaseSource(nameof(CreateTestCases))]
+        public static void CreateTest(ComponentType[] arguments, ComponentType[] expectedTypes)
+        {
+            int expectedManagedComponentCount = 0;
+            int expectedUnmanagedComponentCount = 0;
+            int expectedTagComponentCount = 0;
+            int expectedEntitySize = 8;
+
+            foreach (ComponentType type in expectedTypes)
+            {
+                expectedEntitySize += type.Size;
+
+                switch (type.Category)
                 {
                     case ComponentTypeCategory.Managed:
-                        expectedManagedCount++;
+                        expectedManagedComponentCount++;
                         continue;
                     case ComponentTypeCategory.Unmanaged:
-                        expectedUnmanagedCount++;
+                        expectedUnmanagedComponentCount++;
                         continue;
                     case ComponentTypeCategory.Tag:
-                        expectedTagCount++;
+                        expectedTagComponentCount++;
                         continue;
                 }
             }
 
-            foreach (EntityArchetype archetype in archetypes)
+            for (int method = 0; method < 3; method++)
             {
-                ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
-                int actualManagedCount = 0;
-                int actualUnmanagedCount = 0;
-                int actualTagCount = 0;
-
-                Assert.That(expectedLength, Is.EqualTo(componentTypes.Length));
-
-                for (int i = 0; i < expectedLength; i++)
+                EntityArchetype actual = method switch
                 {
-                    ComponentType componentType = expectedArray[i];
+                    0 => EntityArchetype.Create(arguments),
+                    1 => EntityArchetype.Create((IEnumerable<ComponentType>)arguments),
+                    _ => EntityArchetype.Create((ReadOnlySpan<ComponentType>)arguments)
+                };
 
-                    Assert.That(archetype.Contains(componentType));
-                    Assert.That(componentType, Is.EqualTo(componentTypes[i]));
-
-                    switch (componentType.Category)
-                    {
-                        case ComponentTypeCategory.Managed:
-                            actualManagedCount++;
-                            continue;
-                        case ComponentTypeCategory.Unmanaged:
-                            actualUnmanagedCount++;
-                            continue;
-                        case ComponentTypeCategory.Tag:
-                            actualTagCount++;
-                            continue;
-                    }
+                using (Assert.EnterMultipleScope())
+                {
+                    Assert.That(actual.ComponentTypes.SequenceEqual(expectedTypes), Is.True);
+                    Assert.That(actual.ManagedComponentCount, Is.EqualTo(expectedManagedComponentCount));
+                    Assert.That(actual.UnmanagedComponentCount, Is.EqualTo(expectedUnmanagedComponentCount));
+                    Assert.That(actual.TagComponentCount, Is.EqualTo(expectedTagComponentCount));
+                    Assert.That(actual.EntitySize, Is.EqualTo(expectedEntitySize));
                 }
-
-                Assert.That(expectedManagedCount, Is.EqualTo(actualManagedCount));
-                Assert.That(expectedUnmanagedCount, Is.EqualTo(actualUnmanagedCount));
-                Assert.That(expectedTagCount, Is.EqualTo(actualTagCount));
-            }
-
-            Array.Clear(expectedArray, 0, expectedLength);
-            Array.Clear(actualArray, 0, actualLength);
-        }
-
-        [Test]
-        public void EquatableTest()
-        {
-            ReadOnlySpan<EntityArchetype> span =
-            [
-                EntityArchetype.Base,
-                EntityArchetype.Create([ComponentType.TypeOf<Position2D>(),
-                                        ComponentType.TypeOf<Rotation2D>(),
-                                        ComponentType.TypeOf<Scale2D>()]),
-                EntityArchetype.Create([ComponentType.TypeOf<Name>(),
-                                        ComponentType.TypeOf<Position2D>(),
-                                        ComponentType.TypeOf<Rotation2D>(),
-                                        ComponentType.TypeOf<Scale2D>()]),
-                EntityArchetype.Create([ComponentType.TypeOf<Name>(),
-                                        ComponentType.TypeOf<Position2D>(),
-                                        ComponentType.TypeOf<Rotation2D>(),
-                                        ComponentType.TypeOf<Scale2D>(),
-                                        ComponentType.TypeOf<Enabled>()]),
-                EntityArchetype.Create([ComponentType.TypeOf<Name>(),
-                                        ComponentType.TypeOf<Position3D>(),
-                                        ComponentType.TypeOf<Rotation3D>(),
-                                        ComponentType.TypeOf<Scale3D>(),
-                                        ComponentType.TypeOf<Enabled>()])
-            ];
-            EntityArchetype previous = null!;
-
-            foreach (EntityArchetype current in span)
-            {
-                Assert.That(current, Is.EqualTo(current));
-                Assert.That(current, Is.EqualTo(EntityArchetype.Create(current.ComponentTypes)));
-                Assert.That(previous, Is.Not.EqualTo(current));
-
-                previous = current;
             }
         }
 
-        [Test]
-        public void RemoveTest()
+        [TestCaseSource(nameof(EqualsTestCases))]
+        public static void EqualsTest(EntityArchetype? source, EntityArchetype? other)
         {
-            Span<ComponentType> types =
-            [
-                ComponentType.TypeOf<Name>(),
-                ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Position3D>(),
-                ComponentType.TypeOf<Rotation2D>(),
-                ComponentType.TypeOf<Rotation3D>(),
-                ComponentType.TypeOf<Scale2D>(),
-                ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Enabled>(),
-            ];
-
-            RemoveTestHelper(types);
-
-            types.Reverse();
-            RemoveTestHelper(types);
-
-            Random.Shared.Shuffle(types);
-            RemoveTestHelper(types);
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(EntityArchetype.Equals(source, source), Is.True);
+                Assert.That(EntityArchetype.Equals(other, other), Is.True);
+                Assert.That(EntityArchetype.Equals(source, other), Is.False);
+                Assert.That(EntityArchetype.Equals(other, source), Is.False);
+            }
         }
 
-        private static void RemoveTestHelper(ReadOnlySpan<ComponentType> types)
+        [TestCaseSource(nameof(RemoveTestCases))]
+        public static void RemoveTest(EntityArchetype archetype, ComponentType type)
         {
-            EntityArchetype superarchetype = EntityArchetype.Create(types);
+            EntityArchetype result = archetype.Remove(type);
+            ReadOnlySpan<ComponentType> subset = result.ComponentTypes;
+            ReadOnlySpan<ComponentType> superset = archetype.ComponentTypes;
+            int index = superset.BinarySearch(type);
 
-            foreach (ComponentType type in types)
+            using (Assert.EnterMultipleScope())
             {
-                EntityArchetype subarchetype = superarchetype.Remove(type);
-                AddRemoveAssertHelper(subarchetype, superarchetype, type);
-                superarchetype = subarchetype;
+                Assert.That(subset.BinarySearch(type), Is.EqualTo(~index));
+                Assert.That(archetype.Contains(type), Is.True);
+                Assert.That(result.Contains(type), Is.False);
+                Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
+                Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
+                Assert.That(archetype, Is.SameAs(archetype.Remove(null!)));
+                Assert.That(result, Is.SameAs(result.Remove(type)));
             }
         }
     }

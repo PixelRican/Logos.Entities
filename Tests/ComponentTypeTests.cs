@@ -127,14 +127,14 @@ namespace Monophyll.Entities.Tests
         }
 
         [TestCaseSource(nameof(CompareEqualsTestCases))]
-        public static void EqualsTest(ComponentType? lesser, ComponentType? greater)
+        public static void EqualsTest(ComponentType? source, ComponentType? other)
         {
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(ComponentType.Equals(lesser, lesser), Is.True);
-                Assert.That(ComponentType.Equals(greater, greater), Is.True);
-                Assert.That(ComponentType.Equals(lesser, greater), Is.False);
-                Assert.That(ComponentType.Equals(greater, lesser), Is.False);
+                Assert.That(ComponentType.Equals(source, source), Is.True);
+                Assert.That(ComponentType.Equals(other, other), Is.True);
+                Assert.That(ComponentType.Equals(source, other), Is.False);
+                Assert.That(ComponentType.Equals(other, source), Is.False);
             }
         }
 
