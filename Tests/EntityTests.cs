@@ -14,47 +14,53 @@ namespace Monophyll.Entities.Tests
         {
             get
             {
-                object[] parameters = new object[2];
+                yield return new object[]
+                {
+                    new Entity(0, 0),
+                    new Entity(0, 1)
+                };
 
-                parameters[0] = new Entity(0, 0);
-                parameters[1] = new Entity(0, 1);
+                yield return new object[]
+                {
+                    new Entity(0, 0),
+                    new Entity(1, 0)
+                };
 
-                yield return parameters;
+                yield return new object[]
+                {
+                    new Entity(0, 0),
+                    new Entity(1, 1)
+                };
 
-                parameters[0] = new Entity(0, 0);
-                parameters[1] = new Entity(1, 0);
+                yield return new object[]
+                {
+                    new Entity(0, 0),
+                    new Entity(1, -1)
+                };
 
-                yield return parameters;
+                yield return new object[]
+                {
+                    new Entity(-1, 0),
+                    new Entity(0, 0)
+                };
 
-                parameters[0] = new Entity(0, 0);
-                parameters[1] = new Entity(1, 1);
+                yield return new object[]
+                {
+                    new Entity(0, -1),
+                    new Entity(0, 0)
+                };
 
-                yield return parameters;
+                yield return new object[]
+                {
+                    new Entity(-1, -1),
+                    new Entity(0, 0)
+                };
 
-                parameters[0] = new Entity(0, 0);
-                parameters[1] = new Entity(1, -1);
-
-                yield return parameters;
-
-                parameters[0] = new Entity(-1, 0);
-                parameters[1] = new Entity(0, 0);
-
-                yield return parameters;
-
-                parameters[0] = new Entity(0, -1);
-                parameters[1] = new Entity(0, 0);
-
-                yield return parameters;
-
-                parameters[0] = new Entity(-1, -1);
-                parameters[1] = new Entity(0, 0);
-
-                yield return parameters;
-
-                parameters[0] = new Entity(-1, 1);
-                parameters[1] = new Entity(0, 0);
-
-                yield return parameters;
+                yield return new object[]
+                {
+                    new Entity(-1, 1),
+                    new Entity(0, 0)
+                };
             }
         }
 
