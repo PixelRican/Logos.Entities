@@ -285,6 +285,20 @@ namespace Monophyll.Entities.Tests
             }
         }
 
+        [Test]
+        public static void CreateExceptionTest()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                EntityArchetype.Create(null!);
+            });
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                EntityArchetype.Create((IEnumerable<ComponentType>?)null!);
+            });
+        }
+
         [TestCaseSource(nameof(CreateTestCases))]
         public static void CreateTest(ComponentType[] arguments, ComponentType[] expectedTypes)
         {
