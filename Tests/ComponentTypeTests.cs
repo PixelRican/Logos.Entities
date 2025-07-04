@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
@@ -26,45 +27,47 @@ namespace Monophyll.Entities.Tests
         {
             get
             {
-                yield return new object[]
-                {
-                    null!, ComponentType.TypeOf<Enabled>()
-                };
+                object?[] parameters = new object[2];
 
-                yield return new object[]
-                {
-                    null!, ComponentType.TypeOf<Name>()
-                };
+                parameters[0] = null;
+                parameters[1] = ComponentType.TypeOf<Enabled>();
 
-                yield return new object[]
-                {
-                    null!, ComponentType.TypeOf<Position2D>()
-                };
+                yield return parameters;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Position2D>()
-                };
+                parameters[0] = null;
+                parameters[1] = ComponentType.TypeOf<Name>();
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Name>(), ComponentType.TypeOf<Enabled>()
-                };
+                yield return parameters;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Rotation2D>()
-                };
+                parameters[0] = null;
+                parameters[1] = ComponentType.TypeOf<Position2D>();
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Position2D>(), ComponentType.TypeOf<Enabled>()
-                };
+                yield return parameters;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Position3D>(), ComponentType.TypeOf<Rotation3D>()
-                };
+                parameters[0] = ComponentType.TypeOf<Name>();
+                parameters[1] = ComponentType.TypeOf<Position2D>();
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Name>();
+                parameters[1] = ComponentType.TypeOf<Enabled>();
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Position2D>();
+                parameters[1] = ComponentType.TypeOf<Rotation2D>();
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Position2D>();
+                parameters[1] = ComponentType.TypeOf<Enabled>();
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Position3D>();
+                parameters[1] = ComponentType.TypeOf<Rotation3D>();
+
+                yield return parameters;
             }
         }
 
@@ -72,45 +75,71 @@ namespace Monophyll.Entities.Tests
         {
             get
             {
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Enabled>(), typeof(Enabled), 0, 0, ComponentTypeCategory.Tag
-                };
+                object[] parameters = new object[5];
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Name>(), typeof(Name), 1, nint.Size, ComponentTypeCategory.Managed
-                };
+                parameters[0] = ComponentType.TypeOf<Enabled>();
+                parameters[1] = typeof(Enabled);
+                parameters[2] = 0;
+                parameters[3] = Unsafe.SizeOf<Enabled>() - 1;
+                parameters[4] = ComponentTypeCategory.Tag;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Position2D>(), typeof(Position2D), 2, 8, ComponentTypeCategory.Unmanaged
-                };
+                yield return parameters;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Position3D>(), typeof(Position3D), 3, 12, ComponentTypeCategory.Unmanaged
-                };
+                parameters[0] = ComponentType.TypeOf<Name>();
+                parameters[1] = typeof(Name);
+                parameters[2] = 1;
+                parameters[3] = Unsafe.SizeOf<Name>();
+                parameters[4] = ComponentTypeCategory.Managed;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Rotation2D>(), typeof(Rotation2D), 4, 4, ComponentTypeCategory.Unmanaged
-                };
+                yield return parameters;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Rotation3D>(), typeof(Rotation3D), 5, 12, ComponentTypeCategory.Unmanaged
-                };
+                parameters[0] = ComponentType.TypeOf<Position2D>();
+                parameters[1] = typeof(Position2D);
+                parameters[2] = 2;
+                parameters[3] = Unsafe.SizeOf<Position2D>();
+                parameters[4] = ComponentTypeCategory.Unmanaged;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Scale2D>(), typeof(Scale2D), 6, 8, ComponentTypeCategory.Unmanaged
-                };
+                yield return parameters;
 
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Scale3D>(), typeof(Scale3D), 7, 12, ComponentTypeCategory.Unmanaged
-                };
+                parameters[0] = ComponentType.TypeOf<Position3D>();
+                parameters[1] = typeof(Position3D);
+                parameters[2] = 3;
+                parameters[3] = Unsafe.SizeOf<Position3D>();
+                parameters[4] = ComponentTypeCategory.Unmanaged;
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Rotation2D>();
+                parameters[1] = typeof(Rotation2D);
+                parameters[2] = 4;
+                parameters[3] = Unsafe.SizeOf<Rotation2D>();
+                parameters[4] = ComponentTypeCategory.Unmanaged;
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Rotation3D>();
+                parameters[1] = typeof(Rotation3D);
+                parameters[2] = 5;
+                parameters[3] = Unsafe.SizeOf<Rotation3D>();
+                parameters[4] = ComponentTypeCategory.Unmanaged;
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Scale2D>();
+                parameters[1] = typeof(Scale2D);
+                parameters[2] = 6;
+                parameters[3] = Unsafe.SizeOf<Scale2D>();
+                parameters[4] = ComponentTypeCategory.Unmanaged;
+
+                yield return parameters;
+
+                parameters[0] = ComponentType.TypeOf<Scale3D>();
+                parameters[1] = typeof(Scale3D);
+                parameters[2] = 7;
+                parameters[3] = Unsafe.SizeOf<Scale3D>();
+                parameters[4] = ComponentTypeCategory.Unmanaged;
+
+                yield return parameters;
             }
         }
 
