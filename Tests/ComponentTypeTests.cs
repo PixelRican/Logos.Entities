@@ -114,6 +114,15 @@ namespace Monophyll.Entities.Tests
             }
         }
 
+        [Test]
+        public static void CompareExceptionTest()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                ComponentType.TypeOf<Name>().CompareTo(string.Empty);
+            });
+        }
+
         [TestCaseSource(nameof(CompareEqualsTestCases))]
         public static void CompareTest(ComponentType? lesser, ComponentType? greater)
         {
