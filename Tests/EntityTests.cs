@@ -1,63 +1,85 @@
 ﻿// Copyright (c) 2025 Roberto I. Mercado
 // Released under the MIT License. See LICENSE for details.
 
-using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Monophyll.Entities.Tests
 {
     [TestFixture]
-    public sealed class EntityTests
+    public static class EntityTests
     {
-        [Test]
-        public void ComparableTest()
+        private static IEnumerable CompareEqualsTestCases
         {
-            ReadOnlySpan<Entity> expectedSpan =
-            [
-                new Entity(-1, -1),
-                new Entity(0, 0),
-                new Entity(0, 1),
-                new Entity(128, -256),
-                new Entity(128, 256)
-            ];
-            Span<Entity> actualSpan =
-            [
-                new Entity(128, -256),
-                new Entity(-1, -1),
-                new Entity(128, 256),
-                new Entity(0, 1),
-                new Entity(0, 0)
-            ];
-
-            actualSpan.Sort();
-
-            for (int i = 0; i < 5; i++)
+            get
             {
-                Entity actual = actualSpan[i];
+                yield return new object[]
+                {
+                    new Entity(0, 0), new Entity(0, 1)
+                };
 
-                Assert.That(actual.CompareTo(expectedSpan[i]), Is.EqualTo(0));
-                Assert.That(actual.CompareTo(null), Is.EqualTo(1));
-                Assert.Throws<ArgumentException>(() => actual.CompareTo(this));
+                yield return new object[]
+                {
+                    new Entity(0, 0), new Entity(1, 0)
+                };
+
+                yield return new object[]
+                {
+                    new Entity(0, 0), new Entity(1, -1)
+                };
+
+                yield return new object[]
+                {
+                    new Entity(0, 0), new Entity(1, 1)
+                };
+
+                yield return new object[]
+                {
+                    new Entity(0, -1), new Entity(0, 0)
+                };
+
+                yield return new object[]
+                {
+                    new Entity(-1, 0), new Entity(0, 0)
+                };
+
+                yield return new object[]
+                {
+                    new Entity(-1, 1), new Entity(0, 0)
+                };
+
+                yield return new object[]
+                {
+                    new Entity(-1, -1), new Entity(0, 1)
+                };
             }
         }
 
-        [Test]
-        public void EquatableTest()
+        [TestCaseSource(nameof(CompareEqualsTestCases))]
+        public static void CompareTest(Entity lesser, Entity greater)
         {
-            ReadOnlySpan<Entity> span =
-            [
-                new Entity(0, 0),
-                new Entity(0, 1),
-                new Entity(1, 0),
-                new Entity(1, 1)
-            ];
-            Entity previous = new Entity(-1, -1);
+            Comparer<Entity> comparer = Comparer<Entity>.Default;
 
-            foreach (Entity current in span)
+            using (Assert.EnterMultipleScope())
             {
-                Assert.That(current, Is.EqualTo(current));
-                Assert.That(current, Is.Not.EqualTo(previous));
+                Assert.That(comparer.Compare(lesser, lesser), Is.Zero);
+                Assert.That(comparer.Compare(greater, greater), Is.Zero);
+                Assert.That(comparer.Compare(lesser, greater), Is.EqualTo(-1));
+                Assert.That(comparer.Compare(greater, lesser), Is.EqualTo(1));
+            }
+        }
 
-                previous = current;
+        [TestCaseSource(nameof(CompareEqualsTestCases))]
+        public static void EqualsTest(Entity source, Entity other)
+        {
+            EqualityComparer<Entity> comparer = EqualityComparer<Entity>.Default;
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(comparer.Equals(source, source), Is.True);
+                Assert.That(comparer.Equals(other, other), Is.True);
+                Assert.That(comparer.Equals(source, other), Is.False);
+                Assert.That(comparer.Equals(other, source), Is.False);
             }
         }
     }
