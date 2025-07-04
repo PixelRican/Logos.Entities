@@ -374,22 +374,22 @@ namespace Monophyll.Entities.Tests
         }
 
         [TestCaseSource(nameof(AddTestCases))]
-        public static void AddTest(EntityArchetype archetype, ComponentType type)
+        public static void AddTest(EntityArchetype archetype, ComponentType componentType)
         {
-            EntityArchetype result = archetype.Add(type);
+            EntityArchetype result = archetype.Add(componentType);
             ReadOnlySpan<ComponentType> subset = archetype.ComponentTypes;
             ReadOnlySpan<ComponentType> superset = result.ComponentTypes;
-            int index = ~subset.BinarySearch(type);
+            int index = ~subset.BinarySearch(componentType);
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(superset.BinarySearch(type), Is.EqualTo(index));
-                Assert.That(archetype.Contains(type), Is.False);
-                Assert.That(result.Contains(type), Is.True);
+                Assert.That(superset.BinarySearch(componentType), Is.EqualTo(index));
+                Assert.That(archetype.Contains(componentType), Is.False);
+                Assert.That(result.Contains(componentType), Is.True);
                 Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
                 Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
                 Assert.That(archetype, Is.SameAs(archetype.Add(null!)));
-                Assert.That(result, Is.SameAs(result.Add(type)));
+                Assert.That(result, Is.SameAs(result.Add(componentType)));
             }
         }
 
@@ -466,22 +466,22 @@ namespace Monophyll.Entities.Tests
         }
 
         [TestCaseSource(nameof(RemoveTestCases))]
-        public static void RemoveTest(EntityArchetype archetype, ComponentType type)
+        public static void RemoveTest(EntityArchetype archetype, ComponentType componentType)
         {
-            EntityArchetype result = archetype.Remove(type);
+            EntityArchetype result = archetype.Remove(componentType);
             ReadOnlySpan<ComponentType> subset = result.ComponentTypes;
             ReadOnlySpan<ComponentType> superset = archetype.ComponentTypes;
-            int index = superset.BinarySearch(type);
+            int index = superset.BinarySearch(componentType);
 
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(subset.BinarySearch(type), Is.EqualTo(~index));
-                Assert.That(archetype.Contains(type), Is.True);
-                Assert.That(result.Contains(type), Is.False);
+                Assert.That(subset.BinarySearch(componentType), Is.EqualTo(~index));
+                Assert.That(archetype.Contains(componentType), Is.True);
+                Assert.That(result.Contains(componentType), Is.False);
                 Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
                 Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
                 Assert.That(archetype, Is.SameAs(archetype.Remove(null!)));
-                Assert.That(result, Is.SameAs(result.Remove(type)));
+                Assert.That(result, Is.SameAs(result.Remove(componentType)));
             }
         }
     }
