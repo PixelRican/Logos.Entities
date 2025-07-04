@@ -27,9 +27,13 @@ namespace Monophyll.Entities
             m_type = type;
             m_identifier = identifier;
 
-            if (size > 1 || type.GetFields(Constraints).Length > 0)
+            if (isManaged)
             {
-                m_size = isManaged ? size | int.MinValue : size;
+                m_size = size | int.MinValue;
+            }
+            else if (size > 1 || type.GetFields(Constraints).Length > 0)
+            {
+                m_size = size;
             }
         }
 
