@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2025 Roberto I. Mercado
 // Released under the MIT License. See LICENSE for details.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -53,6 +54,15 @@ namespace Monophyll.Entities.Tests
                     new Entity(-1, -1), new Entity(0, 1)
                 };
             }
+        }
+
+        [Test]
+        public static void CompareExceptionTest()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                new Entity(0, 0).CompareTo(string.Empty);
+            });
         }
 
         [TestCaseSource(nameof(CompareEqualsTestCases))]
