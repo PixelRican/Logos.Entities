@@ -59,6 +59,9 @@ namespace Monophyll.Entities
                         case ComponentTypeCategory.Tag:
                             m_tagComponentCount++;
                             continue;
+                        default:
+                            throw new ArgumentException(
+                                "An invalid component type was found in the array.", nameof(componentTypes));
                     }
                 }
             }
@@ -295,6 +298,91 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
+        /// Determines whether the <see cref="EntityArchetype"/> contains the specified component
+        /// type.
+        /// </summary>
+        /// 
+        /// <param name="componentType">
+        /// The component type to search for.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains the component
+        /// type; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool Contains(ComponentType componentType)
+        {
+            return componentType != null
+                && BitmaskOperations.Test(ComponentBitmask, componentType.Identifier);
+        }
+
+        /// <summary>
+        /// Searches for the specified component type and returns the zero-based index within
+        /// <see cref="ComponentTypes"/>.
+        /// </summary>
+        /// 
+        /// <param name="componentType">
+        /// The component type to search for.
+        /// </param>
+        /// 
+        /// <returns>
+        /// The zero-based index of the component type within <see cref="ComponentTypes"/>, if
+        /// found; otherwise, -1.
+        /// </returns>
+        public int IndexOf(ComponentType componentType)
+        {
+            if (!Contains(componentType))
+            {
+                return -1;
+            }
+
+            ComponentType[] array = m_componentTypes;
+            int identifier = componentType.Identifier;
+            int low;
+            int high;
+
+            switch (componentType.Category)
+            {
+                case ComponentTypeCategory.Managed:
+                    low = 0;
+                    high = m_managedComponentCount - 1;
+                    break;
+                case ComponentTypeCategory.Unmanaged:
+                    low = m_managedComponentCount;
+                    high = low + m_unmanagedComponentCount - 1;
+                    break;
+                case ComponentTypeCategory.Tag:
+                    low = m_managedComponentCount + m_unmanagedComponentCount;
+                    high = low + m_tagComponentCount - 1;
+                    break;
+                default:
+                    return -1;
+            }
+
+            while (low <= high)
+            {
+                int index = low + (high - low >> 1);
+                int otherIdentifier = array[index].Identifier;
+
+                if (identifier == otherIdentifier)
+                {
+                    return index;
+                }
+
+                if (identifier < otherIdentifier)
+                {
+                    high = index - 1;
+                }
+                else
+                {
+                    low = index + 1;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Creates an <see cref="EntityArchetype"/> with the specified component type removed from
         /// it.
         /// </summary>
@@ -337,25 +425,6 @@ namespace Monophyll.Entities
             }
 
             return new EntityArchetype(destination);
-        }
-
-        /// <summary>
-        /// Determines whether the <see cref="EntityArchetype"/> contains the specified component
-        /// type.
-        /// </summary>
-        /// 
-        /// <param name="componentType">
-        /// The component type to search for.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains the component
-        /// type; otherwise, <see langword="false"/>.
-        /// </returns>
-        public bool Contains(ComponentType componentType)
-        {
-            return componentType != null
-                && BitmaskOperations.Test(ComponentBitmask, componentType.Identifier);
         }
 
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)

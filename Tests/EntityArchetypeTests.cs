@@ -385,7 +385,9 @@ namespace Monophyll.Entities.Tests
             {
                 Assert.That(superset.BinarySearch(componentType), Is.EqualTo(index));
                 Assert.That(archetype.Contains(componentType), Is.False);
+                Assert.That(archetype.IndexOf(componentType), Is.EqualTo(-1));
                 Assert.That(result.Contains(componentType), Is.True);
+                Assert.That(result.IndexOf(componentType), Is.EqualTo(index));
                 Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
                 Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
                 Assert.That(archetype, Is.SameAs(archetype.Add(null!)));
@@ -477,7 +479,9 @@ namespace Monophyll.Entities.Tests
             {
                 Assert.That(subset.BinarySearch(componentType), Is.EqualTo(~index));
                 Assert.That(archetype.Contains(componentType), Is.True);
+                Assert.That(archetype.IndexOf(componentType), Is.EqualTo(index));
                 Assert.That(result.Contains(componentType), Is.False);
+                Assert.That(result.IndexOf(componentType), Is.EqualTo(-1));
                 Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
                 Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
                 Assert.That(archetype, Is.SameAs(archetype.Remove(null!)));

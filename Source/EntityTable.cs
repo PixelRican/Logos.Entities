@@ -259,10 +259,9 @@ namespace Monophyll.Entities
 
         private Array? FindComponents(ComponentType componentType, bool throwIfNotFound)
         {
-            int index = m_archetype.ComponentTypes.BinarySearch(componentType);
-            Array[] components = m_components;
+            int index = m_archetype.IndexOf(componentType);
 
-            if ((uint)index >= (uint)components.Length)
+            if ((uint)index >= (uint)m_components.Length)
             {
                 if (throwIfNotFound)
                 {
@@ -273,7 +272,7 @@ namespace Monophyll.Entities
                 return null;
             }
 
-            return components[index];
+            return m_components[index];
         }
 
         /// <summary>
