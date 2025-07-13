@@ -646,15 +646,13 @@ namespace Monophyll.Entities
         {
             EntityTable? table = m_container.Find(entity, out int index);
 
-            if (table == null ||
-                table.TryGetComponents(out Span<T> components) ||
-                (uint)index >= (uint)components.Length)
+            if (table == null)
             {
                 throw new ArgumentException(
-                    "The entity does not exist or does not contain the component.", nameof(entity));
+                    "Entity does not exist within the EntityRegistry.", nameof(entity));
             }
 
-            return components[index];
+            return table.GetComponents<T>()[index];
         }
 
         /// <summary>

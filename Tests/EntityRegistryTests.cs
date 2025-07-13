@@ -79,8 +79,13 @@ namespace Monophyll.Entities.Tests
                 registry.CreateEntity();
             }
 
-            foreach (Entity entity in registry.FindEntity(new Entity()).GetEntities())
+            EntityTable table = registry.FindEntity(new Entity());
+            Entity[] entities = table.GetEntities();
+            int count = table.Count;
+
+            for (int i = 0; i < count; i++)
             {
+                Entity entity = entities[i];
                 Assert.That(registry.DestroyEntity(entity));
                 Assert.That(registry.ContainsEntity(entity), Is.False);
             }

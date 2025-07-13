@@ -66,9 +66,9 @@ namespace Monophyll.Entities.Tests
                 table.Add(new Entity(i, 0));
             }
 
-            ReadOnlySpan<Entity> entities = table.GetEntities();
+            Entity[] entities = table.GetEntities();
 
-            for (int i = entities.Length; i > 1; i--)
+            for (int i = table.Count; i > 1; i--)
             {
                 table.RemoveAt(0);
                 Assert.That(new Entity(i, 0), Is.EqualTo(entities[0]));
