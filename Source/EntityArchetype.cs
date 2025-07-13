@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Monophyll.Entities
 {
@@ -80,21 +78,20 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets an immutable array of component types that compose the
-        /// <see cref="EntityArchetype"/>.
+        /// Gets a read-only span of component types that compose the <see cref="EntityArchetype"/>.
         /// </summary>
-        public ImmutableArray<ComponentType> ComponentTypes
+        public ReadOnlySpan<ComponentType> ComponentTypes
         {
-            get => ImmutableCollectionsMarshal.AsImmutableArray(m_componentTypes);
+            get => new ReadOnlySpan<ComponentType>(m_componentTypes);
         }
 
         /// <summary>
-        /// Gets an immutable bitmask that compactly stores flags indicating whether a component
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
         /// type can be found within <see cref="ComponentTypes"/>.
         /// </summary>
-        public ImmutableArray<int> ComponentBitmask
+        public ReadOnlySpan<int> ComponentBitmask
         {
-            get => ImmutableCollectionsMarshal.AsImmutableArray(m_componentBitmask);
+            get => new ReadOnlySpan<int>(m_componentBitmask);
         }
 
         /// <summary>
@@ -256,7 +253,7 @@ namespace Monophyll.Entities
             return a == b
                 || a != null
                 && b != null
-                && MemoryExtensions.SequenceEqual<int>(a.m_componentBitmask, b.m_componentBitmask);
+                && a.ComponentBitmask.SequenceEqual(b.ComponentBitmask);
         }
 
         /// <summary>
@@ -274,7 +271,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
         {
-            if (componentType == null || BitmaskOperations.Test(m_componentBitmask, componentType.Identifier))
+            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.Identifier))
             {
                 return this;
             }
@@ -316,7 +313,7 @@ namespace Monophyll.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(m_componentBitmask, componentType.Identifier);
+                && BitmaskOperations.Test(ComponentBitmask, componentType.Identifier);
         }
 
         /// <summary>
@@ -401,7 +398,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
         {
-            if (componentType == null || !BitmaskOperations.Test(m_componentBitmask, componentType.Identifier))
+            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.Identifier))
             {
                 return this;
             }
@@ -442,7 +439,7 @@ namespace Monophyll.Entities
 
         public override int GetHashCode()
         {
-            return BitmaskOperations.GetHashCode(m_componentBitmask);
+            return BitmaskOperations.GetHashCode(ComponentBitmask);
         }
 
         public override string ToString()

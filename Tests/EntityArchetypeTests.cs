@@ -377,8 +377,8 @@ namespace Monophyll.Entities.Tests
         public static void AddTest(EntityArchetype archetype, ComponentType componentType)
         {
             EntityArchetype result = archetype.Add(componentType);
-            ReadOnlySpan<ComponentType> subset = archetype.ComponentTypes.AsSpan();
-            ReadOnlySpan<ComponentType> superset = result.ComponentTypes.AsSpan();
+            ReadOnlySpan<ComponentType> subset = archetype.ComponentTypes;
+            ReadOnlySpan<ComponentType> superset = result.ComponentTypes;
             int index = ~subset.BinarySearch(componentType);
 
             using (Assert.EnterMultipleScope())
@@ -446,7 +446,7 @@ namespace Monophyll.Entities.Tests
 
                 using (Assert.EnterMultipleScope())
                 {
-                    Assert.That(actual.ComponentTypes.AsSpan().SequenceEqual(expectedComponentTypes), Is.True);
+                    Assert.That(actual.ComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
                     Assert.That(actual.ManagedComponentCount, Is.EqualTo(expectedManagedComponentCount));
                     Assert.That(actual.UnmanagedComponentCount, Is.EqualTo(expectedUnmanagedComponentCount));
                     Assert.That(actual.TagComponentCount, Is.EqualTo(expectedTagComponentCount));
@@ -471,8 +471,8 @@ namespace Monophyll.Entities.Tests
         public static void RemoveTest(EntityArchetype archetype, ComponentType componentType)
         {
             EntityArchetype result = archetype.Remove(componentType);
-            ReadOnlySpan<ComponentType> subset = result.ComponentTypes.AsSpan();
-            ReadOnlySpan<ComponentType> superset = archetype.ComponentTypes.AsSpan();
+            ReadOnlySpan<ComponentType> subset = result.ComponentTypes;
+            ReadOnlySpan<ComponentType> superset = archetype.ComponentTypes;
             int index = superset.BinarySearch(componentType);
 
             using (Assert.EnterMultipleScope())

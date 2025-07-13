@@ -5,7 +5,6 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -77,14 +76,14 @@ namespace Monophyll.Entities
             get
             {
                 ArgumentNullException.ThrowIfNull(key);
-                return m_container.Find(key.ComponentBitmask.AsSpan()) ?? Enumerable.Empty<EntityTable>();
+                return m_container.Find(key.ComponentBitmask) ?? Enumerable.Empty<EntityTable>();
             }
         }
 
         public bool Contains(EntityArchetype key)
         {
             ArgumentNullException.ThrowIfNull(key);
-            return m_container.Find(key.ComponentBitmask.AsSpan()) != null;
+            return m_container.Find(key.ComponentBitmask) != null;
         }
 
         /// <summary>
@@ -286,7 +285,7 @@ namespace Monophyll.Entities
         {
             ArgumentNullException.ThrowIfNull(archetype);
 
-            EntityTableGrouping? grouping = m_container.Find(archetype.ComponentBitmask.AsSpan());
+            EntityTableGrouping? grouping = m_container.Find(archetype.ComponentBitmask);
 
             if (grouping == null)
             {
@@ -294,7 +293,7 @@ namespace Monophyll.Entities
                 {
                     Container container = m_container;
 
-                    if ((grouping = container.Find(archetype.ComponentBitmask.AsSpan())) == null)
+                    if ((grouping = container.Find(archetype.ComponentBitmask)) == null)
                     {
                         if (container.Isfull)
                         {
@@ -336,7 +335,7 @@ namespace Monophyll.Entities
                 return GetGrouping(archetype);
             }
 
-            ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask.AsSpan();
+            ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.Identifier >> 5;
             int bit = 1 << componentType.Identifier;
 
@@ -363,7 +362,7 @@ namespace Monophyll.Entities
 
             if ((destinationBitmask[index] ^= bit) == 0)
             {
-                ImmutableArray<ComponentType> componentTypes = archetype.ComponentTypes;
+                ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
                 destinationBitmask = componentTypes.Length > 1
                     ? destinationBitmask.Slice(0, componentTypes[^2].Identifier + 32 >> 5)
                     : Span<int>.Empty;
@@ -424,7 +423,7 @@ namespace Monophyll.Entities
                 return GetGrouping(archetype);
             }
 
-            ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask.AsSpan();
+            ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.Identifier >> 5;
             int bit = 1 << componentType.Identifier;
 
@@ -502,7 +501,7 @@ namespace Monophyll.Entities
         public bool TryGetGrouping(EntityArchetype archetype, [NotNullWhen(true)] out EntityTableGrouping? grouping)
         {
             ArgumentNullException.ThrowIfNull(archetype);
-            return (grouping = m_container.Find(archetype.ComponentBitmask.AsSpan())) != null;
+            return (grouping = m_container.Find(archetype.ComponentBitmask)) != null;
         }
 
         /// <summary>
@@ -659,7 +658,7 @@ namespace Monophyll.Entities
             public void Add(EntityTableGrouping grouping)
             {
                 int size = m_size;
-                int hashCode = BitmaskOperations.GetHashCode(grouping.Key.ComponentBitmask.AsSpan()) & int.MaxValue;
+                int hashCode = BitmaskOperations.GetHashCode(grouping.Key.ComponentBitmask) & int.MaxValue;
                 ref int bucket = ref m_buckets[hashCode & m_buckets.Length - 1];
                 ref Entry entry = ref m_entries[size];
 
@@ -763,7 +762,7 @@ namespace Monophyll.Entities
                 {
                     EntityTableGrouping grouping = (entry = ref entries[~i]).Grouping;
 
-                    if (entry.HashCode == hashCode && grouping.Key.ComponentBitmask.AsSpan().SequenceEqual(bitmask))
+                    if (entry.HashCode == hashCode && grouping.Key.ComponentBitmask.SequenceEqual(bitmask))
                     {
                         return grouping;
                     }

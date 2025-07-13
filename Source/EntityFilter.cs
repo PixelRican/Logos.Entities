@@ -638,7 +638,7 @@ namespace Monophyll.Entities
         {
             ReadOnlySpan<int> bitmask;
             return archetype != null
-                && BitmaskOperations.Requires(RequiredComponentBitmask, bitmask = archetype.ComponentBitmask.AsSpan())
+                && BitmaskOperations.Requires(RequiredComponentBitmask, bitmask = archetype.ComponentBitmask)
                 && BitmaskOperations.Includes(IncludedComponentBitmask, bitmask)
                 && BitmaskOperations.Excludes(ExcludedComponentBitmask, bitmask);
         }
