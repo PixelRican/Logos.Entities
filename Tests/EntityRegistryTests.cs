@@ -33,7 +33,7 @@ namespace Monophyll.Entities.Tests
                 Assert.That(registry.AddComponent(entity, componentType));
                 Assert.That(registry.HasComponent(entity, componentType));
                 Assert.That(componentTypes.StartsWith(
-                    registry.FindEntity(entity).Archetype.ComponentTypes));
+                    registry.FindEntity(entity).Archetype.ComponentTypes.AsSpan()));
             }
         }
 
@@ -122,7 +122,8 @@ namespace Monophyll.Entities.Tests
             {
                 Assert.That(registry.RemoveComponent(entity, componentType));
                 Assert.That(registry.HasComponent(entity, componentType), Is.False);
-                Assert.That(componentTypes.EndsWith(registry.FindEntity(entity).Archetype.ComponentTypes));
+                Assert.That(componentTypes.EndsWith(
+                    registry.FindEntity(entity).Archetype.ComponentTypes.AsSpan()));
             }
         }
     }

@@ -2,8 +2,8 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 
 namespace Monophyll.Entities
 {
@@ -96,21 +96,22 @@ namespace Monophyll.Entities
                 capacity = MinimumCapacity;
             }
 
-            ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes.Slice(0,
-                archetype.ManagedComponentCount + archetype.UnmanagedComponentCount);
             m_archetype = archetype;
             m_registry = registry;
 
-            if (componentTypes.Length > 0)
+            ImmutableArray<ComponentType> componentTypes = archetype.ComponentTypes;
+            int componentCount = archetype.ManagedComponentCount + archetype.UnmanagedComponentCount;
+
+            if (componentCount > 0)
             {
-                Array[] components = new Array[componentTypes.Length];
+                m_components = new Array[componentCount--];
 
-                for (int i = 0; i < components.Length; i++)
+                do
                 {
-                    components[i] = Array.CreateInstance(componentTypes[i].Type, capacity);
+                    m_components[componentCount] = Array.CreateInstance(
+                        componentTypes[componentCount].Type, capacity);
                 }
-
-                m_components = components;
+                while (--componentCount >= 0);
             }
             else
             {
@@ -382,14 +383,14 @@ namespace Monophyll.Entities
                 return;
             }
 
+            ImmutableArray<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes;
+            ImmutableArray<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes;
             Array[] sourceComponents = table.m_components;
             Array[] destinationComponents = m_components;
-            ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
-            ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
             ComponentType sourceComponentType = null!;
             int sourceIndex = -1;
 
-            for (int destinationIndex = 0; destinationIndex < destinationComponentTypes.Length; destinationIndex++)
+            for (int destinationIndex = 0; destinationIndex < destinationComponents.Length; destinationIndex++)
             {
                 ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
                 bool recompare;
@@ -413,7 +414,7 @@ namespace Monophyll.Entities
                         default:
                             int nextSourceIndex = sourceIndex + 1;
 
-                            if (recompare = nextSourceIndex < sourceComponentTypes.Length)
+                            if (recompare = nextSourceIndex < sourceComponents.Length)
                             {
                                 sourceIndex = nextSourceIndex;
                                 sourceComponentType = sourceComponentTypes[sourceIndex];
