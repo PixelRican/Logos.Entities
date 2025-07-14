@@ -363,7 +363,7 @@ namespace Monophyll.Entities
                 return false;
             }
 
-            componentBitmask = new int[componentTypes[^1].Identifier + 32 >> 5];
+            componentBitmask = new int[componentTypes[^1].Id + 32 >> 5];
 
             int freeIndex = 0;
             ComponentType? previous = null;
@@ -373,7 +373,7 @@ namespace Monophyll.Entities
                 if (!ComponentType.Equals(previous, current))
                 {
                     componentTypes[freeIndex++] = previous = current;
-                    componentBitmask[current.Identifier >> 5] |= 1 << current.Identifier;
+                    componentBitmask[current.Id >> 5] |= 1 << current.Id;
                 }
             }
 
@@ -579,7 +579,7 @@ namespace Monophyll.Entities
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.Identifier);
+                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.Id);
         }
 
         /// <summary>
@@ -598,7 +598,7 @@ namespace Monophyll.Entities
         public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.Identifier);
+                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.Id);
         }
 
         /// <summary>
@@ -617,7 +617,7 @@ namespace Monophyll.Entities
         public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.Identifier);
+                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.Id);
         }
 
         /// <summary>

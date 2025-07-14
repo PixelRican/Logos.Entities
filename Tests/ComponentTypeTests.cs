@@ -192,12 +192,12 @@ namespace Monophyll.Entities.Tests
 
         [TestCaseSource(nameof(TypeOfTestCases))]
         public static void TypeOfTest(ComponentType actual, Type expectedType,
-            int expectedIdentifier, int expectedSize, ComponentTypeCategory expectedCategory)
+            int expectedId, int expectedSize, ComponentTypeCategory expectedCategory)
         {
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(actual.Type, Is.EqualTo(expectedType));
-                Assert.That(actual.Identifier, Is.EqualTo(expectedIdentifier));
+                Assert.That(actual.Id, Is.EqualTo(expectedId));
                 Assert.That(actual.Size, Is.EqualTo(expectedSize));
                 Assert.That(actual.Category, Is.EqualTo(expectedCategory));
             }

@@ -158,7 +158,7 @@ namespace Monophyll.Entities
             {
                 if (componentType != null)
                 {
-                    builder.Set(componentType.Identifier);
+                    builder.Set(componentType.Id);
                 }
             }
 
@@ -200,7 +200,7 @@ namespace Monophyll.Entities
                     }
 
                     array[count++] = componentType;
-                    builder.Set(componentType.Identifier);
+                    builder.Set(componentType.Id);
                 }
             }
 
@@ -233,7 +233,7 @@ namespace Monophyll.Entities
 
                 if (componentType != null)
                 {
-                    builder.Set(componentType.Identifier);
+                    builder.Set(componentType.Id);
                 }
             }
 
@@ -336,8 +336,8 @@ namespace Monophyll.Entities
             }
 
             ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
-            int index = componentType.Identifier >> 5;
-            int bit = 1 << componentType.Identifier;
+            int index = componentType.Id >> 5;
+            int bit = 1 << componentType.Id;
 
             if (index >= sourceBitmask.Length || (bit & sourceBitmask[index]) == 0)
             {
@@ -364,7 +364,7 @@ namespace Monophyll.Entities
             {
                 ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
                 destinationBitmask = componentTypes.Length > 1
-                    ? destinationBitmask.Slice(0, componentTypes[^2].Identifier + 32 >> 5)
+                    ? destinationBitmask.Slice(0, componentTypes[^2].Id + 32 >> 5)
                     : Span<int>.Empty;
             }
 
@@ -424,8 +424,8 @@ namespace Monophyll.Entities
             }
 
             ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
-            int index = componentType.Identifier >> 5;
-            int bit = 1 << componentType.Identifier;
+            int index = componentType.Id >> 5;
+            int bit = 1 << componentType.Id;
 
             if (index < sourceBitmask.Length && (bit & sourceBitmask[index]) != 0)
             {

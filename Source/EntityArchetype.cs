@@ -34,7 +34,7 @@ namespace Monophyll.Entities
         private EntityArchetype(ComponentType[] componentTypes)
         {
             m_componentTypes = componentTypes;
-            m_componentBitmask = new int[componentTypes[^1].Identifier + 32 >> 5];
+            m_componentBitmask = new int[componentTypes[^1].Id + 32 >> 5];
             m_entitySize = Unsafe.SizeOf<Entity>();
 
             int count = 0;
@@ -45,7 +45,7 @@ namespace Monophyll.Entities
                 if (!ComponentType.Equals(previous, current))
                 {
                     m_componentTypes[count++] = previous = current;
-                    m_componentBitmask[current.Identifier >> 5] |= 1 << current.Identifier;
+                    m_componentBitmask[current.Id >> 5] |= 1 << current.Id;
                     m_entitySize += current.Size;
 
                     switch (current.Category)
@@ -271,7 +271,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
         {
-            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.Identifier))
+            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.Id))
             {
                 return this;
             }
@@ -313,7 +313,7 @@ namespace Monophyll.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ComponentBitmask, componentType.Identifier);
+                && BitmaskOperations.Test(ComponentBitmask, componentType.Id);
         }
 
         /// <summary>
@@ -336,8 +336,8 @@ namespace Monophyll.Entities
                 return -1;
             }
 
-            ComponentType[] array = m_componentTypes;
-            int identifier = componentType.Identifier;
+            ComponentType[] source = m_componentTypes;
+            int targetId = componentType.Id;
             int low;
             int high;
 
@@ -362,14 +362,14 @@ namespace Monophyll.Entities
             while (low <= high)
             {
                 int index = low + (high - low >> 1);
-                int otherIdentifier = array[index].Identifier;
+                int sourceId = source[index].Id;
 
-                if (identifier == otherIdentifier)
+                if (targetId == sourceId)
                 {
                     return index;
                 }
 
-                if (identifier < otherIdentifier)
+                if (targetId < sourceId)
                 {
                     high = index - 1;
                 }
@@ -398,7 +398,7 @@ namespace Monophyll.Entities
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
         {
-            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.Identifier))
+            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.Id))
             {
                 return this;
             }
