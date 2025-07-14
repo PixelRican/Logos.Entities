@@ -80,7 +80,7 @@ namespace Monophyll.Entities.Tests
             }
 
             EntityTable table = registry.FindEntity(new Entity());
-            Entity[] entities = table.GetEntities();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
             int count = table.Count;
 
             for (int i = 0; i < count; i++)

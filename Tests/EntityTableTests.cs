@@ -66,7 +66,7 @@ namespace Monophyll.Entities.Tests
                 table.Add(new Entity(i, 0));
             }
 
-            Entity[] entities = table.GetEntities();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
 
             for (int i = table.Count; i > 1; i--)
             {

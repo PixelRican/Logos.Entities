@@ -2,7 +2,6 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Monophyll.Entities
 {
@@ -193,24 +192,7 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets an array of components stored by the <see cref="EntityTable"/>.
-        /// </summary>
-        /// 
-        /// <param name="componentType">
-        /// The type of the components.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An array of components stored by the <see cref="EntityTable"/>.
-        /// </returns>
-        public Array GetComponents(ComponentType componentType)
-        {
-            ArgumentNullException.ThrowIfNull(componentType);
-            return FindComponents(componentType, throwIfNotFound: true)!;
-        }
-
-        /// <summary>
-        /// Gets an array of components stored by the <see cref="EntityTable"/>.
+        /// Gets a span of components stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <typeparam name="T">
@@ -218,38 +200,15 @@ namespace Monophyll.Entities
         /// </typeparam>
         /// 
         /// <returns>
-        /// An array of components stored by the <see cref="EntityTable"/>.
+        /// A span of components stored by the <see cref="EntityTable"/>.
         /// </returns>
-        public T[] GetComponents<T>()
+        public Span<T> GetComponents<T>()
         {
-            return (T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!;
+            return new Span<T>((T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!);
         }
 
         /// <summary>
-        /// Attempts to get an array of components stored by the <see cref="EntityTable"/>.
-        /// </summary>
-        /// 
-        /// <param name="componentType">
-        /// The type of the components.
-        /// </param>
-        /// 
-        /// <param name="components">
-        /// An array of components stored by the <see cref="EntityTable"/>.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the array was successfully obtained; otherwise,
-        /// <see langword="false"/>.
-        /// </returns>
-        public bool TryGetComponents(ComponentType componentType, [NotNullWhen(true)] out Array? components)
-        {
-            ArgumentNullException.ThrowIfNull(componentType);
-            components = FindComponents(componentType, throwIfNotFound: false);
-            return components != null;
-        }
-
-        /// <summary>
-        /// Attempts to get an array of components stored by the <see cref="EntityTable"/>.
+        /// Attempts to get a span of components stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <typeparam name="T">
@@ -257,17 +216,17 @@ namespace Monophyll.Entities
         /// </typeparam>
         /// 
         /// <param name="components">
-        /// An array of components stored by the <see cref="EntityTable"/>.
+        /// A span of components stored by the <see cref="EntityTable"/>.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the array was successfully obtained; otherwise,
+        /// <see langword="true"/> if the span was successfully obtained; otherwise,
         /// <see langword="false"/>.
         /// </returns>
-        public bool TryGetComponents<T>([NotNullWhen(true)] out T[]? components)
+        public bool TryGetComponents<T>(out Span<T> components)
         {
-            components = FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: false) as T[];
-            return components != null;
+            components = new Span<T>((T[]?)FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: false));
+            return components.Length > 0;
         }
 
         private Array? FindComponents(ComponentType componentType, bool throwIfNotFound)
@@ -289,15 +248,15 @@ namespace Monophyll.Entities
         }
 
         /// <summary>
-        /// Gets an array of entities stored by the <see cref="EntityTable"/>.
+        /// Gets a span of entities stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// An array of entities stored by the <see cref="EntityTable"/>.
+        /// A span of entities stored by the <see cref="EntityTable"/>.
         /// </returns>
-        public Entity[] GetEntities()
+        public ReadOnlySpan<Entity> GetEntities()
         {
-            return m_entities;
+            return new ReadOnlySpan<Entity>(m_entities);
         }
 
         /// <summary>
