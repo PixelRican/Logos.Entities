@@ -102,14 +102,12 @@ namespace Monophyll.Entities
 
             if (componentTypes.Length > 0)
             {
-                Array[] components = new Array[componentTypes.Length];
+                m_components = new Array[componentTypes.Length];
 
-                for (int i = 0; i < components.Length; i++)
+                for (int i = 0; i < componentTypes.Length; i++)
                 {
-                    components[i] = Array.CreateInstance(componentTypes[i].Type, capacity);
+                    m_components[i] = Array.CreateInstance(componentTypes[i].Type, capacity);
                 }
-
-                m_components = components;
             }
             else
             {
@@ -368,8 +366,8 @@ namespace Monophyll.Entities
                 throw new ArgumentException("Count exceeds the size of the table.", nameof(count));
             }
 
-            Entity[] entities = m_entities;
             int size = m_size;
+            Entity[] entities = m_entities;
 
             if (entities.Length - count < size)
             {
@@ -437,11 +435,11 @@ namespace Monophyll.Entities
             VerifyAccess();
 
             int size = m_size;
-            int managedPartitionLength = m_archetype.ManagedComponentCount;
+            int managedComponentCount = m_archetype.ManagedComponentCount;
             Array[] components = m_components;
 
-            // Frees references to managed objects.
-            for (int i = 0; i < managedPartitionLength; i++)
+            // Free references in managed components.
+            for (int i = 0; i < managedComponentCount; i++)
             {
                 Array.Clear(components[i], 0, size);
             }
@@ -507,10 +505,10 @@ namespace Monophyll.Entities
                 m_entities[index] = m_entities[size];
             }
 
-            int managedPartitionLength = m_archetype.ManagedComponentCount;
+            int managedComponentCount = m_archetype.ManagedComponentCount;
 
-            // Frees references to managed objects.
-            for (int i = 0; i < managedPartitionLength; i++)
+            // Free references in managed components.
+            for (int i = 0; i < managedComponentCount; i++)
             {
                 Array.Clear(components[i], size, 1);
             }
@@ -564,10 +562,10 @@ namespace Monophyll.Entities
                 Array.Copy(m_entities, copyIndex, m_entities, index, copyLength);
             }
 
-            int managedPartitionLength = m_archetype.ManagedComponentCount;
+            int managedComponentCount = m_archetype.ManagedComponentCount;
 
-            // Frees references to managed objects.
-            for (int i = 0; i < managedPartitionLength; i++)
+            // Free references in managed components.
+            for (int i = 0; i < managedComponentCount; i++)
             {
                 Array.Clear(components[i], size, count);
             }
