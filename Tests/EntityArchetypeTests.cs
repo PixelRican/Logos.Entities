@@ -405,7 +405,7 @@ namespace Monophyll.Entities.Tests
 
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityArchetype.Create((IEnumerable<ComponentType>?)null!);
+                EntityArchetype.Create((IEnumerable<ComponentType>)null!);
             });
         }
 
