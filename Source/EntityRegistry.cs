@@ -26,7 +26,8 @@ namespace Monophyll.Entities
         /// Initializes a new instance of the <see cref="EntityRegistry"/> class that has the
         /// default capacity.
         /// </summary>
-        public EntityRegistry() : this(DefaultCapacity)
+        public EntityRegistry()
+            : this(DefaultCapacity)
         {
         }
 
@@ -362,9 +363,9 @@ namespace Monophyll.Entities
         /// <returns>
         /// The entity table the entity is stored in.
         /// </returns>
-        public EntityTable FindEntity(Entity entity)
+        public EntityTable FindEntity(Entity entity, out int index)
         {
-            EntityTable? table = m_container.Find(entity, out _);
+            EntityTable? table = m_container.Find(entity, out index);
 
             if (table == null)
             {

@@ -33,7 +33,7 @@ namespace Monophyll.Entities.Tests
                 Assert.That(registry.AddComponent(entity, componentType));
                 Assert.That(registry.HasComponent(entity, componentType));
                 Assert.That(componentTypes.StartsWith(
-                    registry.FindEntity(entity).Archetype.ComponentTypes));
+                    registry.FindEntity(entity, out _).Archetype.ComponentTypes));
             }
         }
 
@@ -48,8 +48,8 @@ namespace Monophyll.Entities.Tests
 
                 Assert.That(new Entity(i, 0), Is.EqualTo(entity));
                 Assert.That(registry.ContainsEntity(entity));
-                Assert.That(registry.FindEntity(entity).Archetype, Is.SameAs(EntityArchetype.Base));
-                Assert.That(registry.FindEntity(entity).GetEntities()[i], Is.EqualTo(entity));
+                Assert.That(registry.FindEntity(entity, out _).Archetype, Is.SameAs(EntityArchetype.Base));
+                Assert.That(registry.FindEntity(entity, out _).GetEntities()[i], Is.EqualTo(entity));
             }
 
             Assert.That(10, Is.EqualTo(registry.Count));
@@ -62,8 +62,8 @@ namespace Monophyll.Entities.Tests
 
                 Assert.That(new Entity(i + 10, 0), Is.EqualTo(entity));
                 Assert.That(registry.HasComponent(entity, ComponentType.TypeOf<Name>()));
-                Assert.That(registry.FindEntity(entity).Archetype, Is.SameAs(archetype));
-                Assert.That(registry.FindEntity(entity).GetEntities()[i], Is.EqualTo(entity));
+                Assert.That(registry.FindEntity(entity, out _).Archetype, Is.SameAs(archetype));
+                Assert.That(registry.FindEntity(entity, out _).GetEntities()[i], Is.EqualTo(entity));
             }
 
             Assert.That(20, Is.EqualTo(registry.Count));
@@ -79,7 +79,7 @@ namespace Monophyll.Entities.Tests
                 registry.CreateEntity();
             }
 
-            EntityTable table = registry.FindEntity(new Entity());
+            EntityTable table = registry.FindEntity(new Entity(), out _);
             ReadOnlySpan<Entity> entities = table.GetEntities();
             int count = table.Count;
 
@@ -122,7 +122,7 @@ namespace Monophyll.Entities.Tests
             {
                 Assert.That(registry.RemoveComponent(entity, componentType));
                 Assert.That(registry.HasComponent(entity, componentType), Is.False);
-                Assert.That(componentTypes.EndsWith(registry.FindEntity(entity).Archetype.ComponentTypes));
+                Assert.That(componentTypes.EndsWith(registry.FindEntity(entity, out _).Archetype.ComponentTypes));
             }
         }
     }
