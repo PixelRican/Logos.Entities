@@ -7,7 +7,7 @@ using System.Linq;
 namespace Monophyll.Entities.Tests
 {
     [TestFixture]
-    public sealed class EntityTableLookupTests
+    public sealed class EntityTableLookupTestFixture
     {
         [Test]
         public void GetGroupingTest()

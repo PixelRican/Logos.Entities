@@ -1,16 +1,14 @@
 ﻿// Copyright (c) 2025 Roberto I. Mercado
 // Released under the MIT License. See LICENSE for details.
 
-using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Monophyll.Entities.Tests
 {
-    [TestFixture]
-    public static class ComponentTypeTests
+    public static class ComponentTypeTestCaseSource
     {
-        static ComponentTypeTests()
+        static ComponentTypeTestCaseSource()
         {
             // Initialize component types in a predefined order for test consistency.
             ComponentType.TypeOf<Enabled>();
@@ -23,7 +21,7 @@ namespace Monophyll.Entities.Tests
             ComponentType.TypeOf<Scale3D>();
         }
 
-        private static IEnumerable CompareEqualsTestCases
+        public static IEnumerable CompareEqualsTestCases
         {
             get
             {
@@ -77,7 +75,7 @@ namespace Monophyll.Entities.Tests
             }
         }
 
-        private static IEnumerable TypeOfTestCases
+        public static IEnumerable TypeOfTestCases
         {
             get
             {
@@ -126,7 +124,6 @@ namespace Monophyll.Entities.Tests
                     ComponentTypeCategory.Unmanaged
                 };
 
-
                 yield return new object[]
                 {
                     ComponentType.TypeOf<Rotation3D>(),
@@ -135,7 +132,6 @@ namespace Monophyll.Entities.Tests
                     Unsafe.SizeOf<Rotation3D>(),
                     ComponentTypeCategory.Unmanaged
                 };
-
 
                 yield return new object[]
                 {
@@ -154,52 +150,6 @@ namespace Monophyll.Entities.Tests
                     Unsafe.SizeOf<Scale3D>(),
                     ComponentTypeCategory.Unmanaged
                 };
-            }
-        }
-
-        [Test]
-        public static void CompareExceptionTest()
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                ComponentType.TypeOf<Name>().CompareTo(string.Empty);
-            });
-        }
-
-        [TestCaseSource(nameof(CompareEqualsTestCases))]
-        public static void CompareTest(ComponentType? lesser, ComponentType? greater)
-        {
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(ComponentType.Compare(lesser, lesser), Is.Zero);
-                Assert.That(ComponentType.Compare(greater, greater), Is.Zero);
-                Assert.That(ComponentType.Compare(lesser, greater), Is.EqualTo(-1));
-                Assert.That(ComponentType.Compare(greater, lesser), Is.EqualTo(1));
-            }
-        }
-
-        [TestCaseSource(nameof(CompareEqualsTestCases))]
-        public static void EqualsTest(ComponentType? source, ComponentType? other)
-        {
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(ComponentType.Equals(source, source), Is.True);
-                Assert.That(ComponentType.Equals(other, other), Is.True);
-                Assert.That(ComponentType.Equals(source, other), Is.False);
-                Assert.That(ComponentType.Equals(other, source), Is.False);
-            }
-        }
-
-        [TestCaseSource(nameof(TypeOfTestCases))]
-        public static void TypeOfTest(ComponentType actual, Type expectedType,
-            int expectedId, int expectedSize, ComponentTypeCategory expectedCategory)
-        {
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(actual.Type, Is.EqualTo(expectedType));
-                Assert.That(actual.Id, Is.EqualTo(expectedId));
-                Assert.That(actual.Size, Is.EqualTo(expectedSize));
-                Assert.That(actual.Category, Is.EqualTo(expectedCategory));
             }
         }
     }

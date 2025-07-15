@@ -6,7 +6,7 @@ using System;
 namespace Monophyll.Entities.Tests
 {
     [TestFixture]
-    public sealed class EntityRegistryTests
+    public sealed class EntityRegistryTestFixture
     {
         [Test]
         public void AddComponentTest()
