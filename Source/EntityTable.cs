@@ -204,7 +204,15 @@ namespace Monophyll.Entities
         /// </returns>
         public Span<T> GetComponents<T>()
         {
-            return new Span<T>((T[])FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: true)!);
+            int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
+
+            if (index == -1)
+            {
+                throw new ArgumentException(
+                    $"The EntityTable does not store components of type {typeof(T).Name}.");
+            }
+
+            return new Span<T>((T[])m_components[index]);
         }
 
         /// <summary>
@@ -225,26 +233,16 @@ namespace Monophyll.Entities
         /// </returns>
         public bool TryGetComponents<T>(out Span<T> components)
         {
-            components = new Span<T>((T[]?)FindComponents(ComponentType.TypeOf<T>(), throwIfNotFound: false));
-            return components.Length > 0;
-        }
+            int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
 
-        private Array? FindComponents(ComponentType componentType, bool throwIfNotFound)
-        {
-            int index = m_archetype.IndexOf(componentType);
-
-            if ((uint)index >= (uint)m_components.Length)
+            if (index == -1)
             {
-                if (throwIfNotFound)
-                {
-                    throw new ArgumentException(
-                        $"The EntityTable does not store components of type {componentType.Type.Name}.");
-                }
-
-                return null;
+                components = default;
+                return false;
             }
 
-            return m_components[index];
+            components = new Span<T>((T[])m_components[index]);
+            return true;
         }
 
         /// <summary>
