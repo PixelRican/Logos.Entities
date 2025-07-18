@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Provides methods that manage entities and their components, maintain the tables they are

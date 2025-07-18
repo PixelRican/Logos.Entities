@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Represents component type declarations associated with a unique ID.

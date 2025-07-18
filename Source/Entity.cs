@@ -4,7 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Represents an ID associated with a set of components.

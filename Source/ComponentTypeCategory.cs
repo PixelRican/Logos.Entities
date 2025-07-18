@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2025 Roberto I. Mercado
 // Released under the MIT License. See LICENSE for details.
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Specifies component type categories.

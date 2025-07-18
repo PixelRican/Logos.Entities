@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Represents a table of entities each associated with a set of components.

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Represents a collection of entity archetypes each mapped to one or more entity tables.

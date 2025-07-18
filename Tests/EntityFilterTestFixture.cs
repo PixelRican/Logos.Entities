@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Monophyll.Entities.Tests
+namespace Logos.Entities.Tests
 {
     [TestFixture]
     public static class EntityFilterTestFixture

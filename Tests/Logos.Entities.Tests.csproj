@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Source\Monophyll.Entities.csproj" />
+    <ProjectReference Include="..\Source\Logos.Entities.csproj" />
   </ItemGroup>
 
   <ItemGroup>

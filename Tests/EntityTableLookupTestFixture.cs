@@ -4,7 +4,7 @@
 using System;
 using System.Linq;
 
-namespace Monophyll.Entities.Tests
+namespace Logos.Entities.Tests
 {
     [TestFixture]
     public sealed class EntityTableLookupTestFixture

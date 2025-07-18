@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Monophyll.Entities
+namespace Logos.Entities
 {
     /// <summary>
     /// Provides utility methods for bitmask operations.

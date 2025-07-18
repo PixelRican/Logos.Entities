@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace Monophyll.Entities.Tests
+namespace Logos.Entities.Tests
 {
     public static class ComponentTypeTestCaseSource
     {

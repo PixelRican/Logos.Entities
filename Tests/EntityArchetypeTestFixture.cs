@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Monophyll.Entities.Tests
+namespace Logos.Entities.Tests
 {
     [TestFixture]
     public static class EntityArchetypeTestFixture

@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Monophyll.Entities.Tests
+namespace Logos.Entities.Tests
 {
     [TestFixture]
     public static class ComponentTypeTestFixture
