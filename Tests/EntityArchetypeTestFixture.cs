@@ -38,7 +38,6 @@ namespace Monophyll.Entities.Tests
             {
                 EntityArchetype.Create(null!);
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityArchetype.Create((IEnumerable<ComponentType>)null!);

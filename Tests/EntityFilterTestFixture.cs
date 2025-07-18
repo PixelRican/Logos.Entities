@@ -17,37 +17,30 @@ namespace Monophyll.Entities.Tests
             {
                 EntityFilter.Create(null!);
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create((IEnumerable<ComponentType>)null!);
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create(null!, Array.Empty<ComponentType>(), Array.Empty<ComponentType>());
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create(Array.Empty<ComponentType>(), null!, Array.Empty<ComponentType>());
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create(Array.Empty<ComponentType>(), Array.Empty<ComponentType>(), null!);
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create(null!, Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>());
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create(Enumerable.Empty<ComponentType>(), null!, Enumerable.Empty<ComponentType>());
             });
-
             Assert.Throws<ArgumentNullException>(() =>
             {
                 EntityFilter.Create(Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>(), null!);

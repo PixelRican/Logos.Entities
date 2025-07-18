@@ -206,7 +206,7 @@ namespace Monophyll.Entities
         {
             int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
 
-            if (index == -1)
+            if ((uint)index >= (uint)m_components.Length)
             {
                 throw new ArgumentException(
                     $"The EntityTable does not store components of type {typeof(T).Name}.");
@@ -235,7 +235,7 @@ namespace Monophyll.Entities
         {
             int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
 
-            if (index == -1)
+            if ((uint)index >= (uint)m_components.Length)
             {
                 components = default;
                 return false;
@@ -495,40 +495,39 @@ namespace Monophyll.Entities
 
             if (size < index)
             {
-                throw new ArgumentException("Count exceeds the size of the EntityTable.", nameof(count));
+                throw new ArgumentOutOfRangeException(nameof(count), count,
+                    "Count exceeds the size of the EntityTable.");
             }
 
-            if (count == 0)
+            if (count > 0)
             {
-                return;
-            }
+                Array[] components = m_components;
 
-            Array[] components = m_components;
-
-            if (index < size)
-            {
-                int copyIndex = index + count;
-                int copyLength = size - index;
-
-                for (int i = 0; i < components.Length; i++)
+                if (index < size)
                 {
-                    Array array = components[i];
-                    Array.Copy(array, copyIndex, array, index, copyLength);
+                    int copyIndex = index + count;
+                    int copyLength = size - index;
+
+                    for (int i = 0; i < components.Length; i++)
+                    {
+                        Array array = components[i];
+                        Array.Copy(array, copyIndex, array, index, copyLength);
+                    }
+
+                    Array.Copy(m_entities, copyIndex, m_entities, index, copyLength);
                 }
 
-                Array.Copy(m_entities, copyIndex, m_entities, index, copyLength);
+                int managedComponentCount = m_archetype.ManagedComponentCount;
+
+                // Free references in managed components.
+                for (int i = 0; i < managedComponentCount; i++)
+                {
+                    Array.Clear(components[i], size, count);
+                }
+
+                m_size = size;
+                m_version++;
             }
-
-            int managedComponentCount = m_archetype.ManagedComponentCount;
-
-            // Free references in managed components.
-            for (int i = 0; i < managedComponentCount; i++)
-            {
-                Array.Clear(components[i], size, count);
-            }
-
-            m_size = size;
-            m_version++;
         }
 
         /// <summary>

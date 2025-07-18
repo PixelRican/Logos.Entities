@@ -2,32 +2,29 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
-using System.Collections;
 
 namespace Monophyll.Entities.Tests
 {
     public static class EntityFilterTestCaseSource
     {
-        public static IEnumerable CreateTestCases
+        public static object[][] CreateTestCases
         {
-            get
+            get => new object[][]
             {
-                yield return new object[]
+                new object[]
                 {
                     Array.Empty<ComponentType>(),
                     Array.Empty<ComponentType>()
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
                         null!
                     },
                     Array.Empty<ComponentType>()
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
@@ -37,9 +34,8 @@ namespace Monophyll.Entities.Tests
                     {
                         ComponentType.TypeOf<Enabled>()
                     }
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
@@ -50,9 +46,8 @@ namespace Monophyll.Entities.Tests
                     {
                         ComponentType.TypeOf<Enabled>()
                     }
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
@@ -63,9 +58,8 @@ namespace Monophyll.Entities.Tests
                     {
                         ComponentType.TypeOf<Enabled>()
                     }
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
@@ -76,9 +70,8 @@ namespace Monophyll.Entities.Tests
                     {
                         ComponentType.TypeOf<Enabled>()
                     }
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
@@ -91,9 +84,8 @@ namespace Monophyll.Entities.Tests
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Enabled>()
                     }
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     new ComponentType[]
                     {
@@ -107,21 +99,20 @@ namespace Monophyll.Entities.Tests
                         ComponentType.TypeOf<Scale2D>(),
                         ComponentType.TypeOf<Enabled>()
                     }
-                };
-            }
+                }
+            };
         }
 
-        public static IEnumerable EqualsTestCases
+        public static object[][] EqualsTestCases
         {
-            get
+            get => new object[][]
             {
-                yield return new object[]
+                new object[]
                 {
                     EntityFilter.Universal,
                     null!
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Universal,
                     EntityFilter.Create(
@@ -131,9 +122,8 @@ namespace Monophyll.Entities.Tests
                         },
                         Array.Empty<ComponentType>(),
                         Array.Empty<ComponentType>())
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Universal,
                     EntityFilter.Create(
@@ -143,9 +133,8 @@ namespace Monophyll.Entities.Tests
                             ComponentType.TypeOf<Position2D>()
                         },
                         Array.Empty<ComponentType>())
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Universal,
                     EntityFilter.Create(
@@ -155,9 +144,8 @@ namespace Monophyll.Entities.Tests
                         {
                             ComponentType.TypeOf<Enabled>()
                         })
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Create(
                         new ComponentType[]
@@ -185,9 +173,8 @@ namespace Monophyll.Entities.Tests
                         {
                             ComponentType.TypeOf<Position2D>()
                         })
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Create(
                         new ComponentType[]
@@ -215,9 +202,8 @@ namespace Monophyll.Entities.Tests
                         {
                             ComponentType.TypeOf<Name>()
                         })
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Create(
                         new ComponentType[]
@@ -245,9 +231,8 @@ namespace Monophyll.Entities.Tests
                         {
                             ComponentType.TypeOf<Enabled>()
                         })
-                };
-
-                yield return new object[]
+                },
+                new object[]
                 {
                     EntityFilter.Create(
                         new ComponentType[]
@@ -275,8 +260,8 @@ namespace Monophyll.Entities.Tests
                         {
                             ComponentType.TypeOf<Name>()
                         })
-                };
-            }
+                }
+            };
         }
     }
 }
