@@ -370,7 +370,7 @@ namespace Logos.Entities
 
             foreach (ComponentType current in componentTypes)
             {
-                if (!ComponentType.Equals(previous, current))
+                if (previous != current)
                 {
                     componentTypes[freeIndex++] = previous = current;
                     componentBitmask[current.Id >> 5] |= 1 << current.Id;
@@ -535,35 +535,6 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether two specified <see cref="EntityFilter"/> objects have the same
-        /// value.
-        /// </summary>
-        /// 
-        /// <param name="a">
-        /// The first object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <param name="b">
-        /// The second object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the value of <paramref name="a"/> is the same as the value of
-        /// <paramref name="b"/>; otherwise, <see langword="false"/>. If both <paramref name="a"/>
-        /// and <paramref name="b"/> are <see langword="null"/>, the method returns
-        /// <see langword="true"/>.
-        /// </returns>
-        public static bool Equals(EntityFilter? a, EntityFilter? b)
-        {
-            return a == b
-                || a != null
-                && b != null
-                && a.RequiredComponentBitmask.SequenceEqual(b.RequiredComponentBitmask)
-                && a.IncludedComponentBitmask.SequenceEqual(b.IncludedComponentBitmask)
-                && a.ExcludedComponentBitmask.SequenceEqual(b.ExcludedComponentBitmask);
-        }
-
-        /// <summary>
         /// Determines whether the <see cref="EntityFilter"/> requires the specified component
         /// type.
         /// </summary>
@@ -659,12 +630,20 @@ namespace Logos.Entities
 
         public bool Equals(EntityFilter? other)
         {
-            return Equals(this, other);
+            return this == other
+                || other != null
+                && RequiredComponentBitmask.SequenceEqual(other.RequiredComponentBitmask)
+                && IncludedComponentBitmask.SequenceEqual(other.IncludedComponentBitmask)
+                && ExcludedComponentBitmask.SequenceEqual(other.ExcludedComponentBitmask);
         }
 
         public override bool Equals(object? obj)
         {
-            return Equals(this, obj as EntityFilter);
+            return this == obj
+                || obj is EntityFilter other
+                && RequiredComponentBitmask.SequenceEqual(other.RequiredComponentBitmask)
+                && IncludedComponentBitmask.SequenceEqual(other.IncludedComponentBitmask)
+                && ExcludedComponentBitmask.SequenceEqual(other.ExcludedComponentBitmask);
         }
 
         public override int GetHashCode()

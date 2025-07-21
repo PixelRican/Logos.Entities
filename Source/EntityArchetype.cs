@@ -42,7 +42,7 @@ namespace Logos.Entities
 
             foreach (ComponentType current in m_componentTypes)
             {
-                if (!ComponentType.Equals(previous, current))
+                if (previous != current)
                 {
                     m_componentTypes[count++] = previous = current;
                     m_componentBitmask[current.Id >> 5] |= 1 << current.Id;
@@ -230,33 +230,6 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether two specified <see cref="EntityArchetype"/> objects have the same
-        /// value.
-        /// </summary>
-        /// 
-        /// <param name="a">
-        /// The first object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <param name="b">
-        /// The second object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the value of <paramref name="a"/> is the same as the value of
-        /// <paramref name="b"/>; otherwise, <see langword="false"/>. If both <paramref name="a"/>
-        /// and <paramref name="b"/> are <see langword="null"/>, the method returns
-        /// <see langword="true"/>.
-        /// </returns>
-        public static bool Equals(EntityArchetype? a, EntityArchetype? b)
-        {
-            return a == b
-                || a != null
-                && b != null
-                && a.ComponentBitmask.SequenceEqual(b.ComponentBitmask);
-        }
-
-        /// <summary>
         /// Creates an <see cref="EntityArchetype"/> with the specified component type added to it.
         /// </summary>
         /// 
@@ -281,7 +254,7 @@ namespace Logos.Entities
             int index = 0;
             ComponentType current;
 
-            while (index < source.Length && ComponentType.Compare(current = source[index], componentType) < 0)
+            while (index < source.Length && (current = source[index]).CompareTo(componentType) < 0)
             {
                 destination[index++] = current;
             }
@@ -414,7 +387,7 @@ namespace Logos.Entities
             int index = 0;
             ComponentType current;
 
-            while (!ComponentType.Equals(current = source[index], componentType))
+            while ((current = source[index]) != componentType)
             {
                 destination[index++] = current;
             }
@@ -429,12 +402,16 @@ namespace Logos.Entities
 
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)
         {
-            return Equals(this, other);
+            return this == other
+                || other != null
+                && ComponentBitmask.SequenceEqual(other.ComponentBitmask);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return Equals(this, obj as EntityArchetype);
+            return this == obj
+                || obj is EntityArchetype other
+                && ComponentBitmask.SequenceEqual(other.ComponentBitmask);
         }
 
         public override int GetHashCode()

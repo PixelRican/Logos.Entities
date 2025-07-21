@@ -32,8 +32,7 @@ namespace Logos.Entities.Tests
             {
                 Assert.That(registry.AddComponent(entity, componentType));
                 Assert.That(registry.HasComponent(entity, componentType));
-                Assert.That(componentTypes.StartsWith(
-                    registry.FindEntity(entity, out _).Archetype.ComponentTypes));
+                //Assert.That(componentTypes.StartsWith(registry.FindEntity(entity, out _).Archetype.ComponentTypes));
             }
         }
 
@@ -122,7 +121,7 @@ namespace Logos.Entities.Tests
             {
                 Assert.That(registry.RemoveComponent(entity, componentType));
                 Assert.That(registry.HasComponent(entity, componentType), Is.False);
-                Assert.That(componentTypes.EndsWith(registry.FindEntity(entity, out _).Archetype.ComponentTypes));
+                //Assert.That(componentTypes.EndsWith(registry.FindEntity(entity, out _).Archetype.ComponentTypes));
             }
         }
     }

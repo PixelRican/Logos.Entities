@@ -5,7 +5,7 @@ namespace Logos.Entities.Tests
 {
     public static class EntityTestCaseSource
     {
-        public static object[][] CompareEqualsTestCases
+        public static object[][] EqualsTestCases
         {
             get => new object[][]
             {

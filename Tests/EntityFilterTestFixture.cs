@@ -77,12 +77,14 @@ namespace Logos.Entities.Tests
         [TestCaseSource(typeof(EntityFilterTestCaseSource), nameof(EntityFilterTestCaseSource.EqualsTestCases))]
         public static void EqualsTest(EntityFilter? source, EntityFilter? other)
         {
+            EqualityComparer<EntityFilter> comparer = EqualityComparer<EntityFilter>.Default;
+
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(EntityFilter.Equals(source, source), Is.True);
-                Assert.That(EntityFilter.Equals(other, other), Is.True);
-                Assert.That(EntityFilter.Equals(source, other), Is.False);
-                Assert.That(EntityFilter.Equals(other, source), Is.False);
+                Assert.That(comparer.Equals(source, source), Is.True);
+                Assert.That(comparer.Equals(other, other), Is.True);
+                Assert.That(comparer.Equals(source, other), Is.False);
+                Assert.That(comparer.Equals(other, source), Is.False);
             }
         }
 

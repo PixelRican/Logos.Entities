@@ -350,13 +350,13 @@ namespace Logos.Entities
 
                 do
                 {
-                    switch (ComponentType.Compare(sourceComponentType, destinationComponentType))
+                    switch (destinationComponentType.CompareTo(sourceComponentType))
                     {
                         case 0:
                             Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex], size, count);
                             recompare = false;
                             continue;
-                        case 1:
+                        case -1:
                             if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
                             {
                                 Array.Clear(destinationComponents[destinationIndex], size, count);

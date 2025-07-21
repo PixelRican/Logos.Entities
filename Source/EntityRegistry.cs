@@ -402,7 +402,7 @@ namespace Logos.Entities
                         "Entity does not exist within the EntityRegistry.", nameof(entity));
                 }
 
-                if (!EntityArchetype.Equals(archetype, table.Archetype))
+                if (!archetype.Equals(table.Archetype))
                 {
                     container.Move(entity.Id, GetUnfilledTable(grouping));
 
@@ -525,7 +525,7 @@ namespace Logos.Entities
                 EntityArchetype archetype = table.Archetype;
                 EntityTableGrouping grouping = m_lookup.GetSupergrouping(archetype, ComponentType.TypeOf<T>());
 
-                if (EntityArchetype.Equals(archetype, grouping.Key))
+                if (archetype.Equals(grouping.Key))
                 {
                     return false;
                 }
@@ -686,7 +686,7 @@ namespace Logos.Entities
                 EntityArchetype archetype = table.Archetype;
                 EntityTableGrouping grouping = m_lookup.GetSupergrouping(archetype, ComponentType.TypeOf<T>());
 
-                if (!EntityArchetype.Equals(archetype, grouping.Key))
+                if (!archetype.Equals(grouping.Key))
                 {
                     EntityTable source = table;
 
@@ -722,7 +722,7 @@ namespace Logos.Entities
                     ? m_lookup.GetSupergrouping(archetype, componentType)
                     : m_lookup.GetSubgrouping(archetype, componentType);
 
-                if (EntityArchetype.Equals(archetype, grouping.Key))
+                if (archetype.Equals(grouping.Key))
                 {
                     return false;
                 }

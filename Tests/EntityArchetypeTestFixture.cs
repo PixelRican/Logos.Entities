@@ -93,12 +93,14 @@ namespace Logos.Entities.Tests
         [TestCaseSource(typeof(EntityArchetypeTestCaseSource), nameof(EntityArchetypeTestCaseSource.EqualsTestCases))]
         public static void EqualsTest(EntityArchetype? source, EntityArchetype? other)
         {
+            EqualityComparer<EntityArchetype> comparer = EqualityComparer<EntityArchetype>.Default;
+
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(EntityArchetype.Equals(source, source), Is.True);
-                Assert.That(EntityArchetype.Equals(other, other), Is.True);
-                Assert.That(EntityArchetype.Equals(source, other), Is.False);
-                Assert.That(EntityArchetype.Equals(other, source), Is.False);
+                Assert.That(comparer.Equals(source, source), Is.True);
+                Assert.That(comparer.Equals(other, other), Is.True);
+                Assert.That(comparer.Equals(source, other), Is.False);
+                Assert.That(comparer.Equals(other, source), Is.False);
             }
         }
 

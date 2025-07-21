@@ -9,7 +9,7 @@ namespace Logos.Entities
     /// <summary>
     /// Represents an ID associated with a set of components.
     /// </summary>
-    public readonly struct Entity : IEquatable<Entity>, IComparable<Entity>, IComparable
+    public readonly struct Entity : IEquatable<Entity>
     {
         private readonly int m_id;
         private readonly int m_version;
@@ -46,33 +46,6 @@ namespace Logos.Entities
         public int Version
         {
             get => m_version;
-        }
-
-        public int CompareTo(Entity other)
-        {
-            int comparison = m_id.CompareTo(other.Id);
-
-            if (comparison != 0)
-            {
-                return comparison;
-            }
-
-            return m_version.CompareTo(other.m_version);
-        }
-
-        public int CompareTo(object? obj)
-        {
-            if (obj is Entity other)
-            {
-                return CompareTo(other);
-            }
-
-            if (obj != null)
-            {
-                throw new ArgumentException("obj is not the same type as this instance.");
-            }
-
-            return 1;
         }
 
         public bool Equals(Entity other)

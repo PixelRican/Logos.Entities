@@ -20,7 +20,7 @@ namespace Logos.Entities.Tests
             ComponentType.TypeOf<Scale3D>();
         }
 
-        public static object[][] CompareEqualsTestCases
+        public static object[][] CompareTestCases
         {
             get => new object[][]
             {

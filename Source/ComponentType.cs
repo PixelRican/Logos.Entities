@@ -2,7 +2,6 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -12,28 +11,36 @@ namespace Logos.Entities
     /// <summary>
     /// Represents component type declarations associated with a unique ID.
     /// </summary>
-    public sealed class ComponentType : IEquatable<ComponentType>, IComparable<ComponentType>, IComparable
+    public sealed class ComponentType : IComparable<ComponentType>, IComparable
     {
-        private const BindingFlags Constraints = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags Constraints =
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static int s_nextId = -1;
 
         private readonly Type m_type;
         private readonly int m_id;
         private readonly int m_size;
+        private readonly ComponentTypeCategory m_category;
 
-        private ComponentType(Type type, int id, int size, bool isManaged)
+        private ComponentType(Type type, int size, bool isManaged)
         {
             m_type = type;
-            m_id = id;
+            m_id = Interlocked.Increment(ref s_nextId);
 
             if (isManaged)
             {
-                m_size = size | int.MinValue;
+                m_size = size;
+                m_category = ComponentTypeCategory.Managed;
             }
             else if (size > 1 || type.GetFields(Constraints).Length > 0)
             {
                 m_size = size;
+                m_category = ComponentTypeCategory.Unmanaged;
+            }
+            else
+            {
+                m_category = ComponentTypeCategory.Tag;
             }
         }
 
@@ -58,7 +65,7 @@ namespace Logos.Entities
         /// </summary>
         public int Size
         {
-            get => m_size & int.MaxValue;
+            get => m_size;
         }
 
         /// <summary>
@@ -66,95 +73,7 @@ namespace Logos.Entities
         /// </summary>
         public ComponentTypeCategory Category
         {
-            get
-            {
-                int size = m_size;
-
-                if (size < 0)
-                {
-                    return ComponentTypeCategory.Managed;
-                }
-
-                if (size > 0)
-                {
-                    return ComponentTypeCategory.Unmanaged;
-                }
-
-                return ComponentTypeCategory.Tag;
-            }
-        }
-
-        /// <summary>
-        /// Compares two specified <see cref="ComponentType"/> objects and returns an integer that
-        /// indicates their relative position in the sort order.
-        /// </summary>
-        /// 
-        /// <param name="a">
-        /// The first object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <param name="b">
-        /// The second object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <returns>
-        /// A 32-bit signed integer that indicates the lexical relationship between the two
-        /// comparands.
-        /// </returns>
-        public static int Compare(ComponentType? a, ComponentType? b)
-        {
-            if (a == b)
-            {
-                return 0;
-            }
-
-            if (a == null)
-            {
-                return -1;
-            }
-
-            if (b == null)
-            {
-                return 1;
-            }
-
-            int comparison = ((int)a.Category).CompareTo((int)b.Category);
-
-            if (comparison != 0)
-            {
-                return comparison;
-            }
-
-            return a.m_id.CompareTo(b.m_id);
-        }
-
-        /// <summary>
-        /// Determines whether two specified <see cref="ComponentType"/> objects have the same
-        /// value.
-        /// </summary>
-        /// 
-        /// <param name="a">
-        /// The first object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <param name="b">
-        /// The second object to compare, or <see langword="null"/>.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the value of <paramref name="a"/> is the same as the value of
-        /// <paramref name="b"/>; otherwise, <see langword="false"/>. If both <paramref name="a"/>
-        /// and <paramref name="b"/> are <see langword="null"/>, the method returns
-        /// <see langword="true"/>.
-        /// </returns>
-        public static bool Equals(ComponentType? a, ComponentType? b)
-        {
-            return a == b
-                || a != null
-                && b != null
-                && a.m_id == b.m_id
-                && a.m_size == b.m_size
-                && a.m_type == b.m_type;
+            get => m_category;
         }
 
         /// <summary>
@@ -177,7 +96,30 @@ namespace Logos.Entities
 
         public int CompareTo(ComponentType? other)
         {
-            return Compare(this, other);
+            if (this == other)
+            {
+                return 0;
+            }
+
+            if (other == null)
+            {
+                return 1;
+            }
+
+            ComponentTypeCategory categoryA = m_category;
+            ComponentTypeCategory categoryB = other.m_category;
+
+            if (categoryA < categoryB)
+            {
+                return -1;
+            }
+
+            if (categoryA > categoryB)
+            {
+                return 1;
+            }
+
+            return m_id.CompareTo(other.m_id);
         }
 
         public int CompareTo(object? obj)
@@ -186,37 +128,23 @@ namespace Logos.Entities
 
             if (obj != other)
             {
-                throw new ArgumentException("obj is not the same type as this instance.");
+                throw new ArgumentException(
+                    "obj is not the same type as this instance.", nameof(obj));
             }
 
-            return Compare(this, other);
-        }
-
-        public bool Equals([NotNullWhen(true)] ComponentType? other)
-        {
-            return Equals(this, other);
-        }
-
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return Equals(this, obj as ComponentType);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(m_type, m_id, m_size);
+            return CompareTo(other);
         }
 
         public override string ToString()
         {
-            return $"ComponentType {{ Type = {m_type.Name}, Id = {m_id} }}";
+            return $"ComponentType {{ Type = {m_type.Name}, Id = {m_id},"
+                + $" Size = {m_size}, Category = {m_category} }}";
         }
 
         private static class TypeLookup<T>
         {
             public static readonly ComponentType Value = new ComponentType(typeof(T),
-                Interlocked.Increment(ref s_nextId), Unsafe.SizeOf<T>(),
-                RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>());
         }
     }
 }

@@ -74,9 +74,7 @@ namespace Logos.Entities
             get => m_tables[index];
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-
-                if (!EntityArchetype.Equals(m_key, value.Archetype))
+                if (!m_key.Equals(value.Archetype))
                 {
                     throw new ArgumentException(
                         "Value's archetype does not match the EntityTableGrouping's key.", nameof(value));
@@ -122,9 +120,7 @@ namespace Logos.Entities
 
         public void Add(EntityTable item)
         {
-            ArgumentNullException.ThrowIfNull(item);
-
-            if (!EntityArchetype.Equals(m_key, item.Archetype))
+            if (!m_key.Equals(item.Archetype))
             {
                 throw new ArgumentException(
                     "Item's archetype does not match the EntityTableGrouping's key.", nameof(item));
@@ -231,9 +227,7 @@ namespace Logos.Entities
 
         public void Insert(int index, EntityTable item)
         {
-            ArgumentNullException.ThrowIfNull(item);
-
-            if (!EntityArchetype.Equals(m_key, item.Archetype))
+            if (!m_key.Equals(item.Archetype))
             {
                 throw new ArgumentException(
                     "Item's archetype does not match the EntityTableGrouping's key.", nameof(item));

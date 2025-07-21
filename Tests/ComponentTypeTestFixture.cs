@@ -2,6 +2,7 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
+using System.Collections.Generic;
 
 namespace Logos.Entities.Tests
 {
@@ -17,27 +18,17 @@ namespace Logos.Entities.Tests
             });
         }
 
-        [TestCaseSource(typeof(ComponentTypeTestCaseSource), nameof(ComponentTypeTestCaseSource.CompareEqualsTestCases))]
+        [TestCaseSource(typeof(ComponentTypeTestCaseSource), nameof(ComponentTypeTestCaseSource.CompareTestCases))]
         public static void CompareTest(ComponentType? lesser, ComponentType? greater)
         {
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(ComponentType.Compare(lesser, lesser), Is.Zero);
-                Assert.That(ComponentType.Compare(greater, greater), Is.Zero);
-                Assert.That(ComponentType.Compare(lesser, greater), Is.EqualTo(-1));
-                Assert.That(ComponentType.Compare(greater, lesser), Is.EqualTo(1));
-            }
-        }
+            Comparer<ComponentType> comparer = Comparer<ComponentType>.Default;
 
-        [TestCaseSource(typeof(ComponentTypeTestCaseSource), nameof(ComponentTypeTestCaseSource.CompareEqualsTestCases))]
-        public static void EqualsTest(ComponentType? source, ComponentType? other)
-        {
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(ComponentType.Equals(source, source), Is.True);
-                Assert.That(ComponentType.Equals(other, other), Is.True);
-                Assert.That(ComponentType.Equals(source, other), Is.False);
-                Assert.That(ComponentType.Equals(other, source), Is.False);
+                Assert.That(comparer.Compare(lesser, lesser), Is.Zero);
+                Assert.That(comparer.Compare(greater, greater), Is.Zero);
+                Assert.That(comparer.Compare(lesser, greater), Is.EqualTo(-1));
+                Assert.That(comparer.Compare(greater, lesser), Is.EqualTo(1));
             }
         }
 
