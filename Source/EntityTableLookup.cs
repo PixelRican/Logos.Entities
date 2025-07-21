@@ -61,7 +61,7 @@ namespace Logos.Entities
             {
                 Container container = m_container;
 
-                if ((int)index >= (int)container.Count)
+                if ((uint)index >= (uint)container.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Index was out of range. Must be non-negative and less than the size of the EntityTableLookup.");
@@ -674,7 +674,7 @@ namespace Logos.Entities
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if ((int)index >= (int)array.Length)
+                if ((uint)index >= (uint)array.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Index was out of range. Must be non-negative and less than the length of the array.");
@@ -717,7 +717,7 @@ namespace Logos.Entities
                         "Arrays with non-zero lower bounds are not supported.", nameof(array));
                 }
 
-                if ((int)index > (int)array.Length)
+                if ((uint)index > (uint)array.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
                         "Index was out of range. Must be non-negative and less than the length of the array.");
