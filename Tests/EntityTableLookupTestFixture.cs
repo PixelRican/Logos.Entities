@@ -7,30 +7,30 @@ using System.Linq;
 namespace Logos.Entities.Tests
 {
     [TestFixture]
-    public sealed class EntityTableLookupTestFixture
+    public static class EntityTableLookupTestFixture
     {
         [Test]
-        public void GetGroupingTest()
+        public static void GetGroupingTest()
         {
             EntityTableLookup lookup = new EntityTableLookup();
             ComponentType[] arguments = new ComponentType[8];
 
             GetGroupingTestHelper(lookup, arguments);
-            Assert.That(1, Is.EqualTo(lookup.Count));
+            Assert.That(lookup, Has.Count.EqualTo(1));
 
             arguments[0] = ComponentType.TypeOf<Position2D>();
             arguments[1] = ComponentType.TypeOf<Rotation2D>();
             arguments[2] = ComponentType.TypeOf<Scale2D>();
 
             GetGroupingTestHelper(lookup, arguments);
-            Assert.That(2, Is.EqualTo(lookup.Count));
+            Assert.That(lookup, Has.Count.EqualTo(2));
 
             arguments[0] = arguments[3] = ComponentType.TypeOf<Position3D>();
             arguments[1] = arguments[4] = ComponentType.TypeOf<Rotation3D>();
             arguments[2] = arguments[5] = ComponentType.TypeOf<Scale3D>();
 
             GetGroupingTestHelper(lookup, arguments);
-            Assert.That(3, Is.EqualTo(lookup.Count));
+            Assert.That(lookup, Has.Count.EqualTo(3));
 
             arguments[0] = ComponentType.TypeOf<Name>();
             arguments[1] = ComponentType.TypeOf<Position2D>();
@@ -39,7 +39,7 @@ namespace Logos.Entities.Tests
             arguments[4] = ComponentType.TypeOf<Enabled>();
 
             GetGroupingTestHelper(lookup, arguments);
-            Assert.That(4, Is.EqualTo(lookup.Count));
+            Assert.That(lookup, Has.Count.EqualTo(4));
 
             arguments[0] = ComponentType.TypeOf<Name>();
             arguments[1] = ComponentType.TypeOf<Position2D>();
@@ -51,7 +51,7 @@ namespace Logos.Entities.Tests
             arguments[7] = ComponentType.TypeOf<Enabled>();
 
             GetGroupingTestHelper(lookup, arguments);
-            Assert.That(5, Is.EqualTo(lookup.Count));
+            Assert.That(lookup, Has.Count.EqualTo(5));
         }
 
         private static void GetGroupingTestHelper(EntityTableLookup lookup, ComponentType[] arguments)
