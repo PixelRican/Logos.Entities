@@ -29,7 +29,8 @@ namespace Logos.Entities
         public static bool Test(ReadOnlySpan<int> source, int index)
         {
             int sourceIndex;
-            return (sourceIndex = index >> 5) < source.Length
+            return index >= 0
+                && (sourceIndex = index >> 5) < source.Length
                 && (source[sourceIndex] & 1 << index) != 0;
         }
 
@@ -145,14 +146,14 @@ namespace Logos.Entities
         /// </returns>
         public static int GetHashCode(ReadOnlySpan<int> obj)
         {
-            int result = 0;
+            HashCode hashCode = default;
 
             for (int i = obj.Length > 8 ? obj.Length - 8 : 0; i < obj.Length; i++)
             {
-                result = (result << 5) + result ^ obj[i];
+                hashCode.Add(obj[i]);
             }
 
-            return result;
+            return hashCode.ToHashCode();
         }
     }
 }
