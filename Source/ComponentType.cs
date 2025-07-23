@@ -137,7 +137,7 @@ namespace Logos.Entities
 
         public override string ToString()
         {
-            return $"ComponentType {{ RuntimeType = {m_runtimeType.Name}, Id = {m_id},"
+            return $"ComponentType {{ RuntimeType = {m_runtimeType}, Id = {m_id},"
                 + $" Size = {m_size}, Category = {m_category} }}";
         }
 
