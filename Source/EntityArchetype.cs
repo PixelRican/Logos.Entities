@@ -10,8 +10,7 @@ using System.Runtime.CompilerServices;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a data model that describes how an entity's components should be laid out in
-    /// memory.
+    /// Represents a data model that describes the composition of entities.
     /// </summary>
     public sealed class EntityArchetype : IEquatable<EntityArchetype>
     {
@@ -31,42 +30,16 @@ namespace Logos.Entities
             m_entitySize = Unsafe.SizeOf<Entity>();
         }
 
-        private EntityArchetype(ComponentType[] componentTypes)
+        private EntityArchetype(ComponentType[] componentTypes, int[] componentBitmask,
+            int managedComponentCount, int unmanagedComponentCount, int tagComponentCount,
+            int entitySize)
         {
             m_componentTypes = componentTypes;
-            m_componentBitmask = new int[componentTypes[^1].Id + 32 >> 5];
-            m_entitySize = Unsafe.SizeOf<Entity>();
-
-            int count = 0;
-            ComponentType? previous = null;
-
-            foreach (ComponentType current in m_componentTypes)
-            {
-                if (previous != current)
-                {
-                    m_componentTypes[count++] = previous = current;
-                    m_componentBitmask[current.Id >> 5] |= 1 << current.Id;
-                    m_entitySize += current.Size;
-
-                    switch (current.Category)
-                    {
-                        case ComponentTypeCategory.Managed:
-                            m_managedComponentCount++;
-                            continue;
-                        case ComponentTypeCategory.Unmanaged:
-                            m_unmanagedComponentCount++;
-                            continue;
-                        case ComponentTypeCategory.Tag:
-                            m_tagComponentCount++;
-                            continue;
-                        default:
-                            throw new ArgumentException(
-                                "An invalid component type was found in the array.", nameof(componentTypes));
-                    }
-                }
-            }
-
-            Array.Resize(ref m_componentTypes, count);
+            m_componentBitmask = componentBitmask;
+            m_managedComponentCount = managedComponentCount;
+            m_unmanagedComponentCount = unmanagedComponentCount;
+            m_tagComponentCount = tagComponentCount;
+            m_entitySize = entitySize;
         }
 
         /// <summary>
@@ -151,23 +124,22 @@ namespace Logos.Entities
         /// An <see cref="EntityArchetype"/> that is composed of component types from the array, or
         /// <see cref="Base"/> if the array does not contain component types.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static EntityArchetype Create(ComponentType[] componentTypes)
         {
             ArgumentNullException.ThrowIfNull(componentTypes);
 
-            if (componentTypes.Length > 0)
+            if (componentTypes.Length == 0)
             {
-                ComponentType[] array = new ComponentType[componentTypes.Length];
-                Array.Copy(componentTypes, array, componentTypes.Length);
-                Array.Sort(array);
-
-                if (array[^1] != null)
-                {
-                    return new EntityArchetype(array);
-                }
+                return s_base;
             }
 
-            return s_base;
+            ComponentType[] arguments = new ComponentType[componentTypes.Length];
+            Array.Copy(componentTypes, arguments, componentTypes.Length);
+            return CreateIfNonEmpty(arguments);
         }
 
         /// <summary>
@@ -183,21 +155,20 @@ namespace Logos.Entities
         /// An <see cref="EntityArchetype"/> that is composed of component types from the sequence,
         /// or <see cref="Base"/> if the sequence does not contain component types.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
         {
-            ComponentType[] array = componentTypes.ToArray();
+            ComponentType[] arguments = componentTypes.ToArray();
 
-            if (array.Length > 0)
+            if (arguments.Length == 0)
             {
-                Array.Sort(array);
-
-                if (array[^1] != null)
-                {
-                    return new EntityArchetype(array);
-                }
+                return s_base;
             }
 
-            return s_base;
+            return CreateIfNonEmpty(arguments);
         }
 
         /// <summary>
@@ -215,18 +186,59 @@ namespace Logos.Entities
         /// </returns>
         public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
         {
-            if (componentTypes.Length > 0)
+            if (componentTypes.IsEmpty)
             {
-                ComponentType[] array = componentTypes.ToArray();
-                Array.Sort(array);
+                return s_base;
+            }
 
-                if (array[^1] != null)
+            return CreateIfNonEmpty(componentTypes.ToArray());
+        }
+
+        private static EntityArchetype CreateIfNonEmpty(ComponentType[] componentTypes)
+        {
+            Array.Sort(componentTypes);
+
+            ComponentType? currentComponentType = componentTypes[^1];
+
+            if (currentComponentType == null)
+            {
+                return s_base;
+            }
+
+            ComponentType? previousComponentType = null;
+            int[] componentBitmask = new int[currentComponentType.Id + 32 >> 5];
+            int entitySize = Unsafe.SizeOf<Entity>();
+            int componentCount = 0;
+            int managedComponentCount = 0;
+            int unmanagedComponentCount = 0;
+            int tagComponentCount = 0;
+
+            for (int i = 0; i < componentTypes.Length; i++)
+            {
+                if ((currentComponentType = componentTypes[i]) != previousComponentType)
                 {
-                    return new EntityArchetype(array);
+                    componentTypes[componentCount++] = previousComponentType = currentComponentType;
+                    componentBitmask[currentComponentType.Id >> 5] |= 1 << currentComponentType.Id;
+                    entitySize += currentComponentType.Size;
+
+                    switch (currentComponentType.Category)
+                    {
+                        case ComponentTypeCategory.Managed:
+                            managedComponentCount++;
+                            continue;
+                        case ComponentTypeCategory.Unmanaged:
+                            unmanagedComponentCount++;
+                            continue;
+                        case ComponentTypeCategory.Tag:
+                            tagComponentCount++;
+                            continue;
+                    }
                 }
             }
 
-            return s_base;
+            Array.Resize(ref componentTypes, componentCount);
+            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
+                unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
         /// <summary>
@@ -249,25 +261,59 @@ namespace Logos.Entities
                 return this;
             }
 
-            ComponentType[] source = m_componentTypes;
-            ComponentType[] destination = new ComponentType[source.Length + 1];
+            // Build component type array.
+            ComponentType[] sourceArray = m_componentTypes;
+            ComponentType[] destinationArray = new ComponentType[sourceArray.Length + 1];
             int index = 0;
-            ComponentType current;
 
-            while (index < source.Length && (current = source[index]).CompareTo(componentType) < 0)
+            while (index < sourceArray.Length)
             {
-                destination[index++] = current;
+                ComponentType currentComponentType = sourceArray[index];
+
+                if (currentComponentType.CompareTo(componentType) > 0)
+                {
+                    break;
+                }
+
+                destinationArray[index++] = currentComponentType;
             }
 
-            destination[index] = componentType;
+            destinationArray[index] = componentType;
 
-            while (index < source.Length)
+            while (index < sourceArray.Length)
             {
-                current = source[index];
-                destination[++index] = current;
+                ComponentType currentComponentType = sourceArray[index];
+                destinationArray[++index] = currentComponentType;
             }
 
-            return new EntityArchetype(destination);
+            // Build component bitmask.
+            int[] sourceBitmask = m_componentBitmask;
+            int[] destinationBitmask = new int[destinationArray[^1].Id + 32 >> 5];
+
+            Array.Copy(sourceBitmask, destinationBitmask, sourceBitmask.Length);
+            destinationBitmask[componentType.Id >> 5] |= 1 << componentType.Id;
+
+            // Increase component count based on component type category.
+            int managedComponentCount = m_managedComponentCount;
+            int unmanagedComponentCount = m_unmanagedComponentCount;
+            int tagComponentCount = m_tagComponentCount;
+
+            switch (componentType.Category)
+            {
+                case ComponentTypeCategory.Managed:
+                    managedComponentCount++;
+                    break;
+                case ComponentTypeCategory.Unmanaged:
+                    unmanagedComponentCount++;
+                    break;
+                case ComponentTypeCategory.Tag:
+                    tagComponentCount++;
+                    break;
+            }
+
+            // Create superarchetype.
+            return new EntityArchetype(destinationArray, destinationBitmask, managedComponentCount,
+                unmanagedComponentCount, tagComponentCount, m_entitySize + componentType.Size);
         }
 
         /// <summary>
@@ -314,6 +360,7 @@ namespace Logos.Entities
             int low;
             int high;
 
+            // Clamp search range based on the component type's categorical order.
             switch (componentType.Category)
             {
                 case ComponentTypeCategory.Managed:
@@ -332,6 +379,7 @@ namespace Logos.Entities
                     return -1;
             }
 
+            // Find the component type using binary search.
             while (low <= high)
             {
                 int index = low + (high - low >> 1);
@@ -352,6 +400,7 @@ namespace Logos.Entities
                 }
             }
 
+            // This line should be unreachable under normal circumstances.
             return -1;
         }
 
@@ -376,28 +425,66 @@ namespace Logos.Entities
                 return this;
             }
 
-            ComponentType[] source = m_componentTypes;
+            ComponentType[] sourceArray = m_componentTypes;
 
-            if (source.Length == 1)
+            if (sourceArray.Length == 1)
             {
                 return s_base;
             }
 
-            ComponentType[] destination = new ComponentType[source.Length - 1];
+            // Build component type array.
+            ComponentType[] destinationArray = new ComponentType[sourceArray.Length - 1];
             int index = 0;
-            ComponentType current;
 
-            while ((current = source[index]) != componentType)
+            while (index < destinationArray.Length)
             {
-                destination[index++] = current;
+                ComponentType currentComponentType = sourceArray[index];
+
+                if (currentComponentType == componentType)
+                {
+                    break;
+                }
+
+                destinationArray[index++] = currentComponentType;
             }
 
-            while (index < destination.Length)
+            while (index < destinationArray.Length)
             {
-                destination[index] = source[++index];
+                destinationArray[index] = sourceArray[++index];
             }
 
-            return new EntityArchetype(destination);
+            // Build component bitmask.
+            int[] sourceBitmask = m_componentBitmask;
+            int[] destinationBitmask = new int[destinationArray[^1].Id + 32 >> 5];
+
+            Array.Copy(sourceBitmask, destinationBitmask, destinationBitmask.Length);
+
+            if ((index = componentType.Id >> 5) < destinationBitmask.Length)
+            {
+                destinationBitmask[index] &= ~(1 << componentType.Id);
+            }
+
+            // Decrease component count based on component type category.
+            int managedComponentCount = m_managedComponentCount;
+            int unmanagedComponentCount = m_unmanagedComponentCount;
+            int tagComponentCount = m_tagComponentCount;
+
+            switch (componentType.Category)
+            {
+                case ComponentTypeCategory.Managed:
+                    managedComponentCount--;
+                    break;
+                case ComponentTypeCategory.Unmanaged:
+                    unmanagedComponentCount--;
+                    break;
+                case ComponentTypeCategory.Tag:
+                    tagComponentCount--;
+                    break;
+            }
+
+            // Create subarchetype.
+            return new EntityArchetype(destinationArray, destinationBitmask, managedComponentCount,
+                unmanagedComponentCount, tagComponentCount, m_entitySize - componentType.Size);
         }
 
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)
