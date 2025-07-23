@@ -105,7 +105,7 @@ namespace Logos.Entities
 
                 for (int i = 0; i < componentTypes.Length; i++)
                 {
-                    m_components[i] = Array.CreateInstance(componentTypes[i].Type, capacity);
+                    m_components[i] = Array.CreateInstance(componentTypes[i].RuntimeType, capacity);
                 }
             }
             else

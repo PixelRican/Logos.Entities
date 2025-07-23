@@ -18,14 +18,14 @@ namespace Logos.Entities
 
         private static int s_nextId = -1;
 
-        private readonly Type m_type;
+        private readonly Type m_runtimeType;
         private readonly int m_id;
         private readonly int m_size;
         private readonly ComponentTypeCategory m_category;
 
-        private ComponentType(Type type, int size, bool isManaged)
+        private ComponentType(Type runtimeType, int size, bool isManaged)
         {
-            m_type = type;
+            m_runtimeType = runtimeType;
             m_id = Interlocked.Increment(ref s_nextId);
 
             if (isManaged)
@@ -33,7 +33,7 @@ namespace Logos.Entities
                 m_size = size;
                 m_category = ComponentTypeCategory.Managed;
             }
-            else if (size > 1 || type.GetFields(Constraints).Length > 0)
+            else if (size > 1 || runtimeType.GetFields(Constraints).Length > 0)
             {
                 m_size = size;
                 m_category = ComponentTypeCategory.Unmanaged;
@@ -47,9 +47,9 @@ namespace Logos.Entities
         /// <summary>
         /// Gets the runtime type associated with the <see cref="ComponentType"/>.
         /// </summary>
-        public Type Type
+        public Type RuntimeType
         {
-            get => m_type;
+            get => m_runtimeType;
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Logos.Entities
         /// </returns>
         public static ComponentType TypeOf<T>()
         {
-            return TypeLookup<T>.Value;
+            return GenericTypeLookup<T>.Value;
         }
 
         public int CompareTo(ComponentType? other)
@@ -137,11 +137,11 @@ namespace Logos.Entities
 
         public override string ToString()
         {
-            return $"ComponentType {{ Type = {m_type.Name}, Id = {m_id},"
+            return $"ComponentType {{ RuntimeType = {m_runtimeType.Name}, Id = {m_id},"
                 + $" Size = {m_size}, Category = {m_category} }}";
         }
 
-        private static class TypeLookup<T>
+        private static class GenericTypeLookup<T>
         {
             public static readonly ComponentType Value = new ComponentType(typeof(T),
                 Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>());
