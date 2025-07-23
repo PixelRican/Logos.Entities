@@ -13,7 +13,7 @@ namespace Logos.Entities
     /// </summary>
     public sealed class ComponentType : IComparable<ComponentType>, IComparable
     {
-        private const BindingFlags Constraints =
+        private const BindingFlags InstanceMembers =
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static int s_nextId = -1;
@@ -33,7 +33,7 @@ namespace Logos.Entities
                 m_size = size;
                 m_category = ComponentTypeCategory.Managed;
             }
-            else if (size > 1 || runtimeType.GetFields(Constraints).Length > 0)
+            else if (size > 1 || runtimeType.GetFields(InstanceMembers).Length > 0)
             {
                 m_size = size;
                 m_category = ComponentTypeCategory.Unmanaged;
@@ -106,6 +106,8 @@ namespace Logos.Entities
                 return 1;
             }
 
+            // Component types are first sorted in categorical order, which is defined by the
+            // constant definition order in the ComponentTypeCategory enumeration.
             ComponentTypeCategory categoryA = m_category;
             ComponentTypeCategory categoryB = other.m_category;
 
@@ -119,6 +121,8 @@ namespace Logos.Entities
                 return 1;
             }
 
+            // Should two component types share the same categorical order, they will be sorted by
+            // their IDs.
             return m_id.CompareTo(other.m_id);
         }
 
@@ -141,8 +145,15 @@ namespace Logos.Entities
                 + $" Size = {m_size}, Category = {m_category} }}";
         }
 
+        /// <summary>
+        /// Guarantees that component type singletons can be retrieved in constant time through
+        /// <see cref="TypeOf{T}"/>.
+        /// </summary>
         private static class GenericTypeLookup<T>
         {
+            /// <summary>
+            /// The per-type singleton associated with components of type <typeparamref name="T"/>.
+            /// </summary>
             public static readonly ComponentType Value = new ComponentType(typeof(T),
                 Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>());
         }
