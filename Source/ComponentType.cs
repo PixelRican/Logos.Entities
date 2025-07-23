@@ -23,12 +23,12 @@ namespace Logos.Entities
         private readonly int m_size;
         private readonly ComponentTypeCategory m_category;
 
-        private ComponentType(Type runtimeType, int size, bool isManaged)
+        private ComponentType(Type runtimeType, int size, bool isReferenceOrContainsReferences)
         {
             m_runtimeType = runtimeType;
             m_id = Interlocked.Increment(ref s_nextId);
 
-            if (isManaged)
+            if (isReferenceOrContainsReferences)
             {
                 m_size = size;
                 m_category = ComponentTypeCategory.Managed;
