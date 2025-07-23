@@ -152,7 +152,7 @@ namespace Logos.Entities
         private static class GenericTypeLookup<T>
         {
             /// <summary>
-            /// The per-type singleton associated with components of type <typeparamref name="T"/>.
+            /// The component type associated with components of type <typeparamref name="T"/>.
             /// </summary>
             public static readonly ComponentType Value = new ComponentType(typeof(T),
                 Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>());
