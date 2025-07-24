@@ -51,7 +51,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that compose the <see cref="EntityArchetype"/>.
+        /// Gets a read-only span of component types that compose entities modeled by the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
         public ReadOnlySpan<ComponentType> ComponentTypes
         {
@@ -68,7 +69,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the total number of components associated with entities modeled by the
+        /// Gets the total number of component types that compose entities modeled by the
         /// <see cref="EntityArchetype"/>.
         /// </summary>
         public int ComponentCount
@@ -77,7 +78,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of managed components associated with entities modeled by the
+        /// Gets the number of managed component types that compose entities modeled by the
         /// <see cref="EntityArchetype"/>.
         /// </summary>
         public int ManagedComponentCount
@@ -86,7 +87,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of unmanaged components associated with entities modeled by the
+        /// Gets the number of unmanaged component types that compose entities modeled by the
         /// <see cref="EntityArchetype"/>.
         /// </summary>
         public int UnmanagedComponentCount
@@ -95,7 +96,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of tag components associated with entities modeled by the
+        /// Gets the number of tag component types that compose entities modeled by the
         /// <see cref="EntityArchetype"/>.
         /// </summary>
         public int TagComponentCount
@@ -112,7 +113,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> that is composed of component types from the
+        /// Creates an <see cref="EntityArchetype"/> that contains component types copied from the
         /// specified array.
         /// </summary>
         /// 
@@ -121,8 +122,8 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that is composed of component types from the array, or
-        /// <see cref="Base"/> if the array does not contain component types.
+        /// An <see cref="EntityArchetype"/> that contains component types copied from the array,
+        /// or <see cref="Base"/> if the array does not contain any component types.
         /// </returns>
         /// 
         /// <exception cref="ArgumentNullException">
@@ -143,7 +144,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> that is composed of component types from the
+        /// Creates an <see cref="EntityArchetype"/> that contains component types copied from the
         /// specified sequence.
         /// </summary>
         /// 
@@ -152,8 +153,8 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that is composed of component types from the sequence,
-        /// or <see cref="Base"/> if the sequence does not contain component types.
+        /// An <see cref="EntityArchetype"/> that contains component types copied from the
+        /// sequence, or <see cref="Base"/> if the sequence does not contain any component types.
         /// </returns>
         /// 
         /// <exception cref="ArgumentNullException">
@@ -172,7 +173,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> that is composed of component types from the
+        /// Creates an <see cref="EntityArchetype"/> that contains component types copied from the
         /// specified span.
         /// </summary>
         /// 
@@ -181,8 +182,8 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that is composed of component types from the span, or
-        /// <see cref="Base"/> if the span does not contain component types.
+        /// An <see cref="EntityArchetype"/> that contains component types copied from the span, or
+        /// <see cref="Base"/> if the span does not contain any component types.
         /// </returns>
         public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -242,7 +243,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> with the specified component type added to it.
+        /// Creates a copy of the <see cref="EntityArchetype"/> and adds the specified component
+        /// type to it.
         /// </summary>
         /// 
         /// <param name="componentType">
@@ -250,8 +252,8 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> with the component type added, or the
-        /// <see cref="EntityArchetype"/> itself if it contains the component type or if the
+        /// A copy of the <see cref="EntityArchetype"/> with the component type added to it, or the
+        /// <see cref="EntityArchetype"/> itself if it either contains the component type or if the
         /// component type is <see langword="null"/>.
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
@@ -288,7 +290,7 @@ namespace Logos.Entities
 
             // Build component bitmask.
             int[] sourceBitmask = m_componentBitmask;
-            int[] destinationBitmask = new int[destinationArray[^1].Id + 32 >> 5];
+            int[] destinationBitmask = new int[destinationArray[index].Id + 32 >> 5];
 
             Array.Copy(sourceBitmask, destinationBitmask, sourceBitmask.Length);
             destinationBitmask[componentType.Id >> 5] |= 1 << componentType.Id;
@@ -405,8 +407,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityArchetype"/> with the specified component type removed from
-        /// it.
+        /// Creates a copy of the <see cref="EntityArchetype"/> and removes the specified component
+        /// type from it.
         /// </summary>
         /// 
         /// <param name="componentType">
@@ -414,9 +416,9 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> with the component type removed, or the
-        /// <see cref="EntityArchetype"/> itself if it does not contain the component type or if
-        /// the component type is <see langword="null"/>.
+        /// A copy of the <see cref="EntityArchetype"/> with the component type removed from it, or
+        /// the <see cref="EntityArchetype"/> itself if it either does not contain the component
+        /// type or if the component type is <see langword="null"/>.
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
         {
@@ -455,7 +457,7 @@ namespace Logos.Entities
 
             // Build component bitmask.
             int[] sourceBitmask = m_componentBitmask;
-            int[] destinationBitmask = new int[destinationArray[^1].Id + 32 >> 5];
+            int[] destinationBitmask = new int[destinationArray[index - 1].Id + 32 >> 5];
 
             Array.Copy(sourceBitmask, destinationBitmask, destinationBitmask.Length);
 
