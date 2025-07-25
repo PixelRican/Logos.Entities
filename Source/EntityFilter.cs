@@ -130,6 +130,10 @@ namespace Logos.Entities
         /// An <see cref="EntityFilter"/> that requires component types from the array, or
         /// <see cref="Universal"/> if the array does not contain component types.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static EntityFilter Create(ComponentType[] requiredComponentTypes)
         {
             ArgumentNullException.ThrowIfNull(requiredComponentTypes);
@@ -164,6 +168,12 @@ namespace Logos.Entities
         /// from the arrays, or <see cref="Universal"/> if the arrays do not contain component
         /// types.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>,
+        /// <paramref name="includedComponentTypes"/> is <see langword="null"/>, or
+        /// <paramref name="excludedComponentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static EntityFilter Create(ComponentType[] requiredComponentTypes,
                                           ComponentType[] includedComponentTypes,
                                           ComponentType[] excludedComponentTypes)
@@ -197,6 +207,10 @@ namespace Logos.Entities
         /// An <see cref="EntityFilter"/> that requires component types from the sequence, or
         /// <see cref="Universal"/> if the sequence does not contain component types.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes)
         {
             if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask))
@@ -229,6 +243,12 @@ namespace Logos.Entities
         /// from the sequences, or <see cref="Universal"/> if the sequences do not contain
         /// component types.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>,
+        /// <paramref name="includedComponentTypes"/> is <see langword="null"/>, or
+        /// <paramref name="excludedComponentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes,
                                           IEnumerable<ComponentType> includedComponentTypes,
                                           IEnumerable<ComponentType> excludedComponentTypes)
@@ -393,6 +413,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="Builder"/> that contains the required component types from the array.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static Builder Require(ComponentType[] componentTypes)
         {
             return new Builder().Require(componentTypes);
@@ -410,6 +434,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="Builder"/> that contains the required component types from the sequence.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static Builder Require(IEnumerable<ComponentType> componentTypes)
         {
             return new Builder().Require(componentTypes);
@@ -444,6 +472,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="Builder"/> that contains the included component types from the array.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static Builder Include(ComponentType[] componentTypes)
         {
             return new Builder().Include(componentTypes);
@@ -461,6 +493,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="Builder"/> that contains the included component types from the sequence.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static Builder Include(IEnumerable<ComponentType> componentTypes)
         {
             return new Builder().Include(componentTypes);
@@ -495,6 +531,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="Builder"/> that contains the excluded component types from the array.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static Builder Exclude(ComponentType[] componentTypes)
         {
             return new Builder().Exclude(componentTypes);
@@ -512,6 +552,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="Builder"/> that contains the excluded component types from the sequence.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public static Builder Exclude(IEnumerable<ComponentType> componentTypes)
         {
             return new Builder().Exclude(componentTypes);
@@ -682,6 +726,10 @@ namespace Logos.Entities
             /// <param name="filter">
             /// The entity filter to draw required, included, and excluded component types from.
             /// </param>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="filter"/> is <see langword="null"/>.
+            /// </exception>
             public Builder(EntityFilter filter)
             {
                 ArgumentNullException.ThrowIfNull(filter);
@@ -722,6 +770,10 @@ namespace Logos.Entities
             /// <returns>
             /// The <see cref="Builder"/>.
             /// </returns>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// </exception>
             public Builder Require(ComponentType[] componentTypes)
             {
                 ArgumentNullException.ThrowIfNull(componentTypes);
@@ -741,6 +793,10 @@ namespace Logos.Entities
             /// <returns>
             /// The <see cref="Builder"/>.
             /// </returns>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// </exception>
             public Builder Require(IEnumerable<ComponentType> componentTypes)
             {
                 TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
@@ -777,6 +833,10 @@ namespace Logos.Entities
             /// <returns>
             /// The <see cref="Builder"/>.
             /// </returns>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// </exception>
             public Builder Include(ComponentType[] componentTypes)
             {
                 ArgumentNullException.ThrowIfNull(componentTypes);
@@ -796,6 +856,10 @@ namespace Logos.Entities
             /// <returns>
             /// The <see cref="Builder"/>.
             /// </returns>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// </exception>
             public Builder Include(IEnumerable<ComponentType> componentTypes)
             {
                 TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
@@ -832,6 +896,10 @@ namespace Logos.Entities
             /// <returns>
             /// The <see cref="Builder"/>.
             /// </returns>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// </exception>
             public Builder Exclude(ComponentType[] componentTypes)
             {
                 ArgumentNullException.ThrowIfNull(componentTypes);
@@ -851,6 +919,10 @@ namespace Logos.Entities
             /// <returns>
             /// The <see cref="Builder"/>.
             /// </returns>
+            /// 
+            /// <exception cref="ArgumentNullException">
+            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// </exception>
             public Builder Exclude(IEnumerable<ComponentType> componentTypes)
             {
                 TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
