@@ -357,7 +357,7 @@ namespace Logos.Entities
                 return -1;
             }
 
-            ComponentType[] source = m_componentTypes;
+            ComponentType[] componentTypes = m_componentTypes;
             int targetId = componentType.Id;
             int low;
             int high;
@@ -385,14 +385,14 @@ namespace Logos.Entities
             while (low <= high)
             {
                 int index = low + (high - low >> 1);
-                int sourceId = source[index].Id;
+                int otherId = componentTypes[index].Id;
 
-                if (targetId == sourceId)
+                if (targetId == otherId)
                 {
                     return index;
                 }
 
-                if (targetId < sourceId)
+                if (targetId < otherId)
                 {
                     high = index - 1;
                 }
