@@ -8,7 +8,8 @@ using System.Collections.Generic;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a query that matches entity tables based on their entity archetypes.
+    /// Represents a query that searches through an <see cref="EntityTableLookup"/> and selects
+    /// entity tables matched by an <see cref="EntityFilter"/>.
     /// </summary>
     public class EntityQuery : IEnumerable<EntityTable>
     {
@@ -17,92 +18,120 @@ namespace Logos.Entities
         private readonly Cache? m_cache;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
-        /// tables from the specified entity table lookup.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects all
+        /// entity tables from the specified <see cref="EntityTableLookup"/>.
         /// </summary>
         /// 
         /// <param name="lookup">
-        /// The entity table lookup.
+        /// The <see cref="EntityTableLookup"/>.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="lookup"/> is <see langword="null"/>.
+        /// </exception>
         public EntityQuery(EntityTableLookup lookup)
             : this(lookup, EntityFilter.Universal, false)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
-        /// tables from the specified entity table lookup and, if enabled, stores them in a cache
-        /// for faster iteration speeds.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that searches through
+        /// the specified <see cref="EntityTableLookup"/> and selects entity tables matched by the
+        /// specified <see cref="EntityFilter"/>.
         /// </summary>
         /// 
         /// <param name="lookup">
-        /// The entity table lookup.
+        /// The <see cref="EntityTableLookup"/>.
+        /// </param>
+        /// 
+        /// <param name="filter">
+        /// The <see cref="EntityFilter"/>.
+        /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="lookup"/> is <see langword="null"/> or <paramref name="filter"/> is
+        /// <see langword="null"/>.
+        /// </exception>
+        public EntityQuery(EntityTableLookup lookup, EntityFilter filter)
+            : this(lookup, filter, false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects all
+        /// entity tables from the specified <see cref="EntityTableLookup"/> and, if enabled,
+        /// stores them in a cache for faster iteration speeds.
+        /// </summary>
+        /// 
+        /// <param name="lookup">
+        /// The <see cref="EntityTableLookup"/>.
         /// </param>
         /// 
         /// <param name="enableCache">
         /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="lookup"/> is <see langword="null"/>.
+        /// </exception>
         public EntityQuery(EntityTableLookup lookup, bool enableCache)
             : this(lookup, EntityFilter.Universal, enableCache)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
-        /// tables from the specified entity table lookup and skips over any entity tables whose
-        /// entity archetypes do not match the specified entity filter.
+        /// Initializes a new instance of the <see cref="EntityQuery"/> class that searches through
+        /// the specified <see cref="EntityTableLookup"/>, selects entity tables matched by the
+        /// specified <see cref="EntityFilter"/>, and, if enabled, stores them in a cache for
+        /// faster iteration speeds. 
         /// </summary>
         /// 
         /// <param name="lookup">
-        /// The entity table lookup.
+        /// The <see cref="EntityTableLookup"/>.
         /// </param>
         /// 
         /// <param name="filter">
-        /// The entity filter.
-        /// </param>
-        public EntityQuery(EntityTableLookup lookup, EntityFilter? filter)
-            : this(lookup, filter, false)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects entity
-        /// tables from the specified entity table lookup, skips over any entity tables whose
-        /// entity archetypes do not match the specified entity filter, and, if enabled, stores
-        /// them in a cache for faster iteration speeds.
-        /// </summary>
-        /// 
-        /// <param name="lookup">
-        /// The entity table lookup.
-        /// </param>
-        /// 
-        /// <param name="filter">
-        /// The entity filter.
+        /// The <see cref="EntityFilter"/>.
         /// </param>
         /// 
         /// <param name="enableCache">
         /// <see langword="true"/> to enable caching; <see langword="false"/> to disable caching.
         /// </param>
-        public EntityQuery(EntityTableLookup lookup, EntityFilter? filter, bool enableCache)
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="lookup"/> is <see langword="null"/> or <paramref name="filter"/> is
+        /// <see langword="null"/>.
+        /// </exception>
+        public EntityQuery(EntityTableLookup lookup, EntityFilter filter, bool enableCache)
         {
             ArgumentNullException.ThrowIfNull(lookup);
+            ArgumentNullException.ThrowIfNull(filter);
 
             m_lookup = lookup;
-            m_filter = filter ?? EntityFilter.Universal;
+            m_filter = filter;
 
             if (enableCache)
             {
                 m_cache = new Cache();
-                m_cache.Refresh(m_lookup, m_filter);
             }
         }
 
         /// <summary>
-        /// Gets the entity filter used by the <see cref="EntityQuery"/> to match entity tables.
+        /// Gets the <see cref="EntityFilter"/> used by the <see cref="EntityQuery"/> to match and
+        /// select entity tables.
         /// </summary>
         public EntityFilter Filter
         {
             get => m_filter;
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether the <see cref="EntityQuery"/> caches its selected
+        /// entity tables.
+        /// </summary>
+        public bool IsCacheEnabled
+        {
+            get => m_cache != null;
         }
 
         /// <summary>
@@ -119,11 +148,11 @@ namespace Logos.Entities
                 return new Enumerator(this, m_lookup.Count);
             }
 
-            if (m_cache.ShouldRefresh(m_lookup))
+            if (m_cache.PreviousLookupCount < m_lookup.Count)
             {
                 lock (m_cache)
                 {
-                    m_cache.Refresh(m_lookup, m_filter);
+                    m_cache.Select(m_lookup, m_filter);
                 }
             }
 
@@ -229,23 +258,18 @@ namespace Logos.Entities
         {
             private const int DefaultCapacity = 4;
 
-            private EntityTableGrouping[] m_items;
+            private EntityTableGrouping[] m_results;
             private int m_size;
-            private int m_lookupIndex;
+            private int m_previousLookupCount;
 
             public Cache()
             {
-                m_items = Array.Empty<EntityTableGrouping>();
+                m_results = Array.Empty<EntityTableGrouping>();
             }
 
             public EntityTableGrouping this[int index]
             {
-                get => m_items[index];
-            }
-
-            public int Capacity
-            {
-                get => m_items.Length;
+                get => m_results[index];
             }
 
             public int Count
@@ -253,39 +277,38 @@ namespace Logos.Entities
                 get => m_size;
             }
 
-            public void Refresh(EntityTableLookup lookup, EntityFilter filter)
+            public int PreviousLookupCount
             {
-                while (lookup.Count > m_lookupIndex)
+                get => m_previousLookupCount;
+            }
+
+            public void Select(EntityTableLookup lookup, EntityFilter filter)
+            {
+                while (m_previousLookupCount < lookup.Count)
                 {
-                    EntityTableGrouping grouping = lookup[m_lookupIndex++];
+                    EntityTableGrouping grouping = lookup[m_previousLookupCount++];
 
                     if (filter.Matches(grouping.Key))
                     {
-                        if (m_size == m_items.Length)
+                        if (m_size >= m_results.Length)
                         {
-                            int newCapacity = m_items.Length == 0 ? DefaultCapacity : m_items.Length * 2;
+                            int newCapacity = m_results.Length * 2;
 
-                            if ((uint)newCapacity > (uint)Array.MaxLength)
+                            if (newCapacity == 0)
                             {
-                                newCapacity = Array.MaxLength;
+                                newCapacity = DefaultCapacity;
+                            }
+                            else if ((uint)newCapacity > (uint)Array.MaxLength)
+                            {
+                                newCapacity = Math.Max(Array.MaxLength, m_size + 1);
                             }
 
-                            if (newCapacity <= m_size)
-                            {
-                                newCapacity = m_size + 1;
-                            }
-
-                            Array.Resize(ref m_items, newCapacity);
+                            Array.Resize(ref m_results, newCapacity);
                         }
 
-                        m_items[m_size++] = grouping;
+                        m_results[m_size++] = grouping;
                     }
                 }
-            }
-
-            public bool ShouldRefresh(EntityTableLookup lookup)
-            {
-                return lookup.Count > m_lookupIndex;
             }
         }
     }
