@@ -9,7 +9,8 @@ using System.Linq;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a collection of entity tables that share a common entity archetype.
+    /// Represents a collection of entity tables whose entities are modeled by a common
+    /// <see cref="EntityArchetype"/>.
     /// </summary>
     public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, IList<EntityTable>, IList, IReadOnlyList<EntityTable>
     {
@@ -18,13 +19,19 @@ namespace Logos.Entities
         private volatile EntityTable[] m_tables;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EntityTableGrouping"/> class that groups
-        /// entity tables by the specified entity archetype.
+        /// Initializes a new instance of the <see cref="EntityTableGrouping"/> class that stores
+        /// entity tables whose entities are modeled by the specified
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
         /// 
         /// <param name="key">
-        /// The entity archetype to group entity tables by.
+        /// The <see cref="EntityArchetype"/> that models the entity tables stored in the
+        /// <see cref="EntityTableGrouping"/>.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTableGrouping(EntityArchetype key)
         {
             ArgumentNullException.ThrowIfNull(key);
@@ -74,10 +81,12 @@ namespace Logos.Entities
             get => m_tables[index];
             set
             {
+                ArgumentNullException.ThrowIfNull(value);
+
                 if (!m_key.Equals(value.Archetype))
                 {
-                    throw new ArgumentException(
-                        "Value's archetype does not match the EntityTableGrouping's key.", nameof(value));
+                    throw new ArgumentException("The EntityArchetype that models entities " +
+                        "stored by the value does not match Key.", nameof(value));
                 }
 
                 lock (m_lock)
@@ -87,14 +96,14 @@ namespace Logos.Entities
                     if ((uint)index >= (uint)tables.Length)
                     {
                         throw new ArgumentOutOfRangeException(nameof(index), index,
-                            "Index was out of range. Must be non-negative and less than the size of the EntityTableGrouping.");
+                            "Index was out of range. Must be non-negative and less than the " +
+                            "size of the EntityTableGrouping.");
                     }
 
                     if (tables[index] != value)
                     {
                         EntityTable[] array = new EntityTable[tables.Length];
-
-                        Array.Copy(tables, array, tables.Length);
+                        Array.Copy(tables, array, array.Length);
                         array[index] = value;
                         m_tables = array;
                     }
@@ -107,47 +116,50 @@ namespace Logos.Entities
             get => m_tables[index];
             set
             {
-                try
+                EntityTable? table = value as EntityTable;
+
+                if (table != value)
                 {
-                    this[index] = (EntityTable)value!;
+                    throw new ArgumentException(
+                        "Value is not of type EntityTable.", nameof(value));
                 }
-                catch (InvalidCastException)
-                {
-                    throw new ArgumentException("Value is not of type EntityTable", nameof(value));
-                }
+
+                this[index] = table!;
             }
         }
 
         public void Add(EntityTable item)
         {
+            ArgumentNullException.ThrowIfNull(item);
+
             if (!m_key.Equals(item.Archetype))
             {
-                throw new ArgumentException(
-                    "Item's archetype does not match the EntityTableGrouping's key.", nameof(item));
+                throw new ArgumentException("The EntityArchetype that models entities stored by " +
+                    "the item does not match Key.", nameof(item));
             }
 
             lock (m_lock)
             {
                 EntityTable[] tables = m_tables;
-                EntityTable[] newTables = new EntityTable[tables.Length + 1];
+                int size = tables.Length;
 
-                Array.Copy(tables, newTables, tables.Length);
-                newTables[tables.Length] = item;
-                m_tables = newTables;
+                Array.Resize(ref tables, size + 1);
+                tables[size] = item;
+                m_tables = tables;
             }
         }
 
         int IList.Add(object? value)
         {
-            try
+            EntityTable? table = value as EntityTable;
+
+            if (table != value)
             {
-                Add((EntityTable)value!);
-                return m_tables.Length;
+                throw new ArgumentException("Value is not of type EntityTable.", nameof(value));
             }
-            catch (InvalidCastException)
-            {
-                throw new ArgumentException("Value is not of type EntityTable", nameof(value));
-            }
+
+            Add(table!);
+            return m_tables.Length;
         }
 
         public void Clear()
@@ -170,21 +182,22 @@ namespace Logos.Entities
 
         public void CopyTo(EntityTable[] array, int index)
         {
-            EntityTable[] items = m_tables;
-            Array.Copy(items, 0, array, index, items.Length);
+            EntityTable[] tables = m_tables;
+            Array.Copy(tables, 0, array, index, tables.Length);
         }
 
         void ICollection.CopyTo(Array array, int index)
         {
             if (array != null && array.Rank != 1)
             {
-                throw new ArgumentException("Multi-dimensional arrays are not supported.", nameof(array));
+                throw new ArgumentException(
+                    "Multi-dimensional arrays are not supported.", nameof(array));
             }
 
             try
             {
-                EntityTable[] items = m_tables;
-                Array.Copy(items, 0, array!, index, items.Length);
+                EntityTable[] tables = m_tables;
+                Array.Copy(tables, 0, array!, index, tables.Length);
             }
             catch (ArrayTypeMismatchException)
             {
@@ -227,10 +240,12 @@ namespace Logos.Entities
 
         public void Insert(int index, EntityTable item)
         {
+            ArgumentNullException.ThrowIfNull(item);
+
             if (!m_key.Equals(item.Archetype))
             {
-                throw new ArgumentException(
-                    "Item's archetype does not match the EntityTableGrouping's key.", nameof(item));
+                throw new ArgumentException("The EntityArchetype that models entities stored by " +
+                    "the item does not match Key.", nameof(item));
             }
 
             lock (m_lock)
@@ -240,36 +255,42 @@ namespace Logos.Entities
                 if ((uint)index > (uint)tables.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Index was out of range. Must be non-negative and less than or equal to the size of the EntityTableGrouping.");
+                        "Index was out of range. Must be non-negative and less than or equal to " +
+                        "the size of the EntityTableGrouping.");
                 }
 
-                EntityTable[] newTables = new EntityTable[tables.Length + 1];
-                Array.Copy(tables, newTables, index);
-                newTables[index] = item;
+                EntityTable[] array = new EntityTable[tables.Length + 1];
+                Array.Copy(tables, array, index);
+                array[index] = item;
 
                 if (index < tables.Length)
                 {
-                    Array.Copy(tables, index, newTables, index + 1, tables.Length - index);
+                    Array.Copy(tables, index, array, index + 1, tables.Length - index);
                 }
 
-                m_tables = newTables;
+                m_tables = array;
             }
         }
 
         void IList.Insert(int index, object? value)
         {
-            try
+            EntityTable? table = value as EntityTable;
+
+            if (table != value)
             {
-                Insert(index, (EntityTable)value!);
+                throw new ArgumentException("Value is not of type EntityTable.", nameof(value));
             }
-            catch (InvalidCastException)
-            {
-                throw new ArgumentException("Value is not of type EntityTable", nameof(value));
-            }
+
+            Insert(index, table!);
         }
 
         public bool Remove(EntityTable item)
         {
+            if (item == null)
+            {
+                return false;
+            }
+
             lock (m_lock)
             {
                 EntityTable[] tables = m_tables;
@@ -277,7 +298,7 @@ namespace Logos.Entities
 
                 if (index != -1)
                 {
-                    m_tables = RemoveAt(tables, index);
+                    m_tables = RemoveTable(tables, index);
                     return true;
                 }
 
@@ -299,29 +320,30 @@ namespace Logos.Entities
                 if ((uint)index >= (uint)tables.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Index was out of range. Must be non-negative and less than the size of the EntityTableGrouping.");
+                        "Index was out of range. Must be non-negative and less than the size of " +
+                        "the EntityTableGrouping.");
                 }
 
-                m_tables = RemoveAt(tables, index);
+                m_tables = RemoveTable(tables, index);
             }
         }
 
-        private static EntityTable[] RemoveAt(EntityTable[] tables, int index)
+        private static EntityTable[] RemoveTable(EntityTable[] tables, int index)
         {
             if (tables.Length == 1)
             {
                 return Array.Empty<EntityTable>();
             }
 
-            EntityTable[] newTables = new EntityTable[tables.Length - 1];
-            Array.Copy(tables, newTables, index);
+            EntityTable[] array = new EntityTable[tables.Length - 1];
+            Array.Copy(tables, array, index);
 
-            if (index < newTables.Length)
+            if (index < array.Length)
             {
-                Array.Copy(tables, index + 1, newTables, index, newTables.Length - index);
+                Array.Copy(tables, index + 1, array, index, array.Length - index);
             }
 
-            return newTables;
+            return array;
         }
 
         /// <summary>
