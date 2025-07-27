@@ -387,47 +387,38 @@ namespace Logos.Entities
                     table.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
                 ReadOnlySpan<ComponentType> destinationComponentTypes =
                     m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
-                int sourceIndex = -1;
+                int sourceIndex = 0;
                 int destinationIndex = 0;
+                Array sourceArray = null!;
                 ComponentType sourceComponentType = null!;
 
                 while (destinationIndex < destinationComponentTypes.Length)
                 {
-                    ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
-                    bool recompare;
+                    Array destinationArray = destinationComponents[destinationIndex];
+                    ComponentType destinationComponentType = destinationComponentTypes[destinationIndex++];
+                    int comparison = destinationComponentType.CompareTo(sourceComponentType);
 
-                    do
+                    // Search for a source array that stores components of the same type as the
+                    // destination array.
+                    while (comparison > 0 && sourceIndex < sourceComponentTypes.Length)
                     {
-                        switch (destinationComponentType.CompareTo(sourceComponentType))
-                        {
-                            case 0:
-                                Array.Copy(sourceComponents[sourceIndex], tableIndex,
-                                    destinationComponents[destinationIndex], size, count);
-                                recompare = false;
-                                continue;
-                            case -1:
-                                if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
-                                {
-                                    Array.Clear(destinationComponents[destinationIndex], size, count);
-                                }
-
-                                recompare = false;
-                                continue;
-                            default:
-                                int nextSourceIndex = sourceIndex + 1;
-
-                                if (recompare = nextSourceIndex < sourceComponentTypes.Length)
-                                {
-                                    sourceIndex = nextSourceIndex;
-                                    sourceComponentType = sourceComponentTypes[sourceIndex];
-                                }
-
-                                continue;
-                        }
+                        sourceArray = sourceComponents[sourceIndex];
+                        sourceComponentType = sourceComponentTypes[sourceIndex++];
+                        comparison = destinationComponentType.CompareTo(sourceComponentType);
                     }
-                    while (recompare);
 
-                    destinationIndex++;
+                    if (comparison == 0)
+                    {
+                        // If a matching array is found, copy the components from the source array
+                        // to the destination array.
+                        Array.Copy(sourceArray, tableIndex, destinationArray, size, count);
+                    }
+                    else if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
+                    {
+                        // If no matching array is found, zero-initialize the unmanaged components
+                        // in the destination array.
+                        Array.Clear(destinationArray, size, count);
+                    }
                 }
 
                 Array.Copy(table.m_entities, tableIndex, entities, size, count);
