@@ -138,7 +138,7 @@ namespace Logos.Entities.Tests
                         Assert.That(archetype.Contains(ComponentType.TypeOf<T>()), Is.False);
                     }
 
-                    Assert.Throws<ArgumentException>(() =>
+                    Assert.Throws<ComponentNotFoundException>(() =>
                     {
                         table.GetComponents<T>();
                     });
@@ -218,7 +218,7 @@ namespace Logos.Entities.Tests
                 Y = 2
             };
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 table.RemoveRange(0, 1);
             });
@@ -271,7 +271,6 @@ namespace Logos.Entities.Tests
         {
             EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry());
 
-            Assert.Throws<InvalidOperationException>(table.VerifyAccess);
             Assert.Throws<InvalidOperationException>(() =>
             {
                 table.Add(new Entity());

@@ -20,70 +20,101 @@ namespace Logos.Entities
         private int m_version;
 
         /// <summary>
-        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
-        /// components described by the specified entity archetype and has the default capacity.
+        /// Initializes new instance of the <see cref="EntityTable"/> class that stores entities
+        /// modeled by the specified <see cref="EntityArchetype"/> and has the default capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
+        /// The <see cref="EntityArchetype"/> that models entities stored by the
+        /// <see cref="EntityTable"/>.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTable(EntityArchetype archetype)
             : this(archetype, null, MinimumCapacity)
         {
         }
 
         /// <summary>
-        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
-        /// components described by the specified entity archetype and has the specified capacity.
+        /// Initializes a new instance of the <see cref="EntityTable"/> class that stores entities
+        /// modeled by the specified <see cref="EntityArchetype"/>, gives the specified
+        /// <see cref="EntityRegistry"/> exclusive write permissions, and has the default capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
-        /// </param>
-        /// 
-        /// <param name="capacity">
-        /// The capacity of the <see cref="EntityTable"/>.
-        /// </param>
-        public EntityTable(EntityArchetype archetype, int capacity)
-            : this(archetype, null, capacity)
-        {
-        }
-
-        /// <summary>
-        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
-        /// components described by the specified entity archetype, is managed by the specified
-        /// entity registry, and has the default capacity.
-        /// </summary>
-        /// 
-        /// <param name="archetype">
-        /// The entity archetype.
+        /// The <see cref="EntityArchetype"/> that models entities stored by the
+        /// <see cref="EntityTable"/>.
         /// </param>
         /// 
         /// <param name="registry">
-        /// The entity registry that manages the entity table, if not <see langword="null"/>.
+        /// The <see cref="EntityRegistry"/> to give exclusive write permissions to, if not
+        /// <see langword="null"/>.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry)
             : this(archetype, registry, MinimumCapacity)
         {
         }
 
         /// <summary>
-        /// Initializes new instance of the <see cref="EntityTable"/> class that contains non-tag
-        /// components described by the specified entity archetype, is managed by the specified
-        /// entity registry, and has the specified capacity.
+        /// Initializes a new instance of the <see cref="EntityTable"/> class that stores entities
+        /// modeled by the specified <see cref="EntityArchetype"/> and has the specified capacity.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
-        /// </param>
-        /// 
-        /// <param name="registry">
-        /// The entity registry that manages the entity table, if not <see langword="null"/>.
+        /// The <see cref="EntityArchetype"/> that models entities stored by the
+        /// <see cref="EntityTable"/>.
         /// </param>
         /// 
         /// <param name="capacity">
         /// The capacity of the <see cref="EntityTable"/>.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="capacity"/> is negative.
+        /// </exception>
+        public EntityTable(EntityArchetype archetype, int capacity)
+            : this(archetype, null, capacity)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EntityTable"/> class that stores entities
+        /// modeled by the specified <see cref="EntityArchetype"/>, gives the specified
+        /// <see cref="EntityRegistry"/> exclusive write permissions, and has the specified
+        /// capacity.
+        /// </summary>
+        /// 
+        /// <param name="archetype">
+        /// The <see cref="EntityArchetype"/> that models entities stored by the
+        /// <see cref="EntityTable"/>.
+        /// </param>
+        /// 
+        /// <param name="registry">
+        /// The <see cref="EntityRegistry"/> to give exclusive write permissions to, if not
+        /// <see langword="null"/>.
+        /// </param>
+        /// 
+        /// <param name="capacity">
+        /// The capacity of the <see cref="EntityTable"/>.
+        /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="capacity"/> is negative.
+        /// </exception>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry, int capacity)
         {
             ArgumentNullException.ThrowIfNull(archetype);
@@ -94,12 +125,17 @@ namespace Logos.Entities
                 capacity = MinimumCapacity;
             }
 
-            ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes.Slice(0,
-                archetype.ManagedComponentCount + archetype.UnmanagedComponentCount);
             m_archetype = archetype;
             m_registry = registry;
 
-            if (componentTypes.Length > 0)
+            ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes.Slice(0,
+                archetype.ManagedComponentCount + archetype.UnmanagedComponentCount);
+
+            if (componentTypes.IsEmpty)
+            {
+                m_components = Array.Empty<Array>();
+            }
+            else
             {
                 m_components = new Array[componentTypes.Length];
 
@@ -108,16 +144,13 @@ namespace Logos.Entities
                     m_components[i] = componentTypes[i].CreateArray(capacity);
                 }
             }
-            else
-            {
-                m_components = Array.Empty<Array>();
-            }
 
             m_entities = new Entity[capacity];
         }
 
         /// <summary>
-        /// Gets the entity archetype that describes the layout of the <see cref="EntityTable"/>.
+        /// Gets the <see cref="EntityArchetype"/> that models entities stored by the
+        /// <see cref="EntityTable"/>.
         /// </summary>
         public EntityArchetype Archetype
         {
@@ -125,9 +158,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the entity registry that manages the <see cref="EntityTable"/>, or
-        /// <see langword="null"/> if the <see cref="EntityTable"/> is not managed by an entity
-        /// registry.
+        /// Gets the <see cref="EntityRegistry"/> that was given exclusive write permissions by the
+        /// <see cref="EntityTable"/>, or <see langword="null"/> if no such permissions were given.
         /// </summary>
         public EntityRegistry? Registry
         {
@@ -160,8 +192,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a value that indicates whether the <see cref="EntityTable"/> does not contain any
-        /// entities.
+        /// Gets a value that indicates whether the <see cref="EntityTable"/> is empty.
         /// </summary>
         public bool IsEmpty
         {
@@ -169,26 +200,11 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a value that indicates whether the <see cref="EntityTable"/> has reach its
-        /// maximum capacity.
+        /// Gets a value that indicates whether the <see cref="EntityTable"/> is full.
         /// </summary>
         public bool IsFull
         {
             get => m_size == m_entities.Length;
-        }
-
-        /// <summary>
-        /// Returns a value that indicates whether the caller is allowed to make structure changes
-        /// to the <see cref="EntityTable"/>.
-        /// </summary>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the caller is allowed to make structure changes to the
-        /// <see cref="EntityTable"/>; otherwise, <see langword="false"/>.
-        /// </returns>
-        public bool CheckAccess()
-        {
-            return m_registry == null || m_registry.AllowStructureChanges;
         }
 
         /// <summary>
@@ -202,14 +218,18 @@ namespace Logos.Entities
         /// <returns>
         /// A span of components stored by the <see cref="EntityTable"/>.
         /// </returns>
+        /// 
+        /// <exception cref="ComponentNotFoundException">
+        /// The EntityTable does not store components of type <typeparamref name="T"/>.
+        /// </exception>
         public Span<T> GetComponents<T>()
         {
             int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
 
             if ((uint)index >= (uint)m_components.Length)
             {
-                throw new ArgumentException(
-                    $"The EntityTable does not store components of type {typeof(T).Name}.");
+                throw new ComponentNotFoundException(
+                    $"The EntityTable does not store components of type {typeof(T)}.");
             }
 
             return new Span<T>((T[])m_components[index]);
@@ -246,11 +266,11 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a span of entities stored by the <see cref="EntityTable"/>.
+        /// Gets a read-only span of entities stored by the <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// A span of entities stored by the <see cref="EntityTable"/>.
+        /// A read-only span of entities stored by the <see cref="EntityTable"/>.
         /// </returns>
         public ReadOnlySpan<Entity> GetEntities()
         {
@@ -264,9 +284,14 @@ namespace Logos.Entities
         /// <param name="entity">
         /// The entity to be added to the end of the <see cref="EntityTable"/>.
         /// </param>
+        /// 
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="EntityTable"/> can only be modified by its <see cref="Registry"/>, or
+        /// the <see cref="EntityTable"/> is full.
+        /// </exception>
         public void Add(Entity entity)
         {
-            VerifyAccess();
+            VerifyCallerWritePermissions();
 
             int size = m_size;
             Entity[] entities = m_entities;
@@ -290,8 +315,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Copies a range of entities from the specified entity table and adds them to the end of
-        /// the <see cref="EntityTable"/>.
+        /// Copies a range of entities from the specified table and adds them to the end of the
+        /// <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="table">
@@ -305,22 +330,45 @@ namespace Logos.Entities
         /// <param name="count">
         /// The number of entities to add.
         /// </param>
+        /// 
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="EntityTable"/> can only be modified by its <see cref="Registry"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="table"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="tableIndex"/> is negative, or <paramref name="tableIndex"/> is greater
+        /// than or equal to the size of <paramref name="table"/>, or <paramref name="count"/> is
+        /// negative.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentException">
+        /// <paramref name="tableIndex"/> and <paramref name="count"/> do not denote a valid range
+        /// of entities in <paramref name="table"/>, or <paramref name="count"/> exceeds the
+        /// capacity of the <see cref="EntityTable"/>.
+        /// </exception>
         public void AddRange(EntityTable table, int tableIndex, int count)
         {
-            VerifyAccess();
+            VerifyCallerWritePermissions();
             ArgumentNullException.ThrowIfNull(table);
 
             if ((uint)tableIndex >= (uint)table.m_size)
             {
                 throw new ArgumentOutOfRangeException(nameof(tableIndex), tableIndex,
-                    "Table index was out of range. Must be non-negative and less than the size of the table.");
+                    "Table index was out of range. Must be non-negative and less than the size " +
+                    "of the table.");
             }
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             
             if (table.m_size - count < tableIndex)
             {
-                throw new ArgumentException("Count exceeds the size of the table.", nameof(count));
+                throw new ArgumentException(
+                    "Table index and count do not denote a valid range of entities in the " +
+                    "EntityTable.");
             }
 
             int size = m_size;
@@ -328,68 +376,76 @@ namespace Logos.Entities
 
             if (entities.Length - count < size)
             {
-                throw new ArgumentException("Count exceeds the capacity of the EntityTable.", nameof(count));
+                throw new ArgumentException("Count exceeds the capacity of the EntityTable.");
             }
 
-            if (count == 0)
+            if (count > 0)
             {
-                return;
-            }
+                Array[] sourceComponents = table.m_components;
+                Array[] destinationComponents = m_components;
+                ReadOnlySpan<ComponentType> sourceComponentTypes =
+                    table.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
+                ReadOnlySpan<ComponentType> destinationComponentTypes =
+                    m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
+                int sourceIndex = -1;
+                int destinationIndex = 0;
+                ComponentType sourceComponentType = null!;
 
-            Array[] sourceComponents = table.m_components;
-            Array[] destinationComponents = m_components;
-            ReadOnlySpan<ComponentType> sourceComponentTypes = table.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
-            ReadOnlySpan<ComponentType> destinationComponentTypes = m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
-            ComponentType sourceComponentType = null!;
-            int sourceIndex = -1;
-
-            for (int destinationIndex = 0; destinationIndex < destinationComponentTypes.Length; destinationIndex++)
-            {
-                ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
-                bool recompare;
-
-                do
+                while (destinationIndex < destinationComponentTypes.Length)
                 {
-                    switch (destinationComponentType.CompareTo(sourceComponentType))
+                    ComponentType destinationComponentType = destinationComponentTypes[destinationIndex];
+                    bool recompare;
+
+                    do
                     {
-                        case 0:
-                            Array.Copy(sourceComponents[sourceIndex], tableIndex, destinationComponents[destinationIndex], size, count);
-                            recompare = false;
-                            continue;
-                        case -1:
-                            if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
-                            {
-                                Array.Clear(destinationComponents[destinationIndex], size, count);
-                            }
+                        switch (destinationComponentType.CompareTo(sourceComponentType))
+                        {
+                            case 0:
+                                Array.Copy(sourceComponents[sourceIndex], tableIndex,
+                                    destinationComponents[destinationIndex], size, count);
+                                recompare = false;
+                                continue;
+                            case -1:
+                                if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
+                                {
+                                    Array.Clear(destinationComponents[destinationIndex], size, count);
+                                }
 
-                            recompare = false;
-                            continue;
-                        default:
-                            int nextSourceIndex = sourceIndex + 1;
+                                recompare = false;
+                                continue;
+                            default:
+                                int nextSourceIndex = sourceIndex + 1;
 
-                            if (recompare = nextSourceIndex < sourceComponentTypes.Length)
-                            {
-                                sourceIndex = nextSourceIndex;
-                                sourceComponentType = sourceComponentTypes[sourceIndex];
-                            }
+                                if (recompare = nextSourceIndex < sourceComponentTypes.Length)
+                                {
+                                    sourceIndex = nextSourceIndex;
+                                    sourceComponentType = sourceComponentTypes[sourceIndex];
+                                }
 
-                            continue;
+                                continue;
+                        }
                     }
-                }
-                while (recompare);
-            }
+                    while (recompare);
 
-            Array.Copy(table.m_entities, tableIndex, entities, size, count);
-            m_size = size + count;
-            m_version++;
+                    destinationIndex++;
+                }
+
+                Array.Copy(table.m_entities, tableIndex, entities, size, count);
+                m_size = size + count;
+                m_version++;
+            }
         }
 
         /// <summary>
         /// Removes all entities from the <see cref="EntityTable"/>.
         /// </summary>
+        /// 
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="EntityTable"/> can only be modified by its <see cref="Registry"/>.
+        /// </exception>
         public void Clear()
         {
-            VerifyAccess();
+            VerifyCallerWritePermissions();
 
             int size = m_size;
             int managedComponentCount = m_archetype.ManagedComponentCount;
@@ -421,7 +477,8 @@ namespace Logos.Entities
         {
             int index;
 
-            if (CheckAccess() && (index = Array.IndexOf(m_entities, entity, 0, m_size)) != -1)
+            if ((m_registry == null || m_registry.IsLockHeld) &&
+                (index = Array.IndexOf(m_entities, entity, 0, m_size)) != -1)
             {
                 RemoveAt(index);
                 return true;
@@ -437,16 +494,26 @@ namespace Logos.Entities
         /// <param name="index">
         /// The zero-based index of the entity to remove.
         /// </param>
+        /// 
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="EntityTable"/> can only be modified by its <see cref="Registry"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative, or <paramref name="index"/> is greater than or
+        /// equal to the size of <see cref="EntityTable"/>.
+        /// </exception>
         public void RemoveAt(int index)
         {
-            VerifyAccess();
+            VerifyCallerWritePermissions();
             
             int size = m_size;
 
             if ((uint)index >= (uint)size)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index,
-                    "Index was out of range. Must be non-negative and less than the size of the entity table.");
+                    "Index was out of range. Must be non-negative and less than the size of the " +
+                    "EntityTable.");
             }
 
             Array[] components = m_components;
@@ -485,9 +552,22 @@ namespace Logos.Entities
         /// <param name="count">
         /// The number of entities to remove.
         /// </param>
+        /// 
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="EntityTable"/> can only be modified by its <see cref="Registry"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative or <paramref name="count"/> is negative.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentException">
+        /// <paramref name="index"/> and <paramref name="count"/> do not denote a valid range of
+        /// entities in <see cref="EntityTable"/>.
+        /// </exception>
         public void RemoveRange(int index, int count)
         {
-            VerifyAccess();
+            VerifyCallerWritePermissions();
             ArgumentOutOfRangeException.ThrowIfNegative(index);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -495,8 +575,8 @@ namespace Logos.Entities
 
             if (size < index)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), count,
-                    "Count exceeds the size of the EntityTable.");
+                throw new ArgumentException(
+                    "Index and count do not denote a valid range of entities in the EntityTable.");
             }
 
             if (count > 0)
@@ -505,6 +585,7 @@ namespace Logos.Entities
 
                 if (index < size)
                 {
+                    Entity[] entities = m_entities;
                     int copyIndex = index + count;
                     int copyLength = size - index;
 
@@ -514,7 +595,7 @@ namespace Logos.Entities
                         Array.Copy(array, copyIndex, array, index, copyLength);
                     }
 
-                    Array.Copy(m_entities, copyIndex, m_entities, index, copyLength);
+                    Array.Copy(entities, copyIndex, entities, index, copyLength);
                 }
 
                 int managedComponentCount = m_archetype.ManagedComponentCount;
@@ -530,16 +611,12 @@ namespace Logos.Entities
             }
         }
 
-        /// <summary>
-        /// Throws an InvalidOperationException if the caller is not allowed to make structure
-        /// changes to the <see cref="EntityTable"/>.
-        /// </summary>
-        public void VerifyAccess()
+        private void VerifyCallerWritePermissions()
         {
-            if (m_registry != null && !m_registry.AllowStructureChanges)
+            if (m_registry != null && !m_registry.IsLockHeld)
             {
                 throw new InvalidOperationException(
-                    "The entity table cannot be modified while structure changes are disallowed by its entity registry.");
+                    "The EntityTable can only be modified by its Registry.");
             }
         }
     }

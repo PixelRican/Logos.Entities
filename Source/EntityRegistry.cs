@@ -52,15 +52,6 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a value that indicates whether it is safe to modify entity tables from the calling
-        /// thread.
-        /// </summary>
-        public bool AllowStructureChanges
-        {
-            get => Monitor.IsEntered(m_lookup);
-        }
-
-        /// <summary>
         /// Gets the total number of entities the internal data structure can hold before it needs
         /// to be resized.
         /// </summary>
@@ -75,6 +66,15 @@ namespace Logos.Entities
         public int Count
         {
             get => m_container.Count;
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether the <see cref="EntityRegistry"/> has entered its
+        /// internal lock.
+        /// </summary>
+        public bool IsLockHeld
+        {
+            get => Monitor.IsEntered(m_lookup);
         }
 
         /// <summary>
