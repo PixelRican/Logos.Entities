@@ -7,7 +7,7 @@ namespace Logos.Entities
 {
     /// <summary>
     /// The exception that is thrown when a component of a specified type could not be found within
-    /// a data structure.
+    /// an <see cref="EntityTable"/>.
     /// </summary>
     public class ComponentNotFoundException : Exception
     {
