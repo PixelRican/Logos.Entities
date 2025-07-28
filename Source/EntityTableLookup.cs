@@ -150,6 +150,10 @@ namespace Logos.Entities
         /// <returns>
         /// An <see cref="EntityTableGrouping"/> whose key contains component types from the array.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTableGrouping GetGrouping(ComponentType[] componentTypes)
         {
             ArgumentNullException.ThrowIfNull(componentTypes);
@@ -183,6 +187,10 @@ namespace Logos.Entities
         /// An <see cref="EntityTableGrouping"/> whose key contains component types from the
         /// sequence.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTableGrouping GetGrouping(IEnumerable<ComponentType> componentTypes)
         {
             ComponentType[] buffer = componentTypes.TryGetNonEnumeratedCount(out int count)
@@ -286,6 +294,10 @@ namespace Logos.Entities
         /// <returns>
         /// An entity table grouping whose key is equal to the entity archetype.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTableGrouping GetGrouping(EntityArchetype archetype)
         {
             ArgumentNullException.ThrowIfNull(archetype);
@@ -333,6 +345,10 @@ namespace Logos.Entities
         /// An <see cref="EntityTableGrouping"/> whose key is equal to the
         /// <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> removed from it.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTableGrouping GetSubgrouping(EntityArchetype archetype, ComponentType componentType)
         {
             if (componentType == null)
@@ -422,6 +438,10 @@ namespace Logos.Entities
         /// An <see cref="EntityTableGrouping"/> whose key is equal to the
         /// <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> added to it.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
         public EntityTableGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
         {
             if (componentType == null)
@@ -510,6 +530,10 @@ namespace Logos.Entities
         /// <see cref="EntityTableGrouping"/> whose key is equal to the
         /// <see cref="EntityArchetype"/>; otherwise, <see langword="false"/>.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
         public bool TryGetGrouping(EntityArchetype archetype, [NotNullWhen(true)] out EntityTableGrouping? grouping)
         {
             ArgumentNullException.ThrowIfNull(archetype);
