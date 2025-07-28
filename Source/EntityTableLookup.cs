@@ -13,7 +13,8 @@ using System.Threading;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a collection of entity archetypes each mapped to one or more entity tables.
+    /// Represents a collection of entity archetypes each mapped to an
+    /// <see cref="EntityTableGrouping"/>.
     /// </summary>
     public class EntityTableLookup : ILookup<EntityArchetype, EntityTable>, IReadOnlyList<EntityTableGrouping>, ICollection
     {
@@ -32,8 +33,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the total number of entity table groupings the internal data structure can hold
-        /// without resizing.
+        /// Gets the total number of key/value collection pairs the internal data structure can
+        /// hold without resizing.
         /// </summary>
         public int Capacity
         {
@@ -64,7 +65,8 @@ namespace Logos.Entities
                 if ((uint)index >= (uint)container.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Index was out of range. Must be non-negative and less than the size of the EntityTableLookup.");
+                        "Index was out of range. Must be non-negative and less than the size of " +
+                        "the EntityTableLookup.");
                 }
 
                 return container[index];
@@ -93,7 +95,7 @@ namespace Logos.Entities
         /// 
         /// <param name="array">
         /// The one-dimensional array that is the destination of the entity table groupings copied
-        /// from the entity table lookup. The array must have zero-based indexing.
+        /// from the <see cref="EntityTableLookup"/>. The array must have zero-based indexing.
         /// </param>
         /// 
         /// <param name="index">
@@ -137,8 +139,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets or creates an entity table grouping whose key is composed of component types from
-        /// the specified array.
+        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key contains component types
+        /// from the specified array.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -146,7 +148,7 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity table grouping whose key is composed of component types from the array.
+        /// An <see cref="EntityTableGrouping"/> whose key contains component types from the array.
         /// </returns>
         public EntityTableGrouping GetGrouping(ComponentType[] componentTypes)
         {
@@ -162,14 +164,15 @@ namespace Logos.Entities
                 }
             }
 
-            EntityTableGrouping grouping = GetGrouping(builder.Build(), componentTypes);
+            EntityTableGrouping grouping = GetGrouping(builder.Build(),
+                new ReadOnlySpan<ComponentType>(componentTypes));
             builder.Dispose();
             return grouping;
         }
 
         /// <summary>
-        /// Gets or creates an entity table grouping whose key is composed of component types from
-        /// the specified sequence.
+        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key contains component types
+        /// from the specified sequence.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -177,11 +180,12 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity table grouping whose key is composed of component types from the sequence.
+        /// An <see cref="EntityTableGrouping"/> whose key contains component types from the
+        /// sequence.
         /// </returns>
         public EntityTableGrouping GetGrouping(IEnumerable<ComponentType> componentTypes)
         {
-            ComponentType[] array = componentTypes.TryGetNonEnumeratedCount(out int count)
+            ComponentType[] buffer = componentTypes.TryGetNonEnumeratedCount(out int count)
                 ? ArrayPool<ComponentType>.Shared.Rent(count)
                 : Array.Empty<ComponentType>();
             BitmaskBuilder builder = new BitmaskBuilder(stackalloc int[DefaultCapacity]);
@@ -191,29 +195,29 @@ namespace Logos.Entities
             {
                 if (componentType != null)
                 {
-                    if (count >= array.Length)
+                    if (count >= buffer.Length)
                     {
-                        ComponentType[] newArray = ArrayPool<ComponentType>.Shared.Rent(count + 1);
-                        Array.Copy(array, newArray, count);
-                        ArrayPool<ComponentType>.Shared.Return(array, true);
-                        array = newArray;
+                        ComponentType[] array = ArrayPool<ComponentType>.Shared.Rent(count + 1);
+                        Array.Copy(buffer, array, count);
+                        ArrayPool<ComponentType>.Shared.Return(buffer, true);
+                        buffer = array;
                     }
 
-                    array[count++] = componentType;
+                    buffer[count++] = componentType;
                     builder.Set(componentType.Id);
                 }
             }
 
             EntityTableGrouping grouping = GetGrouping(builder.Build(),
-                new ReadOnlySpan<ComponentType>(array, 0, count));
-            ArrayPool<ComponentType>.Shared.Return(array, clearArray: true);
+                new ReadOnlySpan<ComponentType>(buffer, 0, count));
+            ArrayPool<ComponentType>.Shared.Return(buffer, clearArray: true);
             builder.Dispose();
             return grouping;
         }
 
         /// <summary>
-        /// Gets or creates an entity table grouping whose key is composed of component types from
-        /// the specified span.
+        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key contains component types
+        /// from the specified span.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -221,7 +225,7 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity table grouping whose key is composed of component types from the span.
+        /// An <see cref="EntityTableGrouping"/> whose key contains component types from the span.
         /// </returns>
         public EntityTableGrouping GetGrouping(ReadOnlySpan<ComponentType> componentTypes)
         {
@@ -242,16 +246,17 @@ namespace Logos.Entities
             return grouping;
         }
 
-        private EntityTableGrouping GetGrouping(ReadOnlySpan<int> bitmask, ReadOnlySpan<ComponentType> componentTypes)
+        private EntityTableGrouping GetGrouping(ReadOnlySpan<int> componentBitmask,
+            ReadOnlySpan<ComponentType> componentTypes)
         {
-            EntityTableGrouping? grouping = m_container.Find(bitmask);
+            EntityTableGrouping? grouping = m_container.Find(componentBitmask);
 
             if (grouping == null)
             {
                 lock (m_lock)
                 {
                     Container container = m_container;
-                    grouping = container.Find(bitmask);
+                    grouping = container.Find(componentBitmask);
 
                     if (grouping == null)
                     {
@@ -292,8 +297,9 @@ namespace Logos.Entities
                 lock (m_lock)
                 {
                     Container container = m_container;
+                    grouping = container.Find(archetype.ComponentBitmask);
 
-                    if ((grouping = container.Find(archetype.ComponentBitmask)) == null)
+                    if (grouping == null)
                     {
                         if (container.Isfull)
                         {
@@ -310,30 +316,31 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets or creates an entity table grouping whose key is composed of component types from
-        /// the specified entity archtype, excluding the specified component type.
+        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key is equal to the
+        /// specified <see cref="EntityArchetype"/> with the specified <see cref="ComponentType"/>
+        /// removed from it.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
+        /// The <see cref="EntityArchetype"/>.
         /// </param>
         /// 
         /// <param name="componentType">
-        /// The component type to exclude.
+        /// The <see cref="ComponentType"/> to remove.
         /// </param>
         /// 
         /// <returns>
-        /// An entity table grouping whose key is composed of component types from the entity
-        /// archtype, excluding the component type.
+        /// An <see cref="EntityTableGrouping"/> whose key is equal to the
+        /// <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> removed from it.
         /// </returns>
         public EntityTableGrouping GetSubgrouping(EntityArchetype archetype, ComponentType componentType)
         {
-            ArgumentNullException.ThrowIfNull(archetype);
-
             if (componentType == null)
             {
                 return GetGrouping(archetype);
             }
+
+            ArgumentNullException.ThrowIfNull(archetype);
 
             ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.Id >> 5;
@@ -360,7 +367,7 @@ namespace Logos.Entities
 
             sourceBitmask.CopyTo(destinationBitmask);
 
-            if ((destinationBitmask[index] ^= bit) == 0)
+            if ((destinationBitmask[index] ^= bit) == 0 && destinationBitmask.Length == index + 1)
             {
                 ReadOnlySpan<ComponentType> componentTypes = archetype.ComponentTypes;
                 destinationBitmask = componentTypes.Length > 1
@@ -398,30 +405,31 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets or creates an entity table grouping whose key is composed of component types from
-        /// the specified entity archtype, including the specified component type.
+        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key is equal to the
+        /// specified <see cref="EntityArchetype"/> with the specified <see cref="ComponentType"/>
+        /// added to it.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
+        /// The <see cref="EntityArchetype"/>.
         /// </param>
         /// 
         /// <param name="componentType">
-        /// The component type to include.
+        /// The <see cref="ComponentType"/> to add.
         /// </param>
         /// 
         /// <returns>
-        /// An entity table grouping whose key is composed of component types from the entity
-        /// archtype, including the component type.
+        /// An <see cref="EntityTableGrouping"/> whose key is equal to the
+        /// <see cref="EntityArchetype"/> with the <see cref="ComponentType"/> added to it.
         /// </returns>
         public EntityTableGrouping GetSupergrouping(EntityArchetype archetype, ComponentType componentType)
         {
-            ArgumentNullException.ThrowIfNull(archetype);
-
             if (componentType == null)
             {
                 return GetGrouping(archetype);
             }
+
+            ArgumentNullException.ThrowIfNull(archetype);
 
             ReadOnlySpan<int> sourceBitmask = archetype.ComponentBitmask;
             int index = componentType.Id >> 5;
@@ -458,8 +466,9 @@ namespace Logos.Entities
                 lock (m_lock)
                 {
                     Container container = m_container;
+                    grouping = container.Find(destinationBitmask);
 
-                    if ((grouping = container.Find(destinationBitmask)) == null)
+                    if (grouping == null)
                     {
                         if (container.Isfull)
                         {
@@ -481,22 +490,25 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the entity table grouping associated with the specified entity archetype.
+        /// Gets the <see cref="EntityTableGrouping"/> whose key is equal to the specified
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The key of the entity table grouping to get.
+        /// The key of the <see cref="EntityTableGrouping"/> to get.
         /// </param>
         /// 
         /// <param name="grouping">
-        /// When this method returns, contains the entity table grouping associated with the
-        /// specified entity archetype, if the entity archetype is found; otherwise,
-        /// <see langword="null"/>. This parameter is passed uninitialized.
+        /// When this method returns, contains the <see cref="EntityTableGrouping"/> whose key is
+        /// equal to the specified <see cref="EntityArchetype"/>, if the
+        /// <see cref="EntityArchetype"/> is found; otherwise, <see langword="null"/>. This
+        /// parameter is passed uninitialized.
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity lookup table contains an entity table grouping
-        /// with the specified entity archetype; otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the <see cref="EntityTableLookup"/> contains an
+        /// <see cref="EntityTableGrouping"/> whose key is equal to the
+        /// <see cref="EntityArchetype"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool TryGetGrouping(EntityArchetype archetype, [NotNullWhen(true)] out EntityTableGrouping? grouping)
         {
@@ -677,13 +689,14 @@ namespace Logos.Entities
                 if ((uint)index >= (uint)array.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Index was out of range. Must be non-negative and less than the length of the array.");
+                        "Index was out of range. Must be non-negative and less than the length " +
+                        "of the array.");
                 }
 
                 if (array.Length - index < m_size)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Count exceeds the length of the array.");
+                    throw new ArgumentException(
+                        "Index and Count exceeds the length of the array.");
                 }
 
                 int size = m_size;
@@ -720,13 +733,14 @@ namespace Logos.Entities
                 if ((uint)index > (uint)array.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Index was out of range. Must be non-negative and less than the length of the array.");
+                        "Index was out of range. Must be non-negative and less than the length " +
+                        "of the array.");
                 }
 
                 if (array.Length - index < m_size)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index,
-                        "Count exceeds the length of the array.");
+                    throw new ArgumentException(
+                        "Index and Count exceeds the length of the array.");
                 }
 
                 if (array is not object[] objects)
