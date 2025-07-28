@@ -139,8 +139,10 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key contains component types
-        /// from the specified array.
+        /// Searches for an <see cref="EntityTableGrouping"/> whose key contains component types
+        /// from the specified array and returns it if found. If the key could not be found, a new
+        /// <see cref="EntityTableGrouping"/> will be added to the <see cref="EntityTableLookup"/>
+        /// and returned.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -175,8 +177,10 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key contains component types
-        /// from the specified sequence.
+        /// Searches for an <see cref="EntityTableGrouping"/> whose key contains component types
+        /// from the specified sequence and returns it if found. If the key could not be found, a
+        /// new <see cref="EntityTableGrouping"/> will be added to the
+        /// <see cref="EntityTableLookup"/> and returned.
         /// </summary>
         /// 
         /// <param name="componentTypes">
@@ -224,8 +228,10 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets or creates an <see cref="EntityTableGrouping"/> whose key contains component types
-        /// from the specified span.
+        /// Searches for an <see cref="EntityTableGrouping"/> whose key contains component types
+        /// from the specified span and returns it if found. If the key could not be found, a new
+        /// <see cref="EntityTableGrouping"/> will be added to the <see cref="EntityTableLookup"/>
+        /// and returned.
         /// </summary>
         /// 
         /// <param name="componentTypes">
