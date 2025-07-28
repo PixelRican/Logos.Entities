@@ -14,11 +14,10 @@ namespace Logos.Entities
     /// </summary>
     public class EntityRegistry
     {
-        private const int DefaultCapacity = 8;
+        private const int MinimumCapacity = 8;
         private const int TargetTableSize = 16384;
 
         private readonly EntityTableLookup m_lookup;
-        private readonly EntityQuery m_universalQuery;
         private volatile Container m_container;
 
         /// <summary>
@@ -26,7 +25,7 @@ namespace Logos.Entities
         /// default capacity.
         /// </summary>
         public EntityRegistry()
-            : this(DefaultCapacity)
+            : this(MinimumCapacity)
         {
         }
 
@@ -40,20 +39,19 @@ namespace Logos.Entities
         /// </param>
         public EntityRegistry(int capacity)
         {
-            if (capacity < DefaultCapacity)
+            if (capacity < MinimumCapacity)
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-                capacity = DefaultCapacity;
+                capacity = MinimumCapacity;
             }
 
             m_lookup = new EntityTableLookup();
-            m_universalQuery = new EntityQuery(m_lookup);
             m_container = new Container(capacity);
         }
 
         /// <summary>
-        /// Gets the total number of entities the internal data structure can hold before it needs
-        /// to be resized.
+        /// Gets the total number of entities the internal data structure can hold without
+        /// resizing.
         /// </summary>
         public int Capacity
         {
@@ -61,7 +59,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of entities held by the internal data structure.
+        /// Gets the number of entities in the <see cref="EntityRegistry"/>.
         /// </summary>
         public int Count
         {
@@ -70,7 +68,7 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="EntityRegistry"/> has entered its
-        /// internal lock.
+        /// internal lock in the current thread.
         /// </summary>
         public bool IsLockHeld
         {
@@ -78,16 +76,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets an entity query that matches all entity tables stored by the
-        /// <see cref="EntityRegistry"/>.
-        /// </summary>
-        public EntityQuery UniversalQuery
-        {
-            get => m_universalQuery;
-        }
-
-        /// <summary>
-        /// Gets or creates an entity archetype that is composed of component types from the
+        /// Returns an <see cref="EntityArchetype"/> that contains component types from the
         /// specified array.
         /// </summary>
         /// 
@@ -98,13 +87,17 @@ namespace Logos.Entities
         /// <returns>
         /// An entity archetype that is composed of component types from the array.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public EntityArchetype CreateArchetype(ComponentType[] componentTypes)
         {
             return m_lookup.GetGrouping(componentTypes).Key;
         }
 
         /// <summary>
-        /// Gets or creates an entity archetype that is composed of component types from the
+        /// Returns an <see cref="EntityArchetype"/> that contains component types from the
         /// specified sequence.
         /// </summary>
         /// 
@@ -115,13 +108,17 @@ namespace Logos.Entities
         /// <returns>
         /// An entity archetype that is composed of component types from the sequence.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public EntityArchetype CreateArchetype(IEnumerable<ComponentType> componentTypes)
         {
             return m_lookup.GetGrouping(componentTypes).Key;
         }
 
         /// <summary>
-        /// Gets or creates an entity archetype that is composed of component types from the
+        /// Returns an <see cref="EntityArchetype"/> that contains component types from the
         /// specified span.
         /// </summary>
         /// 
@@ -138,13 +135,13 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an entity query that matches entity tables stored by the
-        /// <see cref="EntityRegistry"/> using the specified entity filter, and, if enabled, stores
-        /// them in a cache for faster iteration speeds.
+        /// Creates an <see cref="EntityQuery"/> that selects entity tables stored by the
+        /// <see cref="EntityRegistry"/> using the specified <see cref="EntityFilter"/>, and, if
+        /// enabled, stores them in a cache for faster iteration speeds.
         /// </summary>
         /// 
         /// <param name="filter">
-        /// The entity filter.
+        /// The <see cref="EntityFilter"/>.
         /// </param>
         /// 
         /// <param name="enableCache">
@@ -152,16 +149,15 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// An entity query that matches entity tables stored by the <see cref="EntityRegistry"/>
-        /// using the entity filter.
+        /// An <see cref="EntityQuery"/> that selects entity tables stored by the
+        /// <see cref="EntityRegistry"/> using the <see cref="EntityFilter"/>.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="filter"/> is <see langword="null"/>.
+        /// </exception>
         public EntityQuery CreateQuery(EntityFilter filter, bool enableCache)
         {
-            if (filter == null || filter == EntityFilter.Universal && !enableCache)
-            {
-                return m_universalQuery;
-            }
-
             return new EntityQuery(m_lookup, filter, enableCache);
         }
 
@@ -188,6 +184,10 @@ namespace Logos.Entities
         /// <returns>
         /// An entity that is composed of component types from the array.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public Entity CreateEntity(ComponentType[] componentTypes)
         {
             return CreateEntity(m_lookup.GetGrouping(componentTypes));
@@ -204,6 +204,10 @@ namespace Logos.Entities
         /// <returns>
         /// An entity that is composed of component types from the sequence.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// </exception>
         public Entity CreateEntity(IEnumerable<ComponentType> componentTypes)
         {
             return CreateEntity(m_lookup.GetGrouping(componentTypes));
@@ -226,15 +230,15 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an entity that is modelled by the specified entity archetype.
+        /// Creates an entity that is modelled by the specified <see cref="EntityArchetype"/>.
         /// </summary>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
+        /// The <see cref="EntityArchetype"/>.
         /// </param>
         /// 
         /// <returns>
-        /// An entity that is modelled by the entity archetype.
+        /// An entity that is modelled by the <see cref="EntityArchetype"/>.
         /// </returns>
         public Entity CreateEntity(EntityArchetype archetype)
         {
@@ -257,17 +261,25 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an entity managed by the <see cref="EntityRegistry"/> and adds it to the
-        /// specified entity table.
+        /// Adds a new entity to the specified <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="table">
-        /// The entity table.
+        /// The <see cref="EntityTable"/>.
         /// </param>
         /// 
         /// <returns>
-        /// An entity managed by the <see cref="EntityRegistry"/>.
+        /// The entity that was added to the <see cref="EntityTable"/>.
         /// </returns>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="table"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentException">
+        /// <paramref name="table"/> cannot be modified by the <see cref="EntityRegistry"/> or
+        /// <paramref name="table"/> is full.
+        /// </exception>
         public Entity CreateEntity(EntityTable table)
         {
             ArgumentNullException.ThrowIfNull(table);
@@ -275,14 +287,14 @@ namespace Logos.Entities
             if (table.Registry != this)
             {
                 throw new ArgumentException(
-                    "The entity table cannot be modified by the EntityRegistry.", nameof(table));
+                    "The EntityTable cannot be modified by the EntityRegistry.", nameof(table));
             }
 
             lock (m_lookup)
             {
                 if (table.IsFull)
                 {
-                    throw new ArgumentException("The entity table is full.", nameof(table));
+                    throw new ArgumentException("The EntityTable is full.", nameof(table));
                 }
 
                 if (table.IsEmpty)
@@ -302,7 +314,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the internal data structure contains the specified entity.
+        /// Determines whether the <see cref="EntityRegistry"/> contains the specified entity.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -310,7 +322,7 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <returns>
-        /// <see langword="true"/> if the entity is in the internal data structure; otherwise,
+        /// <see langword="true"/> if the entity is in the <see cref="EntityRegistry"/>; otherwise,
         /// <see langword="false"/>.
         /// </returns>
         public bool ContainsEntity(Entity entity)
@@ -319,7 +331,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Removes the specified entity from the entity table it is stored in and invalidates its
+        /// Removes the specified entity from <see cref="EntityRegistry"/> and invalidates its
         /// reference.
         /// </summary>
         /// 
@@ -352,32 +364,33 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the entity table the specified entity is stored in.
+        /// Gets the <see cref="EntityTable"/> the specified entity is stored in.
         /// </summary>
         /// 
         /// <param name="entity">
         /// The entity to search for.
         /// </param>
         /// 
+        /// <param name="index">
+        /// When this method returns, contains the index of the entity in the
+        /// <see cref="EntityTable"/>.
+        /// </param>
+        /// 
         /// <returns>
-        /// The entity table the entity is stored in.
+        /// The <see cref="EntityTable"/> the entity is stored in.
         /// </returns>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
         public EntityTable FindEntity(Entity entity, out int index)
         {
-            EntityTable? table = m_container.Find(entity, out index);
-
-            if (table == null)
-            {
-                throw new ArgumentException(
-                    "Entity does not exist within the EntityRegistry.", nameof(entity));
-            }
-
-            return table;
+            return m_container.Find(entity, out index);
         }
 
         /// <summary>
         /// Adds and removes components from the specified entity to match the model represented by
-        /// the specified entity archetype.
+        /// the specified <see cref="EntityArchetype"/>.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -385,8 +398,16 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <param name="archetype">
-        /// The entity archetype.
+        /// The <see cref="EntityArchetype"/>.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="archetype"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
         public void ModifyEntity(Entity entity, EntityArchetype archetype)
         {
             EntityTableGrouping grouping = m_lookup.GetGrouping(archetype);
@@ -394,13 +415,7 @@ namespace Logos.Entities
             lock (m_lookup)
             {
                 Container container = m_container;
-                EntityTable? table = container.Find(entity, out _);
-
-                if (table == null)
-                {
-                    throw new ArgumentException(
-                        "Entity does not exist within the EntityRegistry.", nameof(entity));
-                }
+                EntityTable table = container.Find(entity, out _);
 
                 if (!archetype.Equals(table.Archetype))
                 {
@@ -415,7 +430,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Moves the specified entity to the specified table.
+        /// Moves the specified entity to the specified <see cref="EntityTable"/>.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -423,8 +438,21 @@ namespace Logos.Entities
         /// </param>
         /// 
         /// <param name="destination">
-        /// The entity table to move the entity into.
+        /// The <see cref="EntityTable"/> to move the entity into.
         /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="destination"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentException">
+        /// <paramref name="destination"/> cannot be modified by the <see cref="EntityRegistry"/>
+        /// or <paramref name="destination"/> is full.
+        /// </exception>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
         public void MoveEntity(Entity entity, EntityTable destination)
         {
             ArgumentNullException.ThrowIfNull(destination);
@@ -432,24 +460,18 @@ namespace Logos.Entities
             if (destination.Registry != this)
             {
                 throw new ArgumentException(
-                    "The entity table cannot be modified by the EntityRegistry.", nameof(destination));
+                    "The EntityTable cannot be modified by the EntityRegistry.", nameof(destination));
             }
 
             lock (m_lookup)
             {
                 if (destination.IsFull)
                 {
-                    throw new ArgumentException("The entity table is full.", nameof(destination));
+                    throw new ArgumentException("The EntityTable is full.", nameof(destination));
                 }
 
                 Container container = m_container;
-                EntityTable? source = container.Find(entity, out _);
-
-                if (source == null)
-                {
-                    throw new ArgumentException(
-                        "Entity does not exist within the EntityRegistry.", nameof(entity));
-                }
+                EntityTable source = container.Find(entity, out _);
 
                 if (source != destination)
                 {
@@ -469,7 +491,8 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Adds the default value of the specified component type to the specified entity.
+        /// Adds the default value of the specified <see cref="ComponentType"/> to the specified
+        /// entity.
         /// </summary>
         /// 
         /// <param name="entity">
@@ -484,9 +507,59 @@ namespace Logos.Entities
         /// <see langword="true"/> if the component was successfully added to the entity;
         /// otherwise, <see langword="false"/>.
         /// </returns>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
         public bool AddComponent(Entity entity, ComponentType componentType)
         {
-            return ModifyEntity(entity, componentType, addComponent: true);
+            return ModifyComponent(entity, componentType, adding: true);
+        }
+
+        /// <summary>
+        /// Determines whether the specified entity has a component of the specified type.
+        /// </summary>
+        /// 
+        /// <param name="entity">
+        /// The entity.
+        /// </param>
+        /// 
+        /// <param name="componentType">
+        /// The type of the component to search for.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the entity has a component of the component type; otherwise,
+        /// <see langword="false"/>.
+        /// </returns>
+        public bool HasComponent(Entity entity, ComponentType componentType)
+        {
+            return m_container.Find(entity, out _).Archetype.Contains(componentType);
+        }
+
+        /// <summary>
+        /// Removes a component of the specified type from the specified entity.
+        /// </summary>
+        /// 
+        /// <param name="entity">
+        /// The entity to modify.
+        /// </param>
+        /// 
+        /// <param name="componentType">
+        /// The type of the component to remove.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if the component was successfully removed from the entity;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
+        public bool RemoveComponent(Entity entity, ComponentType componentType)
+        {
+            return ModifyComponent(entity, componentType, adding: false);
         }
 
         /// <summary>
@@ -509,19 +582,16 @@ namespace Logos.Entities
         /// <see langword="true"/> if the component was successfully added to the entity;
         /// otherwise, <see langword="false"/>.
         /// </returns>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
         public bool AddComponent<T>(Entity entity, T? component)
         {
             lock (m_lookup)
             {
                 Container container = m_container;
-                EntityTable? table = container.Find(entity, out int index);
-
-                if (table == null)
-                {
-                    throw new ArgumentException(
-                        "Entity does not exist within the EntityRegistry.", nameof(entity));
-                }
-
+                EntityTable table = container.Find(entity, out int index);
                 EntityArchetype archetype = table.Archetype;
                 EntityTableGrouping grouping = m_lookup.GetSupergrouping(archetype, ComponentType.TypeOf<T>());
 
@@ -543,70 +613,6 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the specified entity has a component of the specified type.
-        /// </summary>
-        /// 
-        /// <param name="entity">
-        /// The entity.
-        /// </param>
-        /// 
-        /// <param name="componentType">
-        /// The type of the component to search for.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the entity has a component of the component type; otherwise,
-        /// <see langword="false"/>.
-        /// </returns>
-        public bool HasComponent(Entity entity, ComponentType componentType)
-        {
-            EntityTable? table = m_container.Find(entity, out _);
-            return table != null && table.Archetype.Contains(componentType);
-        }
-
-        /// <summary>
-        /// Determines whether the specified entity has a component of the specified type.
-        /// </summary>
-        /// 
-        /// <typeparam name="T">
-        /// The type of the component to search for.
-        /// </typeparam>
-        /// 
-        /// <param name="entity">
-        /// The entity.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the entity has a component described by the component type;
-        /// otherwise, <see langword="false"/>.
-        /// </returns>
-        public bool HasComponent<T>(Entity entity)
-        {
-            return HasComponent(entity, ComponentType.TypeOf<T>());
-        }
-
-        /// <summary>
-        /// Removes a component of the specified type from the specified entity.
-        /// </summary>
-        /// 
-        /// <param name="entity">
-        /// The entity to modify.
-        /// </param>
-        /// 
-        /// <param name="componentType">
-        /// The type of the component to remove.
-        /// </param>
-        /// 
-        /// <returns>
-        /// <see langword="true"/> if the component was successfully removed from the entity;
-        /// otherwise, <see langword="false"/>.
-        /// </returns>
-        public bool RemoveComponent(Entity entity, ComponentType componentType)
-        {
-            return ModifyEntity(entity, componentType, addComponent: false);
-        }
-
-        /// <summary>
         /// Removes a component of the specified type from the specified entity.
         /// </summary>
         /// 
@@ -618,41 +624,44 @@ namespace Logos.Entities
         /// The entity to modify.
         /// </param>
         /// 
+        /// <param name="component">
+        /// When this method returns, contains the component removed from the entity.
+        /// </param>
+        /// 
         /// <returns>
         /// <see langword="true"/> if the component was successfully removed from the entity;
         /// otherwise, <see langword="false"/>.
         /// </returns>
-        public bool RemoveComponent<T>(Entity entity)
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
+        public bool RemoveComponent<T>(Entity entity, out T? component)
         {
-            return ModifyEntity(entity, ComponentType.TypeOf<T>(), addComponent: false);
-        }
-
-        /// <summary>
-        /// Gets the component of the specified type from the specified entity.
-        /// </summary>
-        /// 
-        /// <typeparam name="T">
-        /// The type of the component.
-        /// </typeparam>
-        /// 
-        /// <param name="entity">
-        /// The entity.
-        /// </param>
-        /// 
-        /// <returns>
-        /// A component from the entity.
-        /// </returns>
-        public T? GetComponent<T>(Entity entity)
-        {
-            EntityTable? table = m_container.Find(entity, out int index);
-
-            if (table == null)
+            lock (m_lookup)
             {
-                throw new ArgumentException(
-                    "Entity does not exist within the EntityRegistry.", nameof(entity));
-            }
+                Container container = m_container;
+                EntityTable table = container.Find(entity, out int index);
+                EntityArchetype archetype = table.Archetype;
+                EntityTableGrouping grouping = m_lookup.GetSupergrouping(
+                    archetype, ComponentType.TypeOf<T>());
 
-            return table.GetComponents<T>()[index];
+                if (archetype.Equals(grouping.Key))
+                {
+                    component = default;
+                    return false;
+                }
+
+                if (table.Count == 1)
+                {
+                    m_lookup.GetGrouping(archetype).Remove(table);
+                }
+
+                component = table.GetComponents<T>()[index];
+                table = GetUnfilledTable(grouping);
+                container.Move(entity.Id, table);
+                return true;
+            }
         }
 
         /// <summary>
@@ -670,55 +679,76 @@ namespace Logos.Entities
         /// <param name="component">
         /// The component to set.
         /// </param>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
         public void SetComponent<T>(Entity entity, T? component)
         {
             lock (m_lookup)
             {
                 Container container = m_container;
-                EntityTable? table = container.Find(entity, out int index);
-
-                if (table == null)
-                {
-                    throw new ArgumentException(
-                        "Entity does not exist within the EntityRegistry.", nameof(entity));
-                }
-
+                EntityTable table = container.Find(entity, out int index);
                 EntityArchetype archetype = table.Archetype;
-                EntityTableGrouping grouping = m_lookup.GetSupergrouping(archetype, ComponentType.TypeOf<T>());
+                EntityTableGrouping grouping = m_lookup.GetSupergrouping(
+                    archetype, ComponentType.TypeOf<T>());
 
                 if (!archetype.Equals(grouping.Key))
                 {
-                    EntityTable source = table;
+                    if (table.Count == 1)
+                    {
+                        m_lookup.GetGrouping(archetype).Remove(table);
+                    }
 
                     table = GetUnfilledTable(grouping);
                     index = table.Count;
                     container.Move(entity.Id, table);
-
-                    if (source.IsEmpty)
-                    {
-                        m_lookup.GetGrouping(archetype).Remove(source);
-                    }
                 }
 
                 table.GetComponents<T>()[index] = component!;
             }
         }
 
-        private bool ModifyEntity(Entity entity, ComponentType componentType, bool addComponent)
+        /// <summary>
+        /// Gets the component of the specified <see cref="ComponentType"/> from the specified
+        /// entity.
+        /// </summary>
+        /// 
+        /// <typeparam name="T">
+        /// The type of the component.
+        /// </typeparam>
+        /// 
+        /// <param name="entity">
+        /// The entity.
+        /// </param>
+        /// 
+        /// <returns>
+        /// A component from the entity.
+        /// </returns>
+        /// 
+        /// <exception cref="EntityNotFoundException">
+        /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
+        /// </exception>
+        public bool TryGetComponent<T>(Entity entity, out T? component)
+        {
+            if (m_container.Find(entity, out int index).TryGetComponents(out Span<T> components))
+            {
+                component = components[index];
+                return true;
+            }
+
+            component = default;
+            return false;
+        }
+
+        private bool ModifyComponent(Entity entity, ComponentType componentType, bool adding)
         {
             lock (m_lookup)
             {
                 Container container = m_container;
-                EntityTable? table = container.Find(entity, out _);
-
-                if (table == null)
-                {
-                    throw new ArgumentException(
-                        "Entity does not exist within the EntityRegistry.", nameof(entity));
-                }
-
+                EntityTable table = container.Find(entity, out _);
                 EntityArchetype archetype = table.Archetype;
-                EntityTableGrouping grouping = addComponent
+                EntityTableGrouping grouping = adding
                     ? m_lookup.GetSupergrouping(archetype, componentType)
                     : m_lookup.GetSubgrouping(archetype, componentType);
 
@@ -748,7 +778,8 @@ namespace Logos.Entities
                 }
             }
 
-            EntityTable table = new EntityTable(grouping.Key, this, TargetTableSize / grouping.Key.EntitySize);
+            EntityTable table = new EntityTable(grouping.Key, this,
+                TargetTableSize / grouping.Key.EntitySize);
             grouping.Add(table);
             return table;
         }
@@ -833,14 +864,14 @@ namespace Logos.Entities
                 return !Unsafe.IsNullRef(ref FindEntry(entity));
             }
 
-            public EntityTable? Find(Entity entity, out int index)
+            public EntityTable Find(Entity entity, out int index)
             {
                 ref Entry entry = ref FindEntry(entity);
 
                 if (Unsafe.IsNullRef(ref entry))
                 {
-                    index = 0;
-                    return null;
+                    throw new EntityNotFoundException(
+                        "Entity does not exist within the EntityRegistry.");
                 }
 
                 index = entry.Index;

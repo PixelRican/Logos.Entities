@@ -25,7 +25,7 @@ namespace Logos.Entities.Tests
             ];
             Entity entity = registry.CreateEntity();
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<EntityNotFoundException>(() =>
             {
                 registry.AddComponent(new Entity(-1, -1), null!);
             });
@@ -132,7 +132,7 @@ namespace Logos.Entities.Tests
             ];
             Entity entity = registry.CreateEntity(componentTypes);
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<EntityNotFoundException>(() =>
             {
                 registry.RemoveComponent(new Entity(-1, -1), null!);
             });
