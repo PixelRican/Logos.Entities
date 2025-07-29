@@ -9,10 +9,11 @@ using System.Linq;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a collection of entity tables whose entities are modeled by a common
-    /// <see cref="EntityArchetype"/>.
+    /// Represents a thread-safe collection of entity tables whose entities are modelled by a
+    /// common <see cref="EntityArchetype"/>.
     /// </summary>
-    public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>, ICollection<EntityTable>, ICollection, IReadOnlyCollection<EntityTable>
+    public class EntityTableGrouping : IGrouping<EntityArchetype, EntityTable>,
+        ICollection<EntityTable>, ICollection, IReadOnlyCollection<EntityTable>
     {
         private readonly object m_lock;
         private readonly EntityArchetype m_key;
@@ -41,11 +42,25 @@ namespace Logos.Entities
             m_tables = Array.Empty<EntityTable>();
         }
 
+        /// <summary>
+        /// Gets the key of the <see cref="EntityTableGrouping"/>.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// The key of the <see cref="EntityTableGrouping"/>.
+        /// </returns>
         public EntityArchetype Key
         {
             get => m_key;
         }
 
+        /// <summary>
+        /// Gets the number of entity tables contained in the <see cref="EntityTableGrouping"/>.
+        /// </summary>
+        /// 
+        /// <returns>
+        /// The number of entity tables contained in the <see cref="EntityTableGrouping"/>.
+        /// </returns>
         public int Count
         {
             get => m_tables.Length;
@@ -66,6 +81,22 @@ namespace Logos.Entities
             get => this;
         }
 
+        /// <summary>
+        /// Adds an <see cref="EntityTable"/> to the <see cref="EntityTableGrouping"/>.
+        /// </summary>
+        /// 
+        /// <param name="item">
+        /// The <see cref="EntityTable"/> to add to the <see cref="EntityTableGrouping"/>.
+        /// </param>
+        /// 
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
+        /// 
+        /// <exception cref="ArgumentException">
+        /// The <see cref="EntityArchetype"/> that models entities stored by
+        /// <paramref name="item"/> does not match <see cref="Key"/>.
+        /// </exception>
         public void Add(EntityTable item)
         {
             ArgumentNullException.ThrowIfNull(item);
@@ -87,6 +118,9 @@ namespace Logos.Entities
             }
         }
 
+        /// <summary>
+        /// Removes all entity tables from the <see cref="EntityTableGrouping"/>.
+        /// </summary>
         public void Clear()
         {
             lock (m_lock)
@@ -95,15 +129,42 @@ namespace Logos.Entities
             }
         }
 
+        /// <summary>
+        /// Determines whether the <see cref="EntityTableGrouping"/> contains a specific
+        /// <see cref="EntityTable"/>.
+        /// </summary>
+        /// 
+        /// <param name="item">
+        /// The <see cref="EntityTable"/> to locate in the <see cref="EntityTableGrouping"/>.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="item"/> is found in the
+        /// <see cref="EntityTableGrouping"/>; otherwise, <see langword="false"/>.
+        /// </returns>
         public bool Contains(EntityTable item)
         {
             return Array.IndexOf(m_tables, item) != -1;
         }
 
-        public void CopyTo(EntityTable[] array, int index)
+        /// <summary>
+        /// Copies the elements of the <see cref="EntityTableGrouping"/> to an <see cref="Array"/>,
+        /// starting at a particular <see cref="Array"/> index.
+        /// </summary>
+        /// 
+        /// <param name="array">
+        /// The one-dimensional <see cref="Array"/> that is the destination of the elements copied
+        /// from <see cref="EntityTableGrouping"/>. The <see cref="Array"/> must have zero-based
+        /// indexing.
+        /// </param>
+        /// 
+        /// <param name="arrayIndex">
+        /// The zero-based index in <paramref name="array"/> at which copying begins.
+        /// </param>
+        public void CopyTo(EntityTable[] array, int arrayIndex)
         {
             EntityTable[] tables = m_tables;
-            Array.Copy(tables, 0, array, index, tables.Length);
+            Array.Copy(tables, 0, array, arrayIndex, tables.Length);
         }
 
         void ICollection.CopyTo(Array array, int index)
@@ -126,11 +187,12 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through the <see cref="EntityTableGrouping"/>.
+        /// Returns an <see cref="Enumerator"/> that iterates through the
+        /// <see cref="EntityTableGrouping"/>.
         /// </summary>
         /// 
         /// <returns>
-        /// An enumerator that can be used to iterate through the
+        /// An <see cref="Enumerator"/> that can be used to iterate through the
         /// <see cref="EntityTableGrouping"/>.
         /// </returns>
         public Enumerator GetEnumerator()
@@ -148,9 +210,24 @@ namespace Logos.Entities
             return new Enumerator(m_tables);
         }
 
+        /// <summary>
+        /// Removes the first occurrence of a specific <see cref="EntityTable"/> from the
+        /// <see cref="EntityTableGrouping"/>.
+        /// </summary>
+        /// 
+        /// <param name="item">
+        /// The <see cref="EntityTable"/> to remove from the <see cref="EntityTableGrouping"/>.
+        /// </param>
+        /// 
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="item"/> was successfully removed from the
+        /// <see cref="EntityTableGrouping"/>; otherwise, <see langword="false"/>. This method also
+        /// returns <see langword="false"/> if <paramref name="item"/> is not found in the original
+        /// <see cref="EntityTableGrouping"/>.
+        /// </returns>
         public bool Remove(EntityTable item)
         {
-            if (item == null)
+            if (item == null || !m_key.Equals(item.Archetype))
             {
                 return false;
             }
@@ -202,6 +279,15 @@ namespace Logos.Entities
                 m_index = -1;
             }
 
+            /// <summary>
+            /// Gets the <see cref="EntityTable"/> in the <see cref="EntityTableGrouping"/> at the
+            /// current position of the <see cref="Enumerator"/>.
+            /// </summary>
+            /// 
+            /// <returns>
+            /// The <see cref="EntityTable"/> in the <see cref="EntityTableGrouping"/> at the
+            /// current position of the <see cref="Enumerator"/>.
+            /// </returns>
             public readonly EntityTable Current
             {
                 get => m_tables[m_index];
@@ -209,13 +295,24 @@ namespace Logos.Entities
 
             readonly object IEnumerator.Current
             {
-                get => m_tables[m_index]!;
+                get => m_tables[m_index];
             }
 
+            /// <inheritdoc cref="IDisposable.Dispose"/>
             public readonly void Dispose()
             {
             }
 
+            /// <summary>
+            /// Advances the <see cref="Enumerator"/> to the next element of the
+            /// <see cref="EntityTableGrouping"/>.
+            /// </summary>
+            /// 
+            /// <returns>
+            /// <see langword="true"/> if the <see cref="Enumerator"/> was successfully advanced to
+            /// the next element; <see langword="false"/> if the <see cref="Enumerator"/> has
+            /// passed the end of the <see cref="EntityTableGrouping"/>.
+            /// </returns>
             public bool MoveNext()
             {
                 int index = m_index + 1;
