@@ -24,12 +24,26 @@ namespace Logos.Entities
         private readonly int m_size;
         private readonly ComponentTypeCategory m_category;
 
-        private ComponentType(Type runtimeType, int id, int size, ComponentTypeCategory category)
+        private ComponentType([DynamicallyAccessedMembers(FieldMembers)] Type runtimeType,
+            int size, bool isReferenceOrContainsReferences)
         {
             m_runtimeType = runtimeType;
-            m_id = id;
-            m_size = size;
-            m_category = category;
+            m_id = Interlocked.Increment(ref s_nextId);
+
+            if (isReferenceOrContainsReferences)
+            {
+                m_size = size;
+                m_category = ComponentTypeCategory.Managed;
+            }
+            else if (size > 1 || runtimeType.GetFields(InstanceMembers).Length > 0)
+            {
+                m_size = size;
+                m_category = ComponentTypeCategory.Unmanaged;
+            }
+            else
+            {
+                m_category = ComponentTypeCategory.Tag;
+            }
         }
 
         /// <summary>
@@ -154,34 +168,10 @@ namespace Logos.Entities
 
         private sealed class GenericComponentType<[DynamicallyAccessedMembers(FieldMembers)] T> : ComponentType
         {
-            public static readonly GenericComponentType<T> Instance;
+            public static readonly GenericComponentType<T> Instance = new GenericComponentType<T>();
 
-            static GenericComponentType()
-            {
-                Type runtimeType = typeof(T);
-                int id = Interlocked.Increment(ref s_nextId);
-                int size = Unsafe.SizeOf<T>();
-                ComponentTypeCategory category;
-
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                {
-                    category = ComponentTypeCategory.Managed;
-                }
-                else if (size > 1 || runtimeType.GetFields(InstanceMembers).Length > 0)
-                {
-                    category = ComponentTypeCategory.Unmanaged;
-                }
-                else
-                {
-                    category = ComponentTypeCategory.Tag;
-                    size = 0;
-                }
-
-                Instance = new GenericComponentType<T>(runtimeType, id, size, category);
-            }
-
-            private GenericComponentType(Type runtimeType, int id, int size, ComponentTypeCategory category)
-                : base(runtimeType, id, size, category)
+            private GenericComponentType()
+                : base(typeof(T), Unsafe.SizeOf<T>(), RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
             }
 
