@@ -326,12 +326,13 @@ namespace Logos.Entities
                 return false;
             }
 
-            void IEnumerator.Reset()
+            /// <summary>
+            /// Sets the <see cref="Enumerator"/> to its initial position, which is before the
+            /// first element in the <see cref="EntityTableGrouping"/>.
+            /// </summary>
+            public void Reset()
             {
-                if (m_tables != null)
-                {
-                    m_index = -1;
-                }
+                m_index = -1;
             }
         }
     }
