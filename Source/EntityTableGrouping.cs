@@ -21,7 +21,7 @@ namespace Logos.Entities
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EntityTableGrouping"/> class that stores
-        /// entity tables whose entities are modeled by the specified
+        /// entity tables whose entities are modelled by the specified
         /// <see cref="EntityArchetype"/>.
         /// </summary>
         /// 
