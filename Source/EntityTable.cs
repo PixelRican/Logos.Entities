@@ -10,7 +10,7 @@ namespace Logos.Entities
     /// </summary>
     public class EntityTable
     {
-        private const int MinimumCapacity = 8;
+        private const int DefaultCapacity = 4;
 
         private readonly EntityArchetype m_archetype;
         private readonly EntityRegistry? m_registry;
@@ -33,7 +33,7 @@ namespace Logos.Entities
         /// <paramref name="archetype"/> is <see langword="null"/>.
         /// </exception>
         public EntityTable(EntityArchetype archetype)
-            : this(archetype, null, MinimumCapacity)
+            : this(archetype, null, DefaultCapacity)
         {
         }
 
@@ -57,7 +57,7 @@ namespace Logos.Entities
         /// <paramref name="archetype"/> is <see langword="null"/>.
         /// </exception>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry)
-            : this(archetype, registry, MinimumCapacity)
+            : this(archetype, registry, DefaultCapacity)
         {
         }
 
@@ -113,17 +113,12 @@ namespace Logos.Entities
         /// </exception>
         /// 
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="capacity"/> is negative.
+        /// <paramref name="capacity"/> is negative or zero.
         /// </exception>
         public EntityTable(EntityArchetype archetype, EntityRegistry? registry, int capacity)
         {
             ArgumentNullException.ThrowIfNull(archetype);
-
-            if (capacity < MinimumCapacity)
-            {
-                ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-                capacity = MinimumCapacity;
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             m_archetype = archetype;
             m_registry = registry;
