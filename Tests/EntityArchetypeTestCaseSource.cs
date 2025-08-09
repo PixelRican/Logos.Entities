@@ -14,7 +14,7 @@ namespace Logos.Entities.Tests
                 new object[]
                 {
                     EntityArchetype.Base,
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
@@ -30,7 +30,7 @@ namespace Logos.Entities.Tests
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     ComponentType.TypeOf<Name>()
                 },
@@ -40,14 +40,14 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Name>()
                     }),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
                         ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     ComponentType.TypeOf<Name>()
                 },
@@ -56,7 +56,7 @@ namespace Logos.Entities.Tests
                     EntityArchetype.Create(new ComponentType[]
                     {
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     ComponentType.TypeOf<Position2D>()
                 },
@@ -67,7 +67,7 @@ namespace Logos.Entities.Tests
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Position2D>()
                     }),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 }
             };
         }
@@ -93,23 +93,23 @@ namespace Logos.Entities.Tests
                 {
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     },
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }
                 },
                 new object[]
                 {
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         null!
                     },
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }
                 },
                 new object[]
@@ -117,23 +117,23 @@ namespace Logos.Entities.Tests
                     new ComponentType[]
                     {
                         null!,
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     },
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }
                 },
                 new object[]
                 {
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>(),
+                        ComponentType.TypeOf<Disabled>()
                     },
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }
                 },
                 new object[]
@@ -142,19 +142,19 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Name>(),
                         null!,
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     },
                     new ComponentType[]
                     {
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }
                 },
                 new object[]
                 {
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Position2D>()
                     },
@@ -162,7 +162,7 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }
                 }
             };
@@ -182,23 +182,23 @@ namespace Logos.Entities.Tests
                     EntityArchetype.Base,
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     })
                 },
                 new object[]
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>()
                     }),
-                    EntityArchetype.Create([ComponentType.TypeOf<Enabled>()])
+                    EntityArchetype.Create([ComponentType.TypeOf<Disabled>()])
                 },
                 new object[]
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>()
                     }),
                     EntityArchetype.Create(new ComponentType[]
@@ -210,12 +210,12 @@ namespace Logos.Entities.Tests
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>()
                     }),
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Position2D>()
                     })
                 },
@@ -223,7 +223,7 @@ namespace Logos.Entities.Tests
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>()
                     }),
                     EntityArchetype.Create(new ComponentType[]
@@ -236,7 +236,7 @@ namespace Logos.Entities.Tests
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>()
                     }),
                     EntityArchetype.Create(new ComponentType[]
@@ -249,13 +249,13 @@ namespace Logos.Entities.Tests
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Position2D>(),
                         ComponentType.TypeOf<Name>()
                     }),
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Position3D>(),
                         ComponentType.TypeOf<Name>()
                     })
@@ -273,7 +273,7 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     ComponentType.TypeOf<Name>()
                 },
@@ -283,7 +283,7 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     ComponentType.TypeOf<Position2D>()
                 },
@@ -293,16 +293,16 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Name>(),
                         ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     ComponentType.TypeOf<Name>()
                 },
@@ -311,9 +311,9 @@ namespace Logos.Entities.Tests
                     EntityArchetype.Create(new ComponentType[]
                     {
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
@@ -335,9 +335,9 @@ namespace Logos.Entities.Tests
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 }
             };
         }

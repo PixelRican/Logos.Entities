@@ -10,7 +10,7 @@ namespace Logos.Entities.Tests
         static ComponentTypeTestCaseSource()
         {
             // Declare component types in a predefined order for test consistency.
-            ComponentType.TypeOf<Enabled>();
+            ComponentType.TypeOf<Disabled>();
             ComponentType.TypeOf<Name>();
             ComponentType.TypeOf<Position2D>();
             ComponentType.TypeOf<Position3D>();
@@ -27,7 +27,7 @@ namespace Logos.Entities.Tests
                 new object[]
                 {
                     null!,
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
@@ -47,7 +47,7 @@ namespace Logos.Entities.Tests
                 new object[]
                 {
                     ComponentType.TypeOf<Name>(),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
@@ -57,7 +57,7 @@ namespace Logos.Entities.Tests
                 new object[]
                 {
                     ComponentType.TypeOf<Position2D>(),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new object[]
                 {
@@ -73,10 +73,10 @@ namespace Logos.Entities.Tests
             {
                 new object[]
                 {
-                    ComponentType.TypeOf<Enabled>(),
-                    typeof(Enabled),
+                    ComponentType.TypeOf<Disabled>(),
+                    typeof(Disabled),
                     0,
-                    Unsafe.SizeOf<Enabled>() - 1,
+                    Unsafe.SizeOf<Disabled>() - 1,
                     ComponentTypeCategory.Tag
                 },
                 new object[]

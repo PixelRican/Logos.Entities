@@ -101,7 +101,7 @@ namespace Logos.Entities.Tests
                 new ComponentType[]
                 {
                     ComponentType.TypeOf<Name>(),
-                    ComponentType.TypeOf<Enabled>()
+                    ComponentType.TypeOf<Disabled>()
                 },
                 new ComponentType[]
                 {
@@ -126,7 +126,7 @@ namespace Logos.Entities.Tests
                         ComponentType.TypeOf<Position2D>(),
                         ComponentType.TypeOf<Rotation2D>(),
                         ComponentType.TypeOf<Scale2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     _ => EntityArchetype.Create(new ComponentType[]
                     {
@@ -134,7 +134,7 @@ namespace Logos.Entities.Tests
                         ComponentType.TypeOf<Rotation2D>(),
                         ComponentType.TypeOf<Scale2D>(),
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     })
                 };
 
@@ -148,7 +148,7 @@ namespace Logos.Entities.Tests
                     0 => EntityArchetype.Base,
                     1 => EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     }),
                     2 => EntityArchetype.Create(new ComponentType[]
                     {
@@ -168,7 +168,7 @@ namespace Logos.Entities.Tests
                         ComponentType.TypeOf<Position2D>(),
                         ComponentType.TypeOf<Rotation2D>(),
                         ComponentType.TypeOf<Scale2D>(),
-                        ComponentType.TypeOf<Enabled>(),
+                        ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Position3D>()
                     })
                 };

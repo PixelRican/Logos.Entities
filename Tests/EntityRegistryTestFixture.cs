@@ -21,7 +21,7 @@ namespace Logos.Entities.Tests
                 ComponentType.TypeOf<Rotation3D>(),
                 ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Enabled>()
+                ComponentType.TypeOf<Disabled>()
             ];
             Entity entity = registry.Create();
 
@@ -128,7 +128,7 @@ namespace Logos.Entities.Tests
                 ComponentType.TypeOf<Rotation3D>(),
                 ComponentType.TypeOf<Scale2D>(),
                 ComponentType.TypeOf<Scale3D>(),
-                ComponentType.TypeOf<Enabled>()
+                ComponentType.TypeOf<Disabled>()
             ];
             EntityArchetype archetype = EntityArchetype.Create(componentTypes);
             Entity entity = registry.Create(archetype);

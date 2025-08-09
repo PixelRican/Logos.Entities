@@ -28,7 +28,7 @@
                 {
                     EntityArchetype.Create(new ComponentType[]
                     {
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     })
                 },
                 new object[]
@@ -44,7 +44,7 @@
                     EntityArchetype.Create(new ComponentType[]
                     {
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     })
                 },
                 new object[]
@@ -52,7 +52,7 @@
                     EntityArchetype.Create(new ComponentType[]
                     {
                         ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     })
                 },
                 new object[]
@@ -63,7 +63,7 @@
                         ComponentType.TypeOf<Position2D>(),
                         ComponentType.TypeOf<Rotation2D>(),
                         ComponentType.TypeOf<Scale2D>(),
-                        ComponentType.TypeOf<Enabled>()
+                        ComponentType.TypeOf<Disabled>()
                     })
                 }
             };

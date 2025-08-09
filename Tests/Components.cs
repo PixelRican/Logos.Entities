@@ -3,7 +3,7 @@
 
 namespace Logos.Entities.Tests
 {
-    public readonly record struct Enabled
+    public readonly record struct Disabled
     {
     }
 

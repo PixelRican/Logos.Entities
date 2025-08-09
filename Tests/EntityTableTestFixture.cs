@@ -111,7 +111,7 @@ namespace Logos.Entities.Tests
             EntityTable table = new EntityTable(archetype);
 
             AssertHelper<Name>();
-            AssertHelper<Enabled>();
+            AssertHelper<Disabled>();
             AssertHelper<Position2D>();
             AssertHelper<Position3D>();
             AssertHelper<Rotation2D>();
@@ -262,7 +262,7 @@ namespace Logos.Entities.Tests
             {
                 ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Enabled>()
+                ComponentType.TypeOf<Disabled>()
             }));
         }
 
