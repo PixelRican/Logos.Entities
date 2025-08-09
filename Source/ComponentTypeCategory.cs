@@ -13,8 +13,8 @@ namespace Logos.Entities
         /// </summary>
         None,
         /// <summary>
-        /// Specifies that the component type is a reference type or a value type that
-        /// contains reference type instance fields.
+        /// Specifies that the component type is a reference type or a value type that contains
+        /// reference type instance fields.
         /// </summary>
         Managed,
         /// <summary>
