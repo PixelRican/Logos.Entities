@@ -16,7 +16,7 @@ namespace Logos.Entities
         /// default error message.
         /// </summary>
         public EntityNotFoundException()
-            : base("Entity could not be found.")
+            : base("The specified entity could not be found.")
         {
         }
 

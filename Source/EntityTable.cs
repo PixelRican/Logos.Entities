@@ -10,7 +10,7 @@ namespace Logos.Entities
     /// </summary>
     public class EntityTable
     {
-        private const int DefaultCapacity = 4;
+        private const int DefaultCapacity = 8;
 
         private readonly EntityArchetype m_archetype;
         private readonly EntityRegistry? m_registry;
@@ -463,7 +463,7 @@ namespace Logos.Entities
         {
             int index;
 
-            if ((m_registry == null || m_registry.IsLockHeld) &&
+            if ((m_registry == null || m_registry.IsSyncPointEntered) &&
                 (index = Array.IndexOf(m_entities, entity, 0, m_size)) != -1)
             {
                 RemoveAt(index);
@@ -599,7 +599,7 @@ namespace Logos.Entities
 
         private void VerifyCallerWritePermissions()
         {
-            if (m_registry != null && !m_registry.IsLockHeld)
+            if (m_registry != null && !m_registry.IsSyncPointEntered)
             {
                 throw new InvalidOperationException(
                     "The EntityTable can only be modified by its Registry.");

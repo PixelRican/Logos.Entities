@@ -23,11 +23,11 @@ namespace Logos.Entities.Tests
                 ComponentType.TypeOf<Scale3D>(),
                 ComponentType.TypeOf<Enabled>()
             ];
-            Entity entity = registry.CreateEntity();
+            Entity entity = registry.Create();
 
             Assert.Throws<EntityNotFoundException>(() =>
             {
-                registry.AddComponent(new Entity(-1, -1), null!);
+                registry.AddComponent(new Entity(-1, -1), ComponentType.TypeOf<Name>());
             });
 
             for (int i = 0; i < componentTypes.Length; i++)
@@ -38,7 +38,7 @@ namespace Logos.Entities.Tests
                 {
                     Assert.That(registry.AddComponent(entity, componentType), Is.True);
                     Assert.That(registry.HasComponent(entity, componentType), Is.True);
-                    Assert.That(registry.FindEntity(entity, out _).Archetype.ComponentTypes
+                    Assert.That(registry.Find(entity, out _).Archetype.ComponentTypes
                         .SequenceEqual(componentTypes.Slice(0, i + 1)), Is.True);
                 }
             }
@@ -51,31 +51,31 @@ namespace Logos.Entities.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                Entity entity = registry.CreateEntity();
+                Entity entity = registry.Create();
 
                 using (Assert.EnterMultipleScope())
                 {
                     Assert.That(new Entity(i, 0), Is.EqualTo(entity));
-                    Assert.That(registry.ContainsEntity(entity));
-                    Assert.That(registry.FindEntity(entity, out _).Archetype, Is.SameAs(EntityArchetype.Base));
-                    Assert.That(registry.FindEntity(entity, out _).GetEntities()[i], Is.EqualTo(entity));
+                    Assert.That(registry.Contains(entity));
+                    Assert.That(registry.Find(entity, out _).Archetype, Is.SameAs(EntityArchetype.Base));
+                    Assert.That(registry.Find(entity, out _).GetEntities()[i], Is.EqualTo(entity));
                 }
             }
 
             Assert.That(registry.Count, Is.EqualTo(10));
 
-            EntityArchetype archetype = registry.CreateArchetype([ComponentType.TypeOf<Name>()]);
+            EntityArchetype archetype = EntityArchetype.Create([ComponentType.TypeOf<Name>()]);
 
             for (int i = 0; i < 10; i++)
             {
-                Entity entity = registry.CreateEntity(archetype);
+                Entity entity = registry.Create(archetype);
 
                 using (Assert.EnterMultipleScope())
                 {
                     Assert.That(new Entity(i + 10, 0), Is.EqualTo(entity));
                     Assert.That(registry.HasComponent(entity, ComponentType.TypeOf<Name>()));
-                    Assert.That(registry.FindEntity(entity, out _).Archetype, Is.SameAs(archetype));
-                    Assert.That(registry.FindEntity(entity, out _).GetEntities()[i], Is.EqualTo(entity));
+                    Assert.That(registry.Find(entity, out _).Archetype, Is.SameAs(archetype));
+                    Assert.That(registry.Find(entity, out _).GetEntities()[i], Is.EqualTo(entity));
                 }
             }
 
@@ -89,10 +89,10 @@ namespace Logos.Entities.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                registry.CreateEntity();
+                registry.Create();
             }
 
-            EntityTable table = registry.FindEntity(new Entity(), out _);
+            EntityTable table = registry.Find(new Entity(), out _);
             ReadOnlySpan<Entity> entities = table.GetEntities();
             int count = table.Count;
 
@@ -102,8 +102,8 @@ namespace Logos.Entities.Tests
 
                 using (Assert.EnterMultipleScope())
                 {
-                    Assert.That(registry.DestroyEntity(entity));
-                    Assert.That(registry.ContainsEntity(entity), Is.False);
+                    Assert.That(registry.Destroy(entity));
+                    Assert.That(registry.Contains(entity), Is.False);
                 }
             }
 
@@ -111,7 +111,7 @@ namespace Logos.Entities.Tests
 
             for (int i = 9; i >= 0; i--)
             {
-                Assert.That(new Entity(i, 1), Is.EqualTo(registry.CreateEntity()));
+                Assert.That(new Entity(i, 1), Is.EqualTo(registry.Create()));
             }
         }
 
@@ -130,11 +130,12 @@ namespace Logos.Entities.Tests
                 ComponentType.TypeOf<Scale3D>(),
                 ComponentType.TypeOf<Enabled>()
             ];
-            Entity entity = registry.CreateEntity(componentTypes);
+            EntityArchetype archetype = EntityArchetype.Create(componentTypes);
+            Entity entity = registry.Create(archetype);
 
             Assert.Throws<EntityNotFoundException>(() =>
             {
-                registry.RemoveComponent(new Entity(-1, -1), null!);
+                registry.RemoveComponent(new Entity(-1, -1), ComponentType.TypeOf<Name>());
             });
 
             for (int i = 0; i < componentTypes.Length; i++)
@@ -145,7 +146,7 @@ namespace Logos.Entities.Tests
                 {
                     Assert.That(registry.RemoveComponent(entity, componentType));
                     Assert.That(registry.HasComponent(entity, componentType), Is.False);
-                    Assert.That(registry.FindEntity(entity, out _).Archetype.ComponentTypes
+                    Assert.That(registry.Find(entity, out _).Archetype.ComponentTypes
                         .SequenceEqual(componentTypes.Slice(i + 1)), Is.True);
                 }
             }
