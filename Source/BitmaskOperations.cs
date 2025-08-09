@@ -11,44 +11,42 @@ namespace Logos.Entities
     public static class BitmaskOperations
     {
         /// <summary>
-        /// Determines whether the specified bit index is set within the source bitmask.
+        /// Determines whether the bit at the specified index is set in the source bitmask.
         /// </summary>
-        /// 
         /// <param name="source">
         /// The source bitmask.
         /// </param>
-        /// 
         /// <param name="index">
-        /// The bit index to test within <paramref name="source"/>.
+        /// The index of the bit to test in <paramref name="source"/>.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the bit index is set within the source bitmask; otherwise,
-        /// <see langword="false"/>.
+        /// <see langword="true"/> if the bit at <paramref name="index"/> is set in
+        /// <paramref name="source"/>; otherwise, <see langword="false"/>.
         /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative.
+        /// </exception>
         public static bool Test(ReadOnlySpan<int> source, int index)
         {
-            int sourceIndex;
-            return index >= 0
-                && (sourceIndex = index >> 5) < source.Length
-                && (source[sourceIndex] & 1 << index) != 0;
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+
+            int spanIndex = index >> 5;
+
+            return spanIndex < source.Length && (source[spanIndex] & 1 << index) != 0;
         }
 
         /// <summary>
         /// Determines whether the target bitmask is a bitwise superset of the source bitmask.
         /// </summary>
-        /// 
         /// <param name="source">
         /// The source bitmask.
         /// </param>
-        /// 
         /// <param name="target">
         /// The target bitmask.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the target bitmask is a superset of the source bitmask;
-        /// otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if <paramref name="target"/> is a bitwise superset of
+        /// <paramref name="source"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public static bool Requires(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {
@@ -73,18 +71,16 @@ namespace Logos.Entities
         /// the source bitmask. If not, the method returns a value indicating whether the source
         /// bitmask is empty.
         /// </summary>
-        /// 
         /// <param name="source">
         /// The source bitmask.
         /// </param>
-        /// 
         /// <param name="target">
         /// The target bitmask.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the target bitmask intersects with the source bitmask or if
-        /// the source bitmask is empty; otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if a bitwise intersection exists between
+        /// <paramref name="target"/> and <paramref name="source"/>, or if <paramref name="source"/>
+        /// is empty; otherwise, <see langword="false"/>.
         /// </returns>
         public static bool Includes(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {
@@ -102,21 +98,18 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether there does not exist a bitwise intersection between the target
-        /// bitmask and the source bitmask.
+        /// Determines whether the bitwise intersection between the target bitmask and the source
+        /// bitmask is empty.
         /// </summary>
-        /// 
         /// <param name="source">
         /// The source bitmask.
         /// </param>
-        /// 
         /// <param name="target">
         /// The target bitmask.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the target bitmask does not intersect with the source
-        /// bitmask; otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the bitwise intersection between <paramref name="target"/> and
+        /// <paramref name="source"/> is empty; otherwise, <see langword="false"/>.
         /// </returns>
         public static bool Excludes(ReadOnlySpan<int> source, ReadOnlySpan<int> target)
         {
@@ -136,13 +129,11 @@ namespace Logos.Entities
         /// <summary>
         /// Returns a hash code for the specified bitmask.
         /// </summary>
-        /// 
         /// <param name="obj">
         /// The bitmask for which a hash code is to be returned.
         /// </param>
-        /// 
         /// <returns>
-        /// A hash code for the bitmask.
+        /// A hash code for <paramref name="obj"/>.
         /// </returns>
         public static int GetHashCode(ReadOnlySpan<int> obj)
         {
