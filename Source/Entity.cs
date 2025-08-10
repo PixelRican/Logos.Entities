@@ -7,37 +7,35 @@ using System.Diagnostics.CodeAnalysis;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents an ID associated with a set of components.
+    /// Represents an identifier associated with a set of components.
     /// </summary>
     public readonly struct Entity : IEquatable<Entity>
     {
-        private readonly int m_id;
+        private readonly int m_index;
         private readonly int m_version;
 
         /// <summary>
-        /// Initializes an new instance of the <see cref="Entity"/> structure that has the
-        /// specified ID and version.
+        /// Initializes a new instance of the <see cref="Entity"/> structure that is identified by
+        /// the specified index and version.
         /// </summary>
-        /// 
-        /// <param name="id">
-        /// The ID.
+        /// <param name="index">
+        /// The index of the <see cref="Entity"/>.
         /// </param>
-        /// 
         /// <param name="version">
-        /// The version.
+        /// The version of the <see cref="Entity"/>.
         /// </param>
-        public Entity(int id, int version)
+        public Entity(int index, int version)
         {
-            m_id = id;
+            m_index = index;
             m_version = version;
         }
 
         /// <summary>
-        /// Gets the ID of the <see cref="Entity"/>.
+        /// Gets the index of the <see cref="Entity"/>.
         /// </summary>
-        public int Id
+        public int Index
         {
-            get => m_id;
+            get => m_index;
         }
 
         /// <summary>
@@ -48,32 +46,37 @@ namespace Logos.Entities
             get => m_version;
         }
 
+        /// <inheritdoc cref="IEquatable{T}.Equals"/>
         public bool Equals(Entity other)
         {
-            return m_id == other.m_id
-                && m_version == other.m_version;
+            return m_index == other.m_index && m_version == other.m_version;
         }
 
+        /// <inheritdoc cref="object.Equals"/>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is Entity other && Equals(other);
+            return (obj is Entity other) && Equals(other);
         }
 
+        /// <inheritdoc cref="object.GetHashCode"/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(m_id, m_version);
+            return HashCode.Combine(m_index, m_version);
         }
 
+        /// <inheritdoc cref="object.ToString"/>
         public override string ToString()
         {
-            return $"Entity {{ Id = {m_id}, Version = {m_version} }}";
+            return $"Entity {{ Index = {m_index}, Version = {m_version} }}";
         }
 
+        /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator =="/>
         public static bool operator ==(Entity left, Entity right)
         {
             return left.Equals(right);
         }
 
+        /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>
         public static bool operator !=(Entity left, Entity right)
         {
             return !left.Equals(right);

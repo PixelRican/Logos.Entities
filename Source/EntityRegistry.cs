@@ -348,7 +348,7 @@ namespace Logos.Entities
         /// The entity to search for.
         /// </param>
         /// 
-        /// <param name="index">
+        /// <param name="tableIndex">
         /// When this method returns, contains the index of the entity in the
         /// <see cref="EntityTable"/>.
         /// </param>
@@ -360,9 +360,9 @@ namespace Logos.Entities
         /// <exception cref="EntityNotFoundException">
         /// <paramref name="entity"/> does not exist within the <see cref="EntityRegistry"/>.
         /// </exception>
-        public EntityTable Find(Entity entity, out int index)
+        public EntityTable Find(Entity entity, out int tableIndex)
         {
-            return m_container.FindEntity(entity, out index);
+            return m_container.FindEntity(entity, out tableIndex);
         }
 
         /// <summary>
@@ -792,20 +792,20 @@ namespace Logos.Entities
             public static readonly Container Empty = new Container();
 
             private readonly Entry[] m_entries;
-            private readonly int[] m_freeIds;
+            private readonly int[] m_indexPool;
             private int m_size;
-            private int m_nextId;
+            private int m_nextIndex;
 
             public Container(int capacity)
             {
                 m_entries = new Entry[capacity];
-                m_freeIds = new int[capacity];
+                m_indexPool = new int[capacity];
             }
 
             private Container()
             {
                 m_entries = Array.Empty<Entry>();
-                m_freeIds = Array.Empty<int>();
+                m_indexPool = Array.Empty<int>();
             }
 
             public int Capacity
@@ -841,37 +841,37 @@ namespace Logos.Entities
                 }
 
                 EntityTable table = entry.Table;
-                int index = entry.Index;
+                int index = entry.TableIndex;
 
                 entry.Table = null!;
-                entry.Index = -1;
+                entry.TableIndex = -1;
                 entry.Version++;
                 table.RemoveAt(index);
 
                 if (index < table.Count)
                 {
-                    m_entries[table.GetEntities()[index].Id].Index = index;
+                    m_entries[table.GetEntities()[index].Index].TableIndex = index;
                 }
 
-                m_freeIds[m_nextId - m_size--] = entity.Id;
+                m_indexPool[m_nextIndex - m_size--] = entity.Index;
                 return table;
             }
 
             public void MoveEntity(Entity entity, EntityTable destination)
             {
-                ref Entry entry = ref m_entries[entity.Id];
+                ref Entry entry = ref m_entries[entity.Index];
                 EntityTable source = entry.Table;
-                int index = entry.Index;
+                int tableIndex = entry.TableIndex;
 
                 entry.Table = destination;
-                entry.Index = destination.Count;
+                entry.TableIndex = destination.Count;
 
-                destination.AddRange(source, index, 1);
-                source.RemoveAt(index);
+                destination.AddRange(source, tableIndex, 1);
+                source.RemoveAt(tableIndex);
 
-                if (index < source.Count)
+                if (tableIndex < source.Count)
                 {
-                    m_entries[source.GetEntities()[index].Id].Index = index;
+                    m_entries[source.GetEntities()[tableIndex].Index].TableIndex = tableIndex;
                 }
             }
 
@@ -880,7 +880,7 @@ namespace Logos.Entities
                 return !Unsafe.IsNullRef(ref FindEntry(entity));
             }
 
-            public EntityTable FindEntity(Entity entity, out int index)
+            public EntityTable FindEntity(Entity entity, out int tableIndex)
             {
                 ref Entry entry = ref FindEntry(entity);
 
@@ -889,7 +889,7 @@ namespace Logos.Entities
                     ThrowForEntityNotFound();
                 }
 
-                index = entry.Index;
+                tableIndex = entry.TableIndex;
                 return entry.Table;
             }
 
@@ -920,7 +920,7 @@ namespace Logos.Entities
                 Container container = new Container(capacity)
                 {
                     m_size = size,
-                    m_nextId = size
+                    m_nextIndex = size
                 };
 
                 Array.Copy(m_entries, container.m_entries, size);
@@ -929,23 +929,23 @@ namespace Logos.Entities
 
             private Entity CreateEntry(EntityTable table)
             {
-                int index = (m_size++ < m_nextId)
-                    ? m_freeIds[m_nextId - m_size]
-                    : m_nextId++;
+                int index = (m_size++ < m_nextIndex)
+                    ? m_indexPool[m_nextIndex - m_size]
+                    : m_nextIndex++;
                 ref Entry entry = ref m_entries[index];
 
                 entry.Table = table;
-                entry.Index = table.Count;
+                entry.TableIndex = table.Count;
                 return new Entity(index, entry.Version);
             }
 
             private ref Entry FindEntry(Entity entity)
             {
-                if ((uint)entity.Id < (uint)m_nextId)
+                if ((uint)entity.Index < (uint)m_nextIndex)
                 {
-                    ref Entry entry = ref m_entries[entity.Id];
+                    ref Entry entry = ref m_entries[entity.Index];
 
-                    if (entry.Table != null && entry.Index >= 0 && entry.Version == entity.Version)
+                    if (entry.Table != null && entry.TableIndex >= 0 && entry.Version == entity.Version)
                     {
                         return ref entry;
                     }
@@ -957,7 +957,7 @@ namespace Logos.Entities
             private struct Entry
             {
                 public EntityTable Table;
-                public int Index;
+                public int TableIndex;
                 public int Version;
             }
         }
