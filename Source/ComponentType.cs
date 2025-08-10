@@ -10,7 +10,7 @@ using System.Threading;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents the mapping of a component type declaration to a unique type ID.
+    /// Represents the mapping of a common language runtime (CLR) type to a unique identifier.
     /// </summary>
     public abstract class ComponentType : IComparable<ComponentType>, IComparable
     {
@@ -41,10 +41,10 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the unique type ID associated with the <see cref="ComponentType"/>.
+        /// Gets the unique identifier for the <see cref="ComponentType"/>.
         /// </summary>
         /// <returns>
-        /// The unique type ID associated with the <see cref="ComponentType"/>.
+        /// The unique identifier for the <see cref="ComponentType"/>.
         /// </returns>
         public int TypeId
         {
@@ -52,33 +52,31 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the underlying common language runtime (CLR) type represented by the
+        /// Gets the underlying common language runtime (CLR) type associated with the
         /// <see cref="ComponentType"/>.
         /// </summary>
         /// <returns>
-        /// The underlying common language runtime (CLR) type represented by the
-        /// <see cref="ComponentType"/>.
+        /// The CLR type associated with the <see cref="ComponentType"/>.
         /// </returns>
         public abstract Type Type { get; }
 
         /// <summary>
-        /// Gets the size of a value of the type represented by the <see cref="ComponentType"/>.
+        /// Gets the size of a value of the type associated with the <see cref="ComponentType"/>.
         /// </summary>
         /// <returns>
-        /// The size of a value of the type represented by the <see cref="ComponentType"/>.
+        /// The size, in bytes, of a value of the type associated with the
+        /// <see cref="ComponentType"/>.
         /// </returns>
         public abstract int Size { get; }
 
         /// <summary>
-        /// Gets a <see cref="ComponentType"/> that represents components of type
-        /// <typeparamref name="T"/>.
+        /// Gets a unique <see cref="ComponentType"/> associated with type <typeparamref name="T"/>.
         /// </summary>
         /// <typeparam name="T">
-        /// The type of the component.
+        /// The associated type.
         /// </typeparam>
         /// <returns>
-        /// A <see cref="ComponentType"/> that represents components of type
-        /// <typeparamref name="T"/>.
+        /// A unique <see cref="ComponentType"/> associated with type <typeparamref name="T"/>.
         /// </returns>
         public static ComponentType TypeOf<T>()
         {
@@ -126,25 +124,26 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates a one-dimensional array of the <see cref="ComponentType"/> and specified
-        /// length, with zero-based indexing.
+        /// Creates a one-dimensional array of the type associated with the
+        /// <see cref="ComponentType"/> and specified length, with zero-based indexing.
         /// </summary>
         /// <param name="length">
         /// The size of the array to create.
         /// </param>
         /// <returns>
-        /// A new one-dimensional array of the <see cref="ComponentType"/> with the specified
-        /// length, using zero-based indexing.
+        /// A new one-dimensional array of the type associated with the <see cref="ComponentType"/>
+        /// with the specified length, using zero-based indexing.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="length"/> is negative.
         /// </exception>
         public abstract Array CreateArray(int length);
 
+        [DoesNotReturn]
         private static void ThrowForInvalidComparandType()
         {
             throw new ArgumentException(
-                "The comparand is not of the same type as this instance.", "obj");
+                "The specified comparand is not of the same type as this instance.", "obj");
         }
 
         private sealed class GenericComponentType<[DynamicallyAccessedMembers(FieldMembers)] T> : ComponentType
