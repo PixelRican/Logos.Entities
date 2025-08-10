@@ -15,8 +15,8 @@ namespace Logos.Entities
         private readonly int m_version;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Entity"/> structure that is identified by
-        /// the specified index and version.
+        /// Initializes a new instance of the <see cref="Entity"/> structure that has the specified
+        /// index and version.
         /// </summary>
         /// <param name="index">
         /// The index of the <see cref="Entity"/>.
@@ -33,6 +33,9 @@ namespace Logos.Entities
         /// <summary>
         /// Gets the index of the <see cref="Entity"/>.
         /// </summary>
+        /// <returns>
+        /// The index of the <see cref="Entity"/>.
+        /// </returns>
         public int Index
         {
             get => m_index;
@@ -41,6 +44,9 @@ namespace Logos.Entities
         /// <summary>
         /// Gets the version of the <see cref="Entity"/>.
         /// </summary>
+        /// <returns>
+        /// The version of the <see cref="Entity"/>.
+        /// </returns>
         public int Version
         {
             get => m_version;
