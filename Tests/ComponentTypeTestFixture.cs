@@ -38,8 +38,8 @@ namespace Logos.Entities.Tests
         {
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(actual.RuntimeType, Is.EqualTo(expectedRuntimeType));
-                Assert.That(actual.Id, Is.EqualTo(expectedId));
+                Assert.That(actual.Type, Is.EqualTo(expectedRuntimeType));
+                Assert.That(actual.TypeId, Is.EqualTo(expectedId));
                 Assert.That(actual.Size, Is.EqualTo(expectedSize));
                 Assert.That(actual.Category, Is.EqualTo(expectedCategory));
             }

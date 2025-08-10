@@ -383,7 +383,7 @@ namespace Logos.Entities
                 return false;
             }
 
-            componentBitmask = new int[componentTypes[^1].Id + 32 >> 5];
+            componentBitmask = new int[componentTypes[^1].TypeId + 32 >> 5];
 
             int freeIndex = 0;
             ComponentType? previous = null;
@@ -393,7 +393,7 @@ namespace Logos.Entities
                 if (previous != current)
                 {
                     componentTypes[freeIndex++] = previous = current;
-                    componentBitmask[current.Id >> 5] |= 1 << current.Id;
+                    componentBitmask[current.TypeId >> 5] |= 1 << current.TypeId;
                 }
             }
 
@@ -594,7 +594,7 @@ namespace Logos.Entities
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.Id);
+                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.TypeId);
         }
 
         /// <summary>
@@ -613,7 +613,7 @@ namespace Logos.Entities
         public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.Id);
+                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.TypeId);
         }
 
         /// <summary>
@@ -632,7 +632,7 @@ namespace Logos.Entities
         public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.Id);
+                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.TypeId);
         }
 
         /// <summary>

@@ -54,20 +54,20 @@ namespace Logos.Entities.Tests
 
             foreach (ComponentType type in expectedComponentTypes)
             {
-                expectedEntitySize += type.Size;
-
                 switch (type.Category)
                 {
                     case ComponentTypeCategory.Managed:
                         expectedManagedComponentCount++;
-                        continue;
+                        break;
                     case ComponentTypeCategory.Unmanaged:
                         expectedUnmanagedComponentCount++;
-                        continue;
+                        break;
                     case ComponentTypeCategory.Tag:
                         expectedTagComponentCount++;
                         continue;
                 }
+
+                expectedEntitySize += type.Size;
             }
 
             for (int method = 0; method < 3; method++)

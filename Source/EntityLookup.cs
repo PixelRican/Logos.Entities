@@ -201,8 +201,8 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(keyElement);
 
             ReadOnlySpan<int> bitmask = key.ComponentBitmask;
-            int index = keyElement.Id >> 5;
-            int bit = 1 << keyElement.Id;
+            int index = keyElement.TypeId >> 5;
+            int bit = 1 << keyElement.TypeId;
 
             int[]? rentedArray;
             scoped Span<int> buffer;
@@ -261,8 +261,8 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(keyElement);
             
             ReadOnlySpan<int> bitmask = key.ComponentBitmask;
-            int index = keyElement.Id >> 5;
-            int bit = 1 << keyElement.Id;
+            int index = keyElement.TypeId >> 5;
+            int bit = 1 << keyElement.TypeId;
 
             if (index >= bitmask.Length || (bit & bitmask[index]) == 0)
             {
@@ -290,7 +290,7 @@ namespace Logos.Entities
                 ReadOnlySpan<ComponentType> keyElements = key.ComponentTypes;
 
                 buffer = (keyElements.Length > 1)
-                    ? buffer.Slice(0, keyElements[^2].Id + 32 >> 5)
+                    ? buffer.Slice(0, keyElements[^2].TypeId + 32 >> 5)
                     : Span<int>.Empty;
             }
 

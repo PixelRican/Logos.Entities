@@ -105,7 +105,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the size of entities modeled by the <see cref="EntityArchetype"/>.
+        /// Gets the size of entities modelled by the <see cref="EntityArchetype"/>.
         /// </summary>
         public int EntitySize
         {
@@ -207,7 +207,7 @@ namespace Logos.Entities
             }
 
             ComponentType? previousComponentType = null;
-            int[] componentBitmask = new int[currentComponentType.Id + 32 >> 5];
+            int[] componentBitmask = new int[currentComponentType.TypeId + 32 >> 5];
             int entitySize = Unsafe.SizeOf<Entity>();
             int componentCount = 0;
             int managedComponentCount = 0;
@@ -219,21 +219,22 @@ namespace Logos.Entities
                 if ((currentComponentType = componentTypes[i]) != previousComponentType)
                 {
                     componentTypes[componentCount++] = previousComponentType = currentComponentType;
-                    componentBitmask[currentComponentType.Id >> 5] |= 1 << currentComponentType.Id;
-                    entitySize += currentComponentType.Size;
+                    componentBitmask[currentComponentType.TypeId >> 5] |= 1 << currentComponentType.TypeId;
 
                     switch (currentComponentType.Category)
                     {
                         case ComponentTypeCategory.Managed:
                             managedComponentCount++;
-                            continue;
+                            break;
                         case ComponentTypeCategory.Unmanaged:
                             unmanagedComponentCount++;
-                            continue;
+                            break;
                         case ComponentTypeCategory.Tag:
                             tagComponentCount++;
                             continue;
                     }
+
+                    entitySize += currentComponentType.Size;
                 }
             }
 
@@ -258,7 +259,7 @@ namespace Logos.Entities
         /// </returns>
         public EntityArchetype Add(ComponentType componentType)
         {
-            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.Id))
+            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.TypeId))
             {
                 return this;
             }
@@ -290,32 +291,34 @@ namespace Logos.Entities
 
             // Build component bitmask.
             int[] sourceBitmask = m_componentBitmask;
-            int[] destinationBitmask = new int[destinationArray[index].Id + 32 >> 5];
+            int[] destinationBitmask = new int[destinationArray[index].TypeId + 32 >> 5];
 
             Array.Copy(sourceBitmask, destinationBitmask, sourceBitmask.Length);
-            destinationBitmask[componentType.Id >> 5] |= 1 << componentType.Id;
+            destinationBitmask[componentType.TypeId >> 5] |= 1 << componentType.TypeId;
 
-            // Increase component count based on component type category.
+            // Increase component count and entity size based on component type category.
             int managedComponentCount = m_managedComponentCount;
             int unmanagedComponentCount = m_unmanagedComponentCount;
             int tagComponentCount = m_tagComponentCount;
+            int entitySize = m_entitySize;
 
             switch (componentType.Category)
             {
                 case ComponentTypeCategory.Managed:
                     managedComponentCount++;
+                    entitySize += componentType.Size;
                     break;
                 case ComponentTypeCategory.Unmanaged:
                     unmanagedComponentCount++;
+                    entitySize += componentType.Size;
                     break;
                 case ComponentTypeCategory.Tag:
                     tagComponentCount++;
                     break;
             }
 
-            // Create superarchetype.
             return new EntityArchetype(destinationArray, destinationBitmask, managedComponentCount,
-                unmanagedComponentCount, tagComponentCount, m_entitySize + componentType.Size);
+                unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
         /// <summary>
@@ -334,7 +337,7 @@ namespace Logos.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ComponentBitmask, componentType.Id);
+                && BitmaskOperations.Test(ComponentBitmask, componentType.TypeId);
         }
 
         /// <summary>
@@ -358,7 +361,7 @@ namespace Logos.Entities
             }
 
             ComponentType[] componentTypes = m_componentTypes;
-            int targetId = componentType.Id;
+            int targetId = componentType.TypeId;
             int low;
             int high;
 
@@ -385,7 +388,7 @@ namespace Logos.Entities
             while (low <= high)
             {
                 int index = low + (high - low >> 1);
-                int otherId = componentTypes[index].Id;
+                int otherId = componentTypes[index].TypeId;
 
                 if (targetId == otherId)
                 {
@@ -422,7 +425,7 @@ namespace Logos.Entities
         /// </returns>
         public EntityArchetype Remove(ComponentType componentType)
         {
-            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.Id))
+            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.TypeId))
             {
                 return this;
             }
@@ -457,27 +460,30 @@ namespace Logos.Entities
 
             // Build component bitmask.
             int[] sourceBitmask = m_componentBitmask;
-            int[] destinationBitmask = new int[destinationArray[index - 1].Id + 32 >> 5];
+            int[] destinationBitmask = new int[destinationArray[index - 1].TypeId + 32 >> 5];
 
             Array.Copy(sourceBitmask, destinationBitmask, destinationBitmask.Length);
 
-            if ((index = componentType.Id >> 5) < destinationBitmask.Length)
+            if ((index = componentType.TypeId >> 5) < destinationBitmask.Length)
             {
-                destinationBitmask[index] &= ~(1 << componentType.Id);
+                destinationBitmask[index] &= ~(1 << componentType.TypeId);
             }
 
-            // Decrease component count based on component type category.
+            // Decrease component count and entity size based on component type category.
             int managedComponentCount = m_managedComponentCount;
             int unmanagedComponentCount = m_unmanagedComponentCount;
             int tagComponentCount = m_tagComponentCount;
+            int entitySize = m_entitySize;
 
             switch (componentType.Category)
             {
                 case ComponentTypeCategory.Managed:
                     managedComponentCount--;
+                    entitySize -= componentType.Size;
                     break;
                 case ComponentTypeCategory.Unmanaged:
                     unmanagedComponentCount--;
+                    entitySize -= componentType.Size;
                     break;
                 case ComponentTypeCategory.Tag:
                     tagComponentCount--;
@@ -486,7 +492,7 @@ namespace Logos.Entities
 
             // Create subarchetype.
             return new EntityArchetype(destinationArray, destinationBitmask, managedComponentCount,
-                unmanagedComponentCount, tagComponentCount, m_entitySize - componentType.Size);
+                unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)

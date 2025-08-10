@@ -76,7 +76,7 @@ namespace Logos.Entities.Tests
                     ComponentType.TypeOf<Disabled>(),
                     typeof(Disabled),
                     0,
-                    Unsafe.SizeOf<Disabled>() - 1,
+                    Unsafe.SizeOf<Disabled>(),
                     ComponentTypeCategory.Tag
                 },
                 new object[]
