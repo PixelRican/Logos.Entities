@@ -7,7 +7,7 @@ namespace Logos.Entities
 {
     /// <summary>
     /// The exception that is thrown when an attempt to access a component that does not exist in a
-    /// data structure fails.
+    /// data source fails.
     /// </summary>
     public class ComponentNotFoundException : Exception
     {

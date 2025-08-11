@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents an identifier associated with a set of components.
+    /// Represents an identifier that refers to an entity in a data source.
     /// </summary>
     public readonly struct Entity : IEquatable<Entity>
     {
