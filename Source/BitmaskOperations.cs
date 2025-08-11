@@ -32,7 +32,8 @@ namespace Logos.Entities
 
             int spanIndex = index >> 5;
 
-            return spanIndex < source.Length && (source[spanIndex] & 1 << index) != 0;
+            return spanIndex < source.Length
+                && (source[spanIndex] & 1 << index) != 0;
         }
 
         /// <summary>
