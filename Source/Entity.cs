@@ -55,7 +55,8 @@ namespace Logos.Entities
         /// <inheritdoc cref="IEquatable{T}.Equals"/>
         public bool Equals(Entity other)
         {
-            return m_index == other.m_index && m_version == other.m_version;
+            return m_index == other.m_index
+                && m_version == other.m_version;
         }
 
         /// <inheritdoc cref="object.Equals"/>
@@ -79,13 +80,15 @@ namespace Logos.Entities
         /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator =="/>
         public static bool operator ==(Entity left, Entity right)
         {
-            return left.Equals(right);
+            return left.m_index == right.m_index
+                && left.m_version == right.m_version;
         }
 
         /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>
         public static bool operator !=(Entity left, Entity right)
         {
-            return !left.Equals(right);
+            return left.m_index != right.m_index
+                || left.m_version != right.m_version;
         }
     }
 }
