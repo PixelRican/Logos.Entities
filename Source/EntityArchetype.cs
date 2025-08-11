@@ -45,68 +45,90 @@ namespace Logos.Entities
         /// <summary>
         /// Gets an <see cref="EntityArchetype"/> that models entities with no components.
         /// </summary>
+        /// <returns>
+        /// An <see cref="EntityArchetype"/> that models entities with no components.
+        /// </returns>
         public static EntityArchetype Base
         {
             get => s_base;
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that compose entities modeled by the
+        /// Gets a read-only span of component types that compose entities modelled by the
         /// <see cref="EntityArchetype"/>.
         /// </summary>
+        /// <returns>
+        /// A read-only span of component types that compose entities modelled by the
+        /// <see cref="EntityArchetype"/>.
+        /// </returns>
         public ReadOnlySpan<ComponentType> ComponentTypes
         {
             get => new ReadOnlySpan<ComponentType>(m_componentTypes);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
-        /// type can be found within <see cref="ComponentTypes"/>.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether a specific
+        /// component type can be found in <see cref="ComponentTypes"/>.
         /// </summary>
+        /// <returns>
+        /// A read-only bitmask that compactly stores flags indicating whether a specific component
+        /// type can be found in <see cref="ComponentTypes"/>.
+        /// </returns>
         public ReadOnlySpan<int> ComponentBitmask
         {
             get => new ReadOnlySpan<int>(m_componentBitmask);
         }
 
         /// <summary>
-        /// Gets the total number of component types that compose entities modeled by the
-        /// <see cref="EntityArchetype"/>.
+        /// Gets the total number of component types in <see cref="ComponentTypes"/>.
         /// </summary>
+        /// <returns>
+        /// The total number of component types in <see cref="ComponentTypes"/>.
+        /// </returns>
         public int ComponentCount
         {
             get => m_componentTypes.Length;
         }
 
         /// <summary>
-        /// Gets the number of managed component types that compose entities modeled by the
-        /// <see cref="EntityArchetype"/>.
+        /// Gets the number of managed component types in <see cref="ComponentTypes"/>.
         /// </summary>
+        /// <returns>
+        /// The number of managed component types in <see cref="ComponentTypes"/>.
+        /// </returns>
         public int ManagedComponentCount
         {
             get => m_managedComponentCount;
         }
 
         /// <summary>
-        /// Gets the number of unmanaged component types that compose entities modeled by the
-        /// <see cref="EntityArchetype"/>.
+        /// Gets the number of unmanaged component types in <see cref="ComponentTypes"/>.
         /// </summary>
+        /// <returns>
+        /// The number of unmanaged component types in <see cref="ComponentTypes"/>.
+        /// </returns>
         public int UnmanagedComponentCount
         {
             get => m_unmanagedComponentCount;
         }
 
         /// <summary>
-        /// Gets the number of tag component types that compose entities modeled by the
-        /// <see cref="EntityArchetype"/>.
+        /// Gets the number of tag component types in <see cref="ComponentTypes"/>.
         /// </summary>
+        /// <returns>
+        /// The number of tag component types in <see cref="ComponentTypes"/>.
+        /// </returns>
         public int TagComponentCount
         {
             get => m_tagComponentCount;
         }
 
         /// <summary>
-        /// Gets the size of entities modelled by the <see cref="EntityArchetype"/>.
+        /// Gets the size of an entity modelled by the <see cref="EntityArchetype"/>.
         /// </summary>
+        /// <returns>
+        /// The size, in bytes, of an entity modelled by the <see cref="EntityArchetype"/>.
+        /// </returns>
         public int EntitySize
         {
             get => m_entitySize;
@@ -116,110 +138,88 @@ namespace Logos.Entities
         /// Creates an <see cref="EntityArchetype"/> that contains component types copied from the
         /// specified array.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
+        /// <param name="array">
         /// The array of component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that contains component types copied from the array,
-        /// or <see cref="Base"/> if the array does not contain any component types.
+        /// An <see cref="EntityArchetype"/> that contains component types copied from
+        /// <paramref name="array"/>, or <see cref="Base"/> if <paramref name="array"/> does not
+        /// contain any component types.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// <paramref name="array"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityArchetype Create(ComponentType[] componentTypes)
+        public static EntityArchetype Create(ComponentType[] array)
         {
-            ArgumentNullException.ThrowIfNull(componentTypes);
-
-            if (componentTypes.Length == 0)
-            {
-                return s_base;
-            }
-
-            ComponentType[] arguments = new ComponentType[componentTypes.Length];
-            Array.Copy(componentTypes, arguments, componentTypes.Length);
-            return CreateIfNonEmpty(arguments);
+            ArgumentNullException.ThrowIfNull(array);
+            return CreateInstance(new ReadOnlySpan<ComponentType>(array).ToArray());
         }
 
         /// <summary>
         /// Creates an <see cref="EntityArchetype"/> that contains component types copied from the
-        /// specified sequence.
+        /// specified collection.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
-        /// The sequence of component types.
+        /// <param name="collection">
+        /// The collection of component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that contains component types copied from the
-        /// sequence, or <see cref="Base"/> if the sequence does not contain any component types.
+        /// An <see cref="EntityArchetype"/> that contains component types copied from
+        /// <paramref name="collection"/>, or <see cref="Base"/> if <paramref name="collection"/>
+        /// does not contain any component types.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// <paramref name="collection"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityArchetype Create(IEnumerable<ComponentType> componentTypes)
+        public static EntityArchetype Create(IEnumerable<ComponentType> collection)
         {
-            ComponentType[] arguments = componentTypes.ToArray();
-
-            if (arguments.Length == 0)
-            {
-                return s_base;
-            }
-
-            return CreateIfNonEmpty(arguments);
+            return CreateInstance(collection.ToArray());
         }
 
         /// <summary>
         /// Creates an <see cref="EntityArchetype"/> that contains component types copied from the
         /// specified span.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
+        /// <param name="span">
         /// The span of component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="EntityArchetype"/> that contains component types copied from the span, or
-        /// <see cref="Base"/> if the span does not contain any component types.
+        /// An <see cref="EntityArchetype"/> that contains component types copied from
+        /// <paramref name="span"/>, or <see cref="Base"/> if <paramref name="span"/> does not
+        /// contain any component types.
         /// </returns>
-        public static EntityArchetype Create(ReadOnlySpan<ComponentType> componentTypes)
+        public static EntityArchetype Create(ReadOnlySpan<ComponentType> span)
         {
-            if (componentTypes.IsEmpty)
-            {
-                return s_base;
-            }
-
-            return CreateIfNonEmpty(componentTypes.ToArray());
+            return CreateInstance(span.ToArray());
         }
 
-        private static EntityArchetype CreateIfNonEmpty(ComponentType[] componentTypes)
+        private static EntityArchetype CreateInstance(ComponentType[] componentTypes)
         {
             Array.Sort(componentTypes);
 
-            ComponentType? currentComponentType = componentTypes[^1];
+            ComponentType? previousComponentType;
 
-            if (currentComponentType == null)
+            if (componentTypes.Length == 0 || (previousComponentType = componentTypes[^1]) == null)
             {
                 return s_base;
             }
 
-            ComponentType? previousComponentType = null;
-            int[] componentBitmask = new int[currentComponentType.TypeId + 32 >> 5];
-            int entitySize = Unsafe.SizeOf<Entity>();
+            int[] componentBitmask = new int[previousComponentType.TypeId + 32 >> 5];
             int componentCount = 0;
             int managedComponentCount = 0;
             int unmanagedComponentCount = 0;
             int tagComponentCount = 0;
+            int entitySize = Unsafe.SizeOf<Entity>();
 
-            for (int i = 0; i < componentTypes.Length; i++)
+            previousComponentType = null;
+
+            foreach (ComponentType? currentComponentType in componentTypes)
             {
-                if ((currentComponentType = componentTypes[i]) != previousComponentType)
+                if (currentComponentType != previousComponentType)
                 {
+                    int typeId = currentComponentType.TypeId;
+
                     componentTypes[componentCount++] = previousComponentType = currentComponentType;
-                    componentBitmask[currentComponentType.TypeId >> 5] |= 1 << currentComponentType.TypeId;
+                    componentBitmask[typeId >> 5] |= 1 << typeId;
 
                     switch (currentComponentType.Category)
                     {
@@ -245,58 +245,51 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates a copy of the <see cref="EntityArchetype"/> and adds the specified component
-        /// type to it.
+        /// type to it. If the <see cref="EntityArchetype"/> already contains the component type,
+        /// the method returns the <see cref="EntityArchetype"/>.
         /// </summary>
-        /// 
         /// <param name="componentType">
         /// The component type to add.
         /// </param>
-        /// 
         /// <returns>
-        /// A copy of the <see cref="EntityArchetype"/> with the component type added to it, or the
-        /// <see cref="EntityArchetype"/> itself if it either contains the component type or if the
-        /// component type is <see langword="null"/>.
+        /// A copy of the <see cref="EntityArchetype"/> with <paramref name="componentType"/> added
+        /// to it, or the <see cref="EntityArchetype"/> if it already contains
+        /// <paramref name="componentType"/>.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentType"/> is <see langword="null"/>.
+        /// </exception>
         public EntityArchetype Add(ComponentType componentType)
         {
-            if (componentType == null || BitmaskOperations.Test(ComponentBitmask, componentType.TypeId))
+            ArgumentNullException.ThrowIfNull(componentType);
+
+            ReadOnlySpan<int> sourceBitmask = ComponentBitmask;
+            int typeId = componentType.TypeId;
+
+            // Return this instance if it already contains the component type.
+            if (BitmaskOperations.Test(sourceBitmask, typeId))
             {
                 return this;
             }
 
-            // Build component type array.
-            ComponentType[] sourceArray = m_componentTypes;
-            ComponentType[] destinationArray = new ComponentType[sourceArray.Length + 1];
-            int index = 0;
+            // Update component type array.
+            ReadOnlySpan<ComponentType> sourceSpan = ComponentTypes;
+            ComponentType[] componentTypes = new ComponentType[sourceSpan.Length + 1];
+            Span<ComponentType> destinationSpan = new Span<ComponentType>(componentTypes);
+            int index = ~BinarySearch(componentType);
 
-            while (index < sourceArray.Length)
-            {
-                ComponentType currentComponentType = sourceArray[index];
+            sourceSpan.Slice(0, index).CopyTo(destinationSpan);
+            destinationSpan[index] = componentType;
+            sourceSpan.Slice(index).CopyTo(destinationSpan.Slice(index + 1));
 
-                if (currentComponentType.CompareTo(componentType) > 0)
-                {
-                    break;
-                }
+            // Update component bitmask.
+            int[] componentBitmask = new int[destinationSpan[^1].TypeId + 32 >> 5];
+            Span<int> destinationBitmask = new Span<int>(componentBitmask);
 
-                destinationArray[index++] = currentComponentType;
-            }
+            sourceBitmask.CopyTo(destinationBitmask);
+            destinationBitmask[typeId >> 5] |= 1 << typeId;
 
-            destinationArray[index] = componentType;
-
-            while (index < sourceArray.Length)
-            {
-                ComponentType currentComponentType = sourceArray[index];
-                destinationArray[++index] = currentComponentType;
-            }
-
-            // Build component bitmask.
-            int[] sourceBitmask = m_componentBitmask;
-            int[] destinationBitmask = new int[destinationArray[index].TypeId + 32 >> 5];
-
-            Array.Copy(sourceBitmask, destinationBitmask, sourceBitmask.Length);
-            destinationBitmask[componentType.TypeId >> 5] |= 1 << componentType.TypeId;
-
-            // Increase component count and entity size based on component type category.
+            // Update component count and entity size based on the category of the component type.
             int managedComponentCount = m_managedComponentCount;
             int unmanagedComponentCount = m_unmanagedComponentCount;
             int tagComponentCount = m_tagComponentCount;
@@ -306,18 +299,19 @@ namespace Logos.Entities
             {
                 case ComponentTypeCategory.Managed:
                     managedComponentCount++;
-                    entitySize += componentType.Size;
-                    break;
+                    goto default;
                 case ComponentTypeCategory.Unmanaged:
                     unmanagedComponentCount++;
-                    entitySize += componentType.Size;
-                    break;
+                    goto default;
                 case ComponentTypeCategory.Tag:
                     tagComponentCount++;
                     break;
+                default:
+                    entitySize += componentType.Size;
+                    break;
             }
 
-            return new EntityArchetype(destinationArray, destinationBitmask, managedComponentCount,
+            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
                 unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
@@ -325,14 +319,12 @@ namespace Logos.Entities
         /// Determines whether the <see cref="EntityArchetype"/> contains the specified component
         /// type.
         /// </summary>
-        /// 
         /// <param name="componentType">
         /// The component type to search for.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains the component
-        /// type; otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the <see cref="EntityArchetype"/> contains
+        /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Contains(ComponentType componentType)
         {
@@ -341,135 +333,86 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Searches for the specified component type and returns the zero-based index within
+        /// Searches for the specified component type and returns the zero-based index in
         /// <see cref="ComponentTypes"/>.
         /// </summary>
-        /// 
         /// <param name="componentType">
         /// The component type to search for.
         /// </param>
-        /// 
         /// <returns>
-        /// The zero-based index of the component type within <see cref="ComponentTypes"/>, if
-        /// found; otherwise, -1.
+        /// The zero-based index of <paramref name="componentType"/> in
+        /// <see cref="ComponentTypes"/>, if found; otherwise, -1.
         /// </returns>
         public int IndexOf(ComponentType componentType)
         {
-            if (!Contains(componentType))
+            int index = BinarySearch(componentType);
+
+            if (index >= 0)
             {
-                return -1;
+                return index;
             }
 
-            ComponentType[] componentTypes = m_componentTypes;
-            int targetId = componentType.TypeId;
-            int low;
-            int high;
-
-            // Clamp search range based on the component type's categorical order.
-            switch (componentType.Category)
-            {
-                case ComponentTypeCategory.Managed:
-                    low = 0;
-                    high = m_managedComponentCount - 1;
-                    break;
-                case ComponentTypeCategory.Unmanaged:
-                    low = m_managedComponentCount;
-                    high = low + m_unmanagedComponentCount - 1;
-                    break;
-                case ComponentTypeCategory.Tag:
-                    low = m_managedComponentCount + m_unmanagedComponentCount;
-                    high = low + m_tagComponentCount - 1;
-                    break;
-                default:
-                    return -1;
-            }
-
-            // Find the component type using binary search.
-            while (low <= high)
-            {
-                int index = low + (high - low >> 1);
-                int otherId = componentTypes[index].TypeId;
-
-                if (targetId == otherId)
-                {
-                    return index;
-                }
-
-                if (targetId < otherId)
-                {
-                    high = index - 1;
-                }
-                else
-                {
-                    low = index + 1;
-                }
-            }
-
-            // This line should be unreachable under normal circumstances.
             return -1;
         }
 
         /// <summary>
         /// Creates a copy of the <see cref="EntityArchetype"/> and removes the specified component
-        /// type from it.
+        /// type from it. If the <see cref="EntityArchetype"/> does not contain the component type,
+        /// the method returns the <see cref="EntityArchetype"/>.
         /// </summary>
-        /// 
         /// <param name="componentType">
         /// The component type to remove.
         /// </param>
-        /// 
         /// <returns>
-        /// A copy of the <see cref="EntityArchetype"/> with the component type removed from it, or
-        /// the <see cref="EntityArchetype"/> itself if it either does not contain the component
-        /// type or if the component type is <see langword="null"/>.
+        /// A copy of the <see cref="EntityArchetype"/> with <paramref name="componentType"/>
+        /// removed from it, or the <see cref="EntityArchetype"/> if it does not contain
+        /// <paramref name="componentType"/>.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentType"/> is <see langword="null"/>.
+        /// </exception>
         public EntityArchetype Remove(ComponentType componentType)
         {
-            if (componentType == null || !BitmaskOperations.Test(ComponentBitmask, componentType.TypeId))
+            ArgumentNullException.ThrowIfNull(componentType);
+
+            ReadOnlySpan<int> sourceBitmask = ComponentBitmask;
+            int typeId = componentType.TypeId;
+
+            // Return this instance if it does not contain the component type.
+            if (!BitmaskOperations.Test(sourceBitmask, typeId))
             {
                 return this;
             }
 
-            ComponentType[] sourceArray = m_componentTypes;
+            ReadOnlySpan<ComponentType> sourceSpan = ComponentTypes;
 
-            if (sourceArray.Length == 1)
+            // Return the base archetype if this instance only contains the component type.
+            if (sourceSpan.Length == 1)
             {
                 return s_base;
             }
 
-            // Build component type array.
-            ComponentType[] destinationArray = new ComponentType[sourceArray.Length - 1];
-            int index = 0;
+            // Update component type array.
+            ComponentType[] componentTypes = new ComponentType[sourceSpan.Length - 1];
+            Span<ComponentType> destinationSpan = new Span<ComponentType>(componentTypes);
+            int index = BinarySearch(componentType);
 
-            while (index < destinationArray.Length)
+            sourceSpan.Slice(0, index).CopyTo(destinationSpan);
+            sourceSpan.Slice(index + 1).CopyTo(destinationSpan.Slice(index));
+
+            // Update component bitmask.
+            int[] componentBitmask = new int[destinationSpan[^1].TypeId + 32 >> 5];
+            Span<int> destinationBitmask = new Span<int>(componentBitmask);
+
+            sourceBitmask.Slice(0, destinationBitmask.Length).CopyTo(destinationBitmask);
+            index = typeId >> 5;
+
+            if (index < destinationBitmask.Length)
             {
-                ComponentType currentComponentType = sourceArray[index];
-
-                if (currentComponentType == componentType)
-                {
-                    break;
-                }
-
-                destinationArray[index++] = currentComponentType;
+                destinationBitmask[index] ^= 1 << typeId;
             }
 
-            while (index < destinationArray.Length)
-            {
-                destinationArray[index] = sourceArray[++index];
-            }
-
-            // Build component bitmask.
-            int[] sourceBitmask = m_componentBitmask;
-            int[] destinationBitmask = new int[destinationArray[index - 1].TypeId + 32 >> 5];
-
-            Array.Copy(sourceBitmask, destinationBitmask, destinationBitmask.Length);
-
-            if ((index = componentType.TypeId >> 5) < destinationBitmask.Length)
-            {
-                destinationBitmask[index] &= ~(1 << componentType.TypeId);
-            }
-
-            // Decrease component count and entity size based on component type category.
+            // Update component count and entity size based on the category of the component type.
             int managedComponentCount = m_managedComponentCount;
             int unmanagedComponentCount = m_unmanagedComponentCount;
             int tagComponentCount = m_tagComponentCount;
@@ -479,44 +422,118 @@ namespace Logos.Entities
             {
                 case ComponentTypeCategory.Managed:
                     managedComponentCount--;
-                    entitySize -= componentType.Size;
-                    break;
+                    goto default;
                 case ComponentTypeCategory.Unmanaged:
                     unmanagedComponentCount--;
-                    entitySize -= componentType.Size;
-                    break;
+                    goto default;
                 case ComponentTypeCategory.Tag:
                     tagComponentCount--;
                     break;
+                default:
+                    entitySize -= componentType.Size;
+                    break;
             }
 
-            // Create subarchetype.
-            return new EntityArchetype(destinationArray, destinationBitmask, managedComponentCount,
+            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
                 unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
+        /// <inheritdoc cref="IEquatable{T}.Equals"/>
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)
         {
-            return this == other
-                || other != null
+            return ReferenceEquals(other, this)
+                || other is not null
                 && ComponentBitmask.SequenceEqual(other.ComponentBitmask);
         }
 
+        /// <inheritdoc cref="object.Equals"/>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return this == obj
-                || obj is EntityArchetype other
-                && ComponentBitmask.SequenceEqual(other.ComponentBitmask);
+            return Equals(obj as EntityArchetype);
         }
 
+        /// <inheritdoc cref="object.GetHashCode"/>
         public override int GetHashCode()
         {
             return BitmaskOperations.GetHashCode(ComponentBitmask);
         }
 
+        /// <inheritdoc cref="object.ToString"/>
         public override string ToString()
         {
-            return $"EntityArchetype {{ ComponentTypes = [{string.Join(", ", (object[])m_componentTypes)}] }}";
+            string componentTypesAsString = string.Join(", ", (object[])m_componentTypes);
+
+            return $"EntityArchetype {{ ComponentTypes = [{componentTypesAsString}] }}";
+        }
+
+        private int BinarySearch(ComponentType componentType)
+        {
+            ComponentType[] componentTypes = m_componentTypes;
+            int targetTypeId = componentType.TypeId;
+            int lowerBound;
+            int upperBound;
+
+            // Determine the search range based on the category of the component type.
+            switch (componentType.Category)
+            {
+                case ComponentTypeCategory.Managed:
+                    lowerBound = 0;
+                    upperBound = m_managedComponentCount - 1;
+                    break;
+                case ComponentTypeCategory.Unmanaged:
+                    lowerBound = m_managedComponentCount;
+                    upperBound = lowerBound + m_unmanagedComponentCount - 1;
+                    break;
+                case ComponentTypeCategory.Tag:
+                    lowerBound = m_managedComponentCount + m_unmanagedComponentCount;
+                    upperBound = lowerBound + m_tagComponentCount - 1;
+                    break;
+                default:
+                    // This case should not be reachable under normal circumstances. However, this
+                    // was needed to prevent the compiler from complaining about the lower and upper
+                    // bound variables being uninitialized should the other cases fail somehow.
+                    return -1;
+            }
+
+            // Find the component type using binary search.
+            while (lowerBound <= upperBound)
+            {
+                int index = lowerBound + (upperBound - lowerBound >> 1);
+                int sourceTypeId = componentTypes[index].TypeId;
+
+                if (targetTypeId == sourceTypeId)
+                {
+                    return index;
+                }
+
+                if (targetTypeId < sourceTypeId)
+                {
+                    upperBound = index - 1;
+                }
+                else
+                {
+                    lowerBound = index + 1;
+                }
+            }
+
+            // Return the complement of the index where the component type would have been in if
+            // this instance contained it.
+            return ~lowerBound;
+        }
+
+        /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator =="/>
+        public static bool operator ==(EntityArchetype? left, EntityArchetype? right)
+        {
+            return ReferenceEquals(left, right)
+                || left is not null
+                && right is not null
+                && left.ComponentBitmask.SequenceEqual(right.ComponentBitmask);
+        }
+
+        /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>
+        public static bool operator !=(EntityArchetype? left, EntityArchetype? right)
+        {
+            return !(left == right);
         }
     }
 }

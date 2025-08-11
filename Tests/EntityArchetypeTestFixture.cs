@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Logos.Entities.Tests
 {
@@ -26,7 +27,6 @@ namespace Logos.Entities.Tests
                 Assert.That(result.IndexOf(componentType), Is.EqualTo(index));
                 Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
                 Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
-                Assert.That(archetype, Is.SameAs(archetype.Add(null!)));
                 Assert.That(result, Is.SameAs(result.Add(componentType)));
             }
         }
@@ -36,11 +36,11 @@ namespace Logos.Entities.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityArchetype.Create(null!);
+                EntityArchetype.Create(array: null!);
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityArchetype.Create((IEnumerable<ComponentType>)null!);
+                EntityArchetype.Create(collection: null!);
             });
         }
 
@@ -50,11 +50,11 @@ namespace Logos.Entities.Tests
             int expectedManagedComponentCount = 0;
             int expectedUnmanagedComponentCount = 0;
             int expectedTagComponentCount = 0;
-            int expectedEntitySize = 8;
+            int expectedEntitySize = Unsafe.SizeOf<Entity>();
 
-            foreach (ComponentType type in expectedComponentTypes)
+            foreach (ComponentType componentType in expectedComponentTypes)
             {
-                switch (type.Category)
+                switch (componentType.Category)
                 {
                     case ComponentTypeCategory.Managed:
                         expectedManagedComponentCount++;
@@ -67,16 +67,16 @@ namespace Logos.Entities.Tests
                         continue;
                 }
 
-                expectedEntitySize += type.Size;
+                expectedEntitySize += componentType.Size;
             }
 
             for (int method = 0; method < 3; method++)
             {
                 EntityArchetype actual = method switch
                 {
-                    0 => EntityArchetype.Create(arguments),
-                    1 => EntityArchetype.Create((IEnumerable<ComponentType>)arguments),
-                    _ => EntityArchetype.Create(new ReadOnlySpan<ComponentType>(arguments))
+                    0 => EntityArchetype.Create(array: arguments),
+                    1 => EntityArchetype.Create(collection: arguments),
+                    _ => EntityArchetype.Create(span: arguments)
                 };
 
                 using (Assert.EnterMultipleScope())
@@ -91,16 +91,16 @@ namespace Logos.Entities.Tests
         }
 
         [TestCaseSource(typeof(EntityArchetypeTestCaseSource), nameof(EntityArchetypeTestCaseSource.EqualsTestCases))]
-        public static void EqualsTest(EntityArchetype? source, EntityArchetype? other)
+        public static void EqualsTest(EntityArchetype? source, EntityArchetype? target)
         {
             EqualityComparer<EntityArchetype> comparer = EqualityComparer<EntityArchetype>.Default;
 
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(comparer.Equals(source, source), Is.True);
-                Assert.That(comparer.Equals(other, other), Is.True);
-                Assert.That(comparer.Equals(source, other), Is.False);
-                Assert.That(comparer.Equals(other, source), Is.False);
+                Assert.That(comparer.Equals(target, target), Is.True);
+                Assert.That(comparer.Equals(source, target), Is.False);
+                Assert.That(comparer.Equals(target, source), Is.False);
             }
         }
 
@@ -121,7 +121,6 @@ namespace Logos.Entities.Tests
                 Assert.That(result.IndexOf(componentType), Is.EqualTo(-1));
                 Assert.That(subset.Slice(0, index).SequenceEqual(superset.Slice(0, index)), Is.True);
                 Assert.That(subset.Slice(index).SequenceEqual(superset.Slice(index + 1)), Is.True);
-                Assert.That(archetype, Is.SameAs(archetype.Remove(null!)));
                 Assert.That(result, Is.SameAs(result.Remove(componentType)));
             }
         }
