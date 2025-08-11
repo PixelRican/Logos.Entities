@@ -345,11 +345,14 @@ namespace Logos.Entities
         /// </returns>
         public int IndexOf(ComponentType componentType)
         {
-            int index = BinarySearch(componentType);
-
-            if (index >= 0)
+            if (Contains(componentType))
             {
-                return index;
+                int index = BinarySearch(componentType);
+
+                if (index >= 0)
+                {
+                    return index;
+                }
             }
 
             return -1;
