@@ -61,7 +61,7 @@ namespace Logos.Entities
         /// <inheritdoc cref="object.Equals"/>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return (obj is Entity other) && Equals(other);
+            return obj is Entity other && Equals(other);
         }
 
         /// <inheritdoc cref="object.GetHashCode"/>
