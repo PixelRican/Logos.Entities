@@ -150,7 +150,8 @@ namespace Logos.Entities
         {
             public static readonly GenericComponentType<T> Instance = new GenericComponentType<T>();
 
-            private GenericComponentType() : base(GetCategory())
+            private GenericComponentType()
+                : base(GetCategory())
             {
             }
 
