@@ -194,11 +194,16 @@ namespace Logos.Entities
 
         private static EntityArchetype CreateInstance(ComponentType[] componentTypes)
         {
+            if (componentTypes.Length == 0)
+            {
+                return s_base;
+            }
+
             Array.Sort(componentTypes);
 
-            ComponentType? previousComponentType;
+            ComponentType? previousComponentType = componentTypes[^1];
 
-            if (componentTypes.Length == 0 || (previousComponentType = componentTypes[^1]) == null)
+            if (previousComponentType == null)
             {
                 return s_base;
             }
