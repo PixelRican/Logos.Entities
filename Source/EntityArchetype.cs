@@ -192,62 +192,6 @@ namespace Logos.Entities
             return CreateInstance(span.ToArray());
         }
 
-        private static EntityArchetype CreateInstance(ComponentType[] componentTypes)
-        {
-            if (componentTypes.Length == 0)
-            {
-                return s_base;
-            }
-
-            Array.Sort(componentTypes);
-
-            ComponentType? previousComponentType = componentTypes[^1];
-
-            if (previousComponentType == null)
-            {
-                return s_base;
-            }
-
-            int[] componentBitmask = new int[previousComponentType.TypeId + 32 >> 5];
-            int componentCount = 0;
-            int managedComponentCount = 0;
-            int unmanagedComponentCount = 0;
-            int tagComponentCount = 0;
-            int entitySize = Unsafe.SizeOf<Entity>();
-
-            previousComponentType = null;
-
-            foreach (ComponentType? currentComponentType in componentTypes)
-            {
-                if (currentComponentType != previousComponentType)
-                {
-                    int typeId = currentComponentType.TypeId;
-
-                    componentTypes[componentCount++] = previousComponentType = currentComponentType;
-                    componentBitmask[typeId >> 5] |= 1 << typeId;
-
-                    switch (currentComponentType.Category)
-                    {
-                        case ComponentTypeCategory.Managed:
-                            managedComponentCount++;
-                            break;
-                        case ComponentTypeCategory.Unmanaged:
-                            unmanagedComponentCount++;
-                            break;
-                        case ComponentTypeCategory.Tag:
-                            tagComponentCount++;
-                            continue;
-                    }
-
-                    entitySize += currentComponentType.Size;
-                }
-            }
-
-            Array.Resize(ref componentTypes, componentCount);
-            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
-                unmanagedComponentCount, tagComponentCount, entitySize);
-        }
-
         /// <summary>
         /// Creates a copy of the <see cref="EntityArchetype"/> and adds the specified component
         /// type to it. If the <see cref="EntityArchetype"/> already contains the component type,
@@ -472,6 +416,62 @@ namespace Logos.Entities
             string componentTypesAsString = string.Join(", ", (object[])m_componentTypes);
 
             return $"EntityArchetype {{ ComponentTypes = [{componentTypesAsString}] }}";
+        }
+
+        private static EntityArchetype CreateInstance(ComponentType[] componentTypes)
+        {
+            if (componentTypes.Length == 0)
+            {
+                return s_base;
+            }
+
+            Array.Sort(componentTypes);
+
+            ComponentType? previousComponentType = componentTypes[^1];
+
+            if (previousComponentType == null)
+            {
+                return s_base;
+            }
+
+            int[] componentBitmask = new int[previousComponentType.TypeId + 32 >> 5];
+            int componentCount = 0;
+            int managedComponentCount = 0;
+            int unmanagedComponentCount = 0;
+            int tagComponentCount = 0;
+            int entitySize = Unsafe.SizeOf<Entity>();
+
+            previousComponentType = null;
+
+            foreach (ComponentType? currentComponentType in componentTypes)
+            {
+                if (currentComponentType != previousComponentType)
+                {
+                    int typeId = currentComponentType.TypeId;
+
+                    componentTypes[componentCount++] = previousComponentType = currentComponentType;
+                    componentBitmask[typeId >> 5] |= 1 << typeId;
+
+                    switch (currentComponentType.Category)
+                    {
+                        case ComponentTypeCategory.Managed:
+                            managedComponentCount++;
+                            break;
+                        case ComponentTypeCategory.Unmanaged:
+                            unmanagedComponentCount++;
+                            break;
+                        case ComponentTypeCategory.Tag:
+                            tagComponentCount++;
+                            continue;
+                    }
+
+                    entitySize += currentComponentType.Size;
+                }
+            }
+
+            Array.Resize(ref componentTypes, componentCount);
+            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
+                unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
         private int BinarySearch(ComponentType componentType)
