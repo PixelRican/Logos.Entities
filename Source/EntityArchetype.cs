@@ -413,9 +413,9 @@ namespace Logos.Entities
         /// <inheritdoc cref="object.ToString"/>
         public override string ToString()
         {
-            string componentTypesAsString = string.Join(", ", (object[])m_componentTypes);
+            string componentTypes = string.Join(", ", (object[])m_componentTypes);
 
-            return $"EntityArchetype {{ ComponentTypes = [{componentTypesAsString}] }}";
+            return $"EntityArchetype {{ ComponentTypes = [{componentTypes}] }}";
         }
 
         private static EntityArchetype CreateInstance(ComponentType[] componentTypes)
