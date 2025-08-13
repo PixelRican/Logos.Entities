@@ -10,7 +10,8 @@ using System.Threading;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents the mapping of a common language runtime (CLR) type to a unique identifier.
+    /// Represents the mapping of a common language runtime (CLR) type to columns of components in a
+    /// data source.
     /// </summary>
     public abstract class ComponentType : IComparable<ComponentType>, IComparable
     {
@@ -18,15 +19,15 @@ namespace Logos.Entities
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.NonPublicFields;
 
-        private static int s_nextTypeId = -1;
+        private static int s_nextIndex = -1;
 
         private readonly ComponentTypeCategory m_category;
-        private readonly int m_typeId;
+        private readonly int m_index;
 
         private ComponentType(ComponentTypeCategory category)
         {
             m_category = category;
-            m_typeId = Interlocked.Increment(ref s_nextTypeId);
+            m_index = Interlocked.Increment(ref s_nextIndex);
         }
 
         /// <summary>
@@ -41,14 +42,14 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the unique identifier for the <see cref="ComponentType"/>.
+        /// Gets the index of the <see cref="ComponentType"/>.
         /// </summary>
         /// <returns>
-        /// The unique identifier for the <see cref="ComponentType"/>.
+        /// The index of the <see cref="ComponentType"/>.
         /// </returns>
-        public int TypeId
+        public int Index
         {
-            get => m_typeId;
+            get => m_index;
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace Logos.Entities
             // their type IDs instead.
             if (comparison == 0)
             {
-                comparison = m_typeId.CompareTo(other.m_typeId);
+                comparison = m_index.CompareTo(other.m_index);
             }
 
             return comparison;
@@ -139,6 +140,12 @@ namespace Logos.Entities
         /// </exception>
         public abstract Array CreateArray(int length);
 
+        /// <inheritdoc cref="object.ToString"/>
+        public override string ToString()
+        {
+            return $"ComponentType {{ Type = {Type} }}";
+        }
+
         [DoesNotReturn]
         private static void ThrowForInvalidComparandType()
         {
@@ -168,11 +175,6 @@ namespace Logos.Entities
             public override Array CreateArray(int length)
             {
                 return new T[length];
-            }
-
-            public override string ToString()
-            {
-                return $"ComponentType {{ Type = {typeof(T)} }}";
             }
 
             private static ComponentTypeCategory GetCategory()

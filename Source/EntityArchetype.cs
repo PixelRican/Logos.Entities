@@ -215,10 +215,10 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(componentType);
 
             ReadOnlySpan<int> sourceBitmask = ComponentBitmask;
-            int typeId = componentType.TypeId;
+            int commponentTypeIndex = componentType.Index;
 
             // Return this instance if it already contains the component type.
-            if (BitmaskOperations.Test(sourceBitmask, typeId))
+            if (BitmaskOperations.Test(sourceBitmask, commponentTypeIndex))
             {
                 return this;
             }
@@ -234,11 +234,11 @@ namespace Logos.Entities
             sourceSpan.Slice(index).CopyTo(destinationSpan.Slice(index + 1));
 
             // Update component bitmask.
-            int[] componentBitmask = new int[destinationSpan[^1].TypeId + 32 >> 5];
+            int[] componentBitmask = new int[destinationSpan[^1].Index + 32 >> 5];
             Span<int> destinationBitmask = new Span<int>(componentBitmask);
 
             sourceBitmask.CopyTo(destinationBitmask);
-            destinationBitmask[typeId >> 5] |= 1 << typeId;
+            destinationBitmask[commponentTypeIndex >> 5] |= 1 << commponentTypeIndex;
 
             // Update component count and entity size based on the category of the component type.
             int managedComponentCount = m_managedComponentCount;
@@ -280,7 +280,7 @@ namespace Logos.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ComponentBitmask, componentType.TypeId);
+                && BitmaskOperations.Test(ComponentBitmask, componentType.Index);
         }
 
         /// <summary>
@@ -330,10 +330,10 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(componentType);
 
             ReadOnlySpan<int> sourceBitmask = ComponentBitmask;
-            int typeId = componentType.TypeId;
+            int componentTypeIndex = componentType.Index;
 
             // Return this instance if it does not contain the component type.
-            if (!BitmaskOperations.Test(sourceBitmask, typeId))
+            if (!BitmaskOperations.Test(sourceBitmask, componentTypeIndex))
             {
                 return this;
             }
@@ -355,15 +355,15 @@ namespace Logos.Entities
             sourceSpan.Slice(index + 1).CopyTo(destinationSpan.Slice(index));
 
             // Update component bitmask.
-            int[] componentBitmask = new int[destinationSpan[^1].TypeId + 32 >> 5];
+            int[] componentBitmask = new int[destinationSpan[^1].Index + 32 >> 5];
             Span<int> destinationBitmask = new Span<int>(componentBitmask);
 
             sourceBitmask.Slice(0, destinationBitmask.Length).CopyTo(destinationBitmask);
-            index = typeId >> 5;
+            index = componentTypeIndex >> 5;
 
             if (index < destinationBitmask.Length)
             {
-                destinationBitmask[index] ^= 1 << typeId;
+                destinationBitmask[index] ^= 1 << componentTypeIndex;
             }
 
             // Update component count and entity size based on the category of the component type.
@@ -436,7 +436,7 @@ namespace Logos.Entities
                 return s_base;
             }
 
-            int[] componentBitmask = new int[previousComponentType.TypeId + 32 >> 5];
+            int[] componentBitmask = new int[previousComponentType.Index + 32 >> 5];
             int componentCount = 0;
             int managedComponentCount = 0;
             int unmanagedComponentCount = 0;
@@ -449,10 +449,10 @@ namespace Logos.Entities
             {
                 if (currentComponentType != previousComponentType)
                 {
-                    int typeId = currentComponentType.TypeId;
+                    int componentTypeIndex = currentComponentType.Index;
 
                     componentTypes[componentCount++] = previousComponentType = currentComponentType;
-                    componentBitmask[typeId >> 5] |= 1 << typeId;
+                    componentBitmask[componentTypeIndex >> 5] |= 1 << componentTypeIndex;
 
                     switch (currentComponentType.Category)
                     {
@@ -479,7 +479,7 @@ namespace Logos.Entities
         private int BinarySearch(ComponentType componentType)
         {
             ComponentType[] componentTypes = m_componentTypes;
-            int targetTypeId = componentType.TypeId;
+            int targetComponentTypeIndex = componentType.Index;
             int lowerBound;
             int upperBound;
 
@@ -509,14 +509,14 @@ namespace Logos.Entities
             while (lowerBound <= upperBound)
             {
                 int index = lowerBound + (upperBound - lowerBound >> 1);
-                int sourceTypeId = componentTypes[index].TypeId;
+                int sourceComponentTypeIndex = componentTypes[index].Index;
 
-                if (targetTypeId == sourceTypeId)
+                if (targetComponentTypeIndex == sourceComponentTypeIndex)
                 {
                     return index;
                 }
 
-                if (targetTypeId < sourceTypeId)
+                if (targetComponentTypeIndex < sourceComponentTypeIndex)
                 {
                     upperBound = index - 1;
                 }

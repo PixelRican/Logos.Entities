@@ -516,7 +516,7 @@ namespace Logos.Entities
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.TypeId);
+                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.Index);
         }
 
         /// <summary>
@@ -532,7 +532,7 @@ namespace Logos.Entities
         public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.TypeId);
+                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.Index);
         }
 
         /// <summary>
@@ -548,7 +548,7 @@ namespace Logos.Entities
         public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.TypeId);
+                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.Index);
         }
 
         /// <summary>
@@ -673,7 +673,7 @@ namespace Logos.Entities
                 return false;
             }
 
-            int[] localComponentBitmask = new int[previousComponentType.TypeId + 32 >> 5];
+            int[] localComponentBitmask = new int[previousComponentType.Index + 32 >> 5];
             int count = 0;
 
             previousComponentType = null;
@@ -682,10 +682,10 @@ namespace Logos.Entities
             {
                 if (currentComponentType != previousComponentType)
                 {
-                    int typeId = currentComponentType.TypeId;
+                    int componentTypeIndex = currentComponentType.Index;
 
                     localComponentTypes[count++] = previousComponentType = currentComponentType;
-                    localComponentBitmask[typeId >> 5] |= 1 << typeId;
+                    localComponentBitmask[componentTypeIndex >> 5] |= 1 << componentTypeIndex;
                 }
             }
 

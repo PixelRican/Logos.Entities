@@ -34,12 +34,12 @@ namespace Logos.Entities.Tests
 
         [TestCaseSource(typeof(ComponentTypeTestCaseSource), nameof(ComponentTypeTestCaseSource.TypeOfTestCases))]
         public static void TypeOfTest(ComponentType actual, Type expectedType,
-            int expectedId, int expectedSize, ComponentTypeCategory expectedCategory)
+            int expectedIndex, int expectedSize, ComponentTypeCategory expectedCategory)
         {
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(actual.Type, Is.EqualTo(expectedType));
-                Assert.That(actual.TypeId, Is.EqualTo(expectedId));
+                Assert.That(actual.Index, Is.EqualTo(expectedIndex));
                 Assert.That(actual.Size, Is.EqualTo(expectedSize));
                 Assert.That(actual.Category, Is.EqualTo(expectedCategory));
             }
