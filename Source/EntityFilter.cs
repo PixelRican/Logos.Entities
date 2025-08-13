@@ -9,8 +9,8 @@ using System.Linq;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a predicate that determines whether entities match a set of criteria in terms of
-    /// required, included, and excluded component types.
+    /// Represents a predicate that determines whether archetypes match a set of criteria in terms
+    /// of required, included, and excluded component types.
     /// </summary>
     public sealed class EntityFilter : IEquatable<EntityFilter>
     {
@@ -56,540 +56,462 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets an <see cref="EntityFilter"/> that matches all entities.
+        /// Gets an <see cref="EntityFilter"/> that matches all archetypes.
         /// </summary>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that matches all archetypes.
+        /// </returns>
         public static EntityFilter Universal
         {
             get => s_universal;
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that entities must have in order to match with
-        /// the <see cref="EntityFilter"/>.
+        /// Gets a read-only span of component types that archetypes must contain in order to match
+        /// with the <see cref="EntityFilter"/>.
         /// </summary>
+        /// <returns>
+        /// A read-only span of component types that archetypes must contain in order to match with
+        /// the <see cref="EntityFilter"/>.
+        /// </returns>
         public ReadOnlySpan<ComponentType> RequiredComponentTypes
         {
             get => new ReadOnlySpan<ComponentType>(m_requiredComponentTypes);
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that, if non-empty, entities must have at
-        /// least one instance of in order to match with the <see cref="EntityFilter"/>.
+        /// Gets a read-only span of component types that archetypes must contain at least one
+        /// instance of in order to match with the <see cref="EntityFilter"/>.
         /// </summary>
+        /// <returns>
+        /// A read-only span of component types that, if not empty, archetypes must contain at least
+        /// one instance of in order to match with the <see cref="EntityFilter"/>.
+        /// </returns>
         public ReadOnlySpan<ComponentType> IncludedComponentTypes
         {
             get => new ReadOnlySpan<ComponentType>(m_includedComponentTypes);
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that entities must not have in order to match
-        /// with the <see cref="EntityFilter"/>.
+        /// Gets a read-only span of component types that archetypes must not contain in order to
+        /// match with the <see cref="EntityFilter"/>.
         /// </summary>
+        /// <returns>
+        /// A read-only span of component types that archetypes must not contain in order to match
+        /// with the <see cref="EntityFilter"/>.
+        /// </returns>
         public ReadOnlySpan<ComponentType> ExcludedComponentTypes
         {
             get => new ReadOnlySpan<ComponentType>(m_excludedComponentTypes);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
-        /// type can be found within <see cref="RequiredComponentTypes"/>.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether the
+        /// <see cref="EntityFilter"/> requires a specific component type.
         /// </summary>
+        /// <returns>
+        /// A read-only bitmask that compactly stores flags indicating whether the
+        /// <see cref="EntityFilter"/> requires a specific component type.
+        /// </returns>
         public ReadOnlySpan<int> RequiredComponentBitmask
         {
             get => new ReadOnlySpan<int>(m_requiredComponentBitmask);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
-        /// type can be found within <see cref="IncludedComponentTypes"/>.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether the
+        /// <see cref="EntityFilter"/> includes a specific component type.
         /// </summary>
+        /// <returns>
+        /// A read-only bitmask that compactly stores flags indicating whether the
+        /// <see cref="EntityFilter"/> includes a specific component type.
+        /// </returns>
         public ReadOnlySpan<int> IncludedComponentBitmask
         {
             get => new ReadOnlySpan<int>(m_includedComponentBitmask);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether a component
-        /// type can be found within <see cref="ExcludedComponentTypes"/>.
+        /// Gets a read-only bitmask that compactly stores flags indicating whether the
+        /// <see cref="EntityFilter"/> excludes a specific component type.
         /// </summary>
+        /// <returns>
+        /// A read-only bitmask that compactly stores flags indicating whether the
+        /// <see cref="EntityFilter"/> excludes a specific component type.
+        /// </returns>
         public ReadOnlySpan<int> ExcludedComponentBitmask
         {
             get => new ReadOnlySpan<int>(m_excludedComponentBitmask);
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires component types from the specified
+        /// Creates an <see cref="EntityFilter"/> that requires specific component types from the
+        /// specified array.
+        /// </summary>
+        /// <param name="requiredArray">
+        /// The array of required component types.
+        /// </param>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that requires specific component types from
+        /// <paramref name="requiredArray"/>, or <see cref="Universal"/> if
+        /// <paramref name="requiredArray"/> does not contain any component types.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredArray"/> is <see langword="null"/>.
+        /// </exception>
+        public static EntityFilter Create(ComponentType[] requiredArray)
+        {
+            ArgumentNullException.ThrowIfNull(requiredArray);
+            return CreateInstance(new ReadOnlySpan<ComponentType>(requiredArray).ToArray());
+        }
+
+        /// <summary>
+        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes specific
+        /// component types from the specified arrays.
+        /// </summary>
+        /// <param name="requiredArray">
+        /// The array of required component types.
+        /// </param>
+        /// <param name="includedArray">
+        /// The array of included component types.
+        /// </param>
+        /// <param name="excludedArray">
+        /// The array of excluded component types.
+        /// </param>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that requires, includes, and excludes specific component
+        /// types from <paramref name="requiredArray"/>, <paramref name="includedArray"/>, and
+        /// <paramref name="excludedArray"/>, or <see cref="Universal"/> if
+        /// <paramref name="requiredArray"/>, <paramref name="includedArray"/>, and
+        /// <paramref name="excludedArray"/> do not contain any component types.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredArray"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="includedArray"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="excludedArray"/> is <see langword="null"/>.
+        /// </exception>
+        public static EntityFilter Create(ComponentType[] requiredArray,
+                                          ComponentType[] includedArray,
+                                          ComponentType[] excludedArray)
+        {
+            ArgumentNullException.ThrowIfNull(requiredArray);
+            ArgumentNullException.ThrowIfNull(includedArray);
+            ArgumentNullException.ThrowIfNull(excludedArray);
+
+            return CreateInstance(new ReadOnlySpan<ComponentType>(requiredArray).ToArray(),
+                                  new ReadOnlySpan<ComponentType>(includedArray).ToArray(),
+                                  new ReadOnlySpan<ComponentType>(excludedArray).ToArray());
+        }
+
+        /// <summary>
+        /// Creates an <see cref="EntityFilter"/> that requires specific component types from the
+        /// specified collection.
+        /// </summary>
+        /// <param name="requiredCollection">
+        /// The collection of required component types.
+        /// </param>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that requires specific component types from
+        /// <paramref name="requiredCollection"/>, or <see cref="Universal"/> if
+        /// <paramref name="requiredCollection"/> does not contain any component types.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredCollection"/> is <see langword="null"/>.
+        /// </exception>
+        public static EntityFilter Create(IEnumerable<ComponentType> requiredCollection)
+        {
+            return CreateInstance(requiredCollection.ToArray());
+        }
+
+        /// <summary>
+        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes specific
+        /// component types from the specified collections.
+        /// </summary>
+        /// <param name="requiredCollection">
+        /// The collection of required component types.
+        /// </param>
+        /// <param name="includedCollection">
+        /// The collection of included component types.
+        /// </param>
+        /// <param name="excludedCollection">
+        /// The collection of excluded component types.
+        /// </param>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that requires, includes, and excludes specific component
+        /// types from <paramref name="requiredCollection"/>, <paramref name="includedCollection"/>, and
+        /// <paramref name="excludedCollection"/>, or <see cref="Universal"/> if
+        /// <paramref name="requiredCollection"/>, <paramref name="includedCollection"/>, and
+        /// <paramref name="excludedCollection"/> do not contain any component types.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="requiredCollection"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="includedCollection"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="excludedCollection"/> is <see langword="null"/>.
+        /// </exception>
+        public static EntityFilter Create(IEnumerable<ComponentType> requiredCollection,
+                                          IEnumerable<ComponentType> includedCollection,
+                                          IEnumerable<ComponentType> excludedCollection)
+        {
+            return CreateInstance(requiredCollection.ToArray(),
+                                  includedCollection.ToArray(),
+                                  excludedCollection.ToArray());
+        }
+
+        /// <summary>
+        /// Creates an <see cref="EntityFilter"/> that requires specific component types from the
+        /// specified span.
+        /// </summary>
+        /// <param name="requiredSpan">
+        /// The span of required component types.
+        /// </param>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that requires specific component types from
+        /// <paramref name="requiredSpan"/>, or <see cref="Universal"/> if
+        /// <paramref name="requiredSpan"/> does not contain any component types.
+        /// </returns>
+        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredSpan)
+        {
+            return CreateInstance(requiredSpan.ToArray());
+        }
+
+        /// <summary>
+        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes specific
+        /// component types from the specified spans.
+        /// </summary>
+        /// <param name="requiredSpan">
+        /// The span of required component types.
+        /// </param>
+        /// <param name="includedSpan">
+        /// The span of included component types.
+        /// </param>
+        /// <param name="excludedSpan">
+        /// The span of excluded component types.
+        /// </param>
+        /// <returns>
+        /// An <see cref="EntityFilter"/> that requires, includes, and excludes specific component
+        /// types from <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>, and
+        /// <paramref name="excludedSpan"/>, or <see cref="Universal"/> if
+        /// <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>, and
+        /// <paramref name="excludedSpan"/> do not contain any component types.
+        /// </returns>
+        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredSpan,
+                                          ReadOnlySpan<ComponentType> includedSpan,
+                                          ReadOnlySpan<ComponentType> excludedSpan)
+        {
+            return CreateInstance(requiredSpan.ToArray(),
+                                  includedSpan.ToArray(),
+                                  excludedSpan.ToArray());
+        }
+
+        /// <summary>
+        /// Creates an <see cref="Builder"/> that can be used to construct
+        /// <see cref="EntityFilter"/> instances that require, include, and exclude specific
+        /// component types from a variety of inputs.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="Builder"/> that can be used to construct <see cref="EntityFilter"/>
+        /// instances that require, include, and exclude specific component types from a variety of
+        /// inputs.
+        /// </returns>
+        public static Builder CreateBuilder()
+        {
+            return new Builder();
+        }
+
+        /// <summary>
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that requires specific component types from the specified
         /// array.
         /// </summary>
-        /// 
-        /// <param name="requiredComponentTypes">
+        /// <param name="array">
         /// The array of required component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires component types from the array, or
-        /// <see cref="Universal"/> if the array does not contain component types.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that requires specific component types from <paramref name="array"/>, if any.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>.
+        /// <paramref name="array"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityFilter Create(ComponentType[] requiredComponentTypes)
+        public static Builder Require(ComponentType[] array)
         {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
-
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask))
-            {
-                return new EntityFilter(requiredTypes, requiredBitmask);
-            }
-
-            return s_universal;
+            return new Builder().Require(array);
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes component
-        /// types from the specified arrays.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that requires specific component types from the specified
+        /// collection.
         /// </summary>
-        /// 
-        /// <param name="requiredComponentTypes">
-        /// The array of required component types.
+        /// <param name="collection">
+        /// The collection of required component types.
         /// </param>
-        /// 
-        /// <param name="includedComponentTypes">
-        /// The array of included component types.
-        /// </param>
-        /// 
-        /// <param name="excludedComponentTypes">
-        /// The array of excluded component types.
-        /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
-        /// from the arrays, or <see cref="Universal"/> if the arrays do not contain component
-        /// types.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that requires specific component types from <paramref name="collection"/>, if any.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>,
-        /// <paramref name="includedComponentTypes"/> is <see langword="null"/>, or
-        /// <paramref name="excludedComponentTypes"/> is <see langword="null"/>.
+        /// <paramref name="collection"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityFilter Create(ComponentType[] requiredComponentTypes,
-                                          ComponentType[] includedComponentTypes,
-                                          ComponentType[] excludedComponentTypes)
+        public static Builder Require(IEnumerable<ComponentType> collection)
         {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
-            ArgumentNullException.ThrowIfNull(includedComponentTypes);
-            ArgumentNullException.ThrowIfNull(excludedComponentTypes);
-
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask) |
-                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out int[] includedBitmask) |
-                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out int[] excludedBitmask))
-            {
-                return new EntityFilter(requiredTypes, requiredBitmask,
-                                        includedTypes, includedBitmask,
-                                        excludedTypes, excludedBitmask);
-            }
-
-            return s_universal;
+            return new Builder().Require(collection);
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires component types from the specified
-        /// sequence.
-        /// </summary>
-        /// 
-        /// <param name="requiredComponentTypes">
-        /// The sequence of required component types.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An <see cref="EntityFilter"/> that requires component types from the sequence, or
-        /// <see cref="Universal"/> if the sequence does not contain component types.
-        /// </returns>
-        /// 
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>.
-        /// </exception>
-        public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes)
-        {
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask))
-            {
-                return new EntityFilter(requiredTypes, requiredBitmask);
-            }
-
-            return s_universal;
-        }
-
-        /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes component
-        /// types from the specified sequences.
-        /// </summary>
-        /// 
-        /// <param name="requiredComponentTypes">
-        /// The sequence of required component types.
-        /// </param>
-        /// 
-        /// <param name="includedComponentTypes">
-        /// The sequence of included component types.
-        /// </param>
-        /// 
-        /// <param name="excludedComponentTypes">
-        /// The sequence of excluded component types.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
-        /// from the sequences, or <see cref="Universal"/> if the sequences do not contain
-        /// component types.
-        /// </returns>
-        /// 
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="requiredComponentTypes"/> is <see langword="null"/>,
-        /// <paramref name="includedComponentTypes"/> is <see langword="null"/>, or
-        /// <paramref name="excludedComponentTypes"/> is <see langword="null"/>.
-        /// </exception>
-        public static EntityFilter Create(IEnumerable<ComponentType> requiredComponentTypes,
-                                          IEnumerable<ComponentType> includedComponentTypes,
-                                          IEnumerable<ComponentType> excludedComponentTypes)
-        {
-            ArgumentNullException.ThrowIfNull(requiredComponentTypes);
-            ArgumentNullException.ThrowIfNull(includedComponentTypes);
-            ArgumentNullException.ThrowIfNull(excludedComponentTypes);
-
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask) |
-                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out int[] includedBitmask) |
-                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out int[] excludedBitmask))
-            {
-                return new EntityFilter(requiredTypes, requiredBitmask,
-                                        includedTypes, includedBitmask,
-                                        excludedTypes, excludedBitmask);
-            }
-
-            return s_universal;
-        }
-
-        /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires component types from the specified
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that requires specific component types from the specified
         /// span.
         /// </summary>
-        /// 
-        /// <param name="requiredComponentTypes">
+        /// <param name="span">
         /// The span of required component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires component types from the span, or
-        /// <see cref="Universal"/> if the span does not contain component types.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that requires specific component types from <paramref name="span"/>, if any.
         /// </returns>
-        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes)
+        public static Builder Require(ReadOnlySpan<ComponentType> span)
         {
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask))
-            {
-                return new EntityFilter(requiredTypes, requiredBitmask);
-            }
-
-            return s_universal;
+            return new Builder().Require(span);
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes component
-        /// types from the specified spans.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that includes specific component types from the specified
+        /// array.
         /// </summary>
-        /// 
-        /// <param name="requiredComponentTypes">
-        /// The span of required component types.
-        /// </param>
-        /// 
-        /// <param name="includedComponentTypes">
-        /// The span of included component types.
-        /// </param>
-        /// 
-        /// <param name="excludedComponentTypes">
-        /// The span of excluded component types.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
-        /// from the spans, or <see cref="Universal"/> if the spans do not contain component types.
-        /// </returns>
-        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredComponentTypes,
-                                          ReadOnlySpan<ComponentType> includedComponentTypes,
-                                          ReadOnlySpan<ComponentType> excludedComponentTypes)
-        {
-            if (TryBuild(requiredComponentTypes, out ComponentType[] requiredTypes, out int[] requiredBitmask) |
-                TryBuild(includedComponentTypes, out ComponentType[] includedTypes, out int[] includedBitmask) |
-                TryBuild(excludedComponentTypes, out ComponentType[] excludedTypes, out int[] excludedBitmask))
-            {
-                return new EntityFilter(requiredTypes, requiredBitmask,
-                                        includedTypes, includedBitmask,
-                                        excludedTypes, excludedBitmask);
-            }
-
-            return s_universal;
-        }
-
-        private static bool TryBuild(ComponentType[] arguments,
-            out ComponentType[] componentTypes, out int[] componentBitmask)
-        {
-            if (arguments.Length > 0)
-            {
-                componentTypes = new ComponentType[arguments.Length];
-                Array.Copy(arguments, componentTypes, arguments.Length);
-                return TryFinalizeBuild(ref componentTypes, out componentBitmask);
-            }
-
-            componentTypes = Array.Empty<ComponentType>();
-            componentBitmask = Array.Empty<int>();
-            return false;
-        }
-
-        private static bool TryBuild(IEnumerable<ComponentType> arguments,
-            out ComponentType[] componentTypes, out int[] componentBitmask)
-        {
-            componentTypes = arguments.ToArray();
-
-            if (componentTypes.Length > 0)
-            {
-                return TryFinalizeBuild(ref componentTypes, out componentBitmask);
-            }
-
-            componentBitmask = Array.Empty<int>();
-            return false;
-        }
-
-        private static bool TryBuild(ReadOnlySpan<ComponentType> arguments,
-            out ComponentType[] componentTypes, out int[] componentBitmask)
-        {
-            componentTypes = arguments.ToArray();
-
-            if (componentTypes.Length > 0)
-            {
-                return TryFinalizeBuild(ref componentTypes, out componentBitmask);
-            }
-
-            componentBitmask = Array.Empty<int>();
-            return false;
-        }
-
-        private static bool TryFinalizeBuild(ref ComponentType[] componentTypes, out int[] componentBitmask)
-        {
-            Array.Sort(componentTypes);
-
-            if (componentTypes[^1] == null)
-            {
-                componentTypes = Array.Empty<ComponentType>();
-                componentBitmask = Array.Empty<int>();
-                return false;
-            }
-
-            componentBitmask = new int[componentTypes[^1].TypeId + 32 >> 5];
-
-            int freeIndex = 0;
-            ComponentType? previous = null;
-
-            foreach (ComponentType current in componentTypes)
-            {
-                if (previous != current)
-                {
-                    componentTypes[freeIndex++] = previous = current;
-                    componentBitmask[current.TypeId >> 5] |= 1 << current.TypeId;
-                }
-            }
-
-            Array.Resize(ref componentTypes, freeIndex);
-            return true;
-        }
-
-        /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the required component types from the
-        /// specified array, if any.
-        /// </summary>
-        /// 
-        /// <param name="componentTypes">
-        /// The array of required component types.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An <see cref="Builder"/> that contains the required component types from the array.
-        /// </returns>
-        /// 
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
-        /// </exception>
-        public static Builder Require(ComponentType[] componentTypes)
-        {
-            return new Builder().Require(componentTypes);
-        }
-
-        /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the required component types from the
-        /// specified sequence, if any.
-        /// </summary>
-        /// 
-        /// <param name="componentTypes">
-        /// The sequence of required component types.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An <see cref="Builder"/> that contains the required component types from the sequence.
-        /// </returns>
-        /// 
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
-        /// </exception>
-        public static Builder Require(IEnumerable<ComponentType> componentTypes)
-        {
-            return new Builder().Require(componentTypes);
-        }
-
-        /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the required component types from the
-        /// specified span, if any.
-        /// </summary>
-        /// 
-        /// <param name="componentTypes">
-        /// The span of required component types.
-        /// </param>
-        /// 
-        /// <returns>
-        /// An <see cref="Builder"/> that contains the required component types from the span.
-        /// </returns>
-        public static Builder Require(ReadOnlySpan<ComponentType> componentTypes)
-        {
-            return new Builder().Require(componentTypes);
-        }
-
-        /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the included component types from the
-        /// specified array, if any.
-        /// </summary>
-        /// 
-        /// <param name="componentTypes">
+        /// <param name="array">
         /// The array of included component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains the included component types from the array.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that includes specific component types from <paramref name="array"/>, if any.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// <paramref name="array"/> is <see langword="null"/>.
         /// </exception>
-        public static Builder Include(ComponentType[] componentTypes)
+        public static Builder Include(ComponentType[] array)
         {
-            return new Builder().Include(componentTypes);
+            return new Builder().Include(array);
         }
 
         /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the included component types from the
-        /// specified sequence, if any.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that includes specific component types from the specified
+        /// collection.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
-        /// The sequence of included component types.
+        /// <param name="collection">
+        /// The collection of included component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains the included component types from the sequence.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that includes specific component types from <paramref name="collection"/>, if any.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// <paramref name="collection"/> is <see langword="null"/>.
         /// </exception>
-        public static Builder Include(IEnumerable<ComponentType> componentTypes)
+        public static Builder Include(IEnumerable<ComponentType> collection)
         {
-            return new Builder().Include(componentTypes);
+            return new Builder().Include(collection);
         }
 
         /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the included component types from the
-        /// specified span, if any.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that includes specific component types from the specified
+        /// span.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
+        /// <param name="span">
         /// The span of included component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains the included component types from the span.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that includes specific component types from <paramref name="span"/>, if any.
         /// </returns>
-        public static Builder Include(ReadOnlySpan<ComponentType> componentTypes)
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="span"/> is <see langword="null"/>.
+        /// </exception>
+        public static Builder Include(ReadOnlySpan<ComponentType> span)
         {
-            return new Builder().Include(componentTypes);
+            return new Builder().Include(span);
         }
 
         /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the excluded component types from the
-        /// specified array, if any.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that excludes specific component types from the specified
+        /// array.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
+        /// <param name="array">
         /// The array of excluded component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains the excluded component types from the array.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that excludes specific component types from <paramref name="array"/>, if any.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// <paramref name="array"/> is <see langword="null"/>.
         /// </exception>
-        public static Builder Exclude(ComponentType[] componentTypes)
+        public static Builder Exclude(ComponentType[] array)
         {
-            return new Builder().Exclude(componentTypes);
+            return new Builder().Exclude(array);
         }
 
         /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the excluded component types from the
-        /// specified sequence, if any.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that excludes specific component types from the specified
+        /// collection.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
-        /// The sequence of excluded component types.
+        /// <param name="collection">
+        /// The collection of excluded component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains the excluded component types from the sequence.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that excludes specific component types from <paramref name="collection"/>, if any.
         /// </returns>
-        /// 
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentTypes"/> is <see langword="null"/>.
+        /// <paramref name="collection"/> is <see langword="null"/>.
         /// </exception>
-        public static Builder Exclude(IEnumerable<ComponentType> componentTypes)
+        public static Builder Exclude(IEnumerable<ComponentType> collection)
         {
-            return new Builder().Exclude(componentTypes);
+            return new Builder().Exclude(collection);
         }
 
         /// <summary>
-        /// Creates an <see cref="Builder"/> that contains the excluded component types from the
-        /// specified span, if any.
+        /// Creates an <see cref="Builder"/> that can be used to construct an
+        /// <see cref="EntityFilter"/> that excludes specific component types from the specified
+        /// span.
         /// </summary>
-        /// 
-        /// <param name="componentTypes">
+        /// <param name="span">
         /// The span of excluded component types.
         /// </param>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains the excluded component types from the span.
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// that excludes specific component types from <paramref name="span"/>, if any.
         /// </returns>
-        public static Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="span"/> is <see langword="null"/>.
+        /// </exception>
+        public static Builder Exclude(ReadOnlySpan<ComponentType> span)
         {
-            return new Builder().Exclude(componentTypes);
+            return new Builder().Exclude(span);
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityFilter"/> requires the specified component
-        /// type.
+        /// Determines whether the <see cref="EntityFilter"/> requires the specified component type.
         /// </summary>
-        /// 
         /// <param name="componentType">
-        /// The component type.
+        /// The component type to search for.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityFilter"/> requires the component type;
-        /// otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the <see cref="EntityFilter"/> requires
+        /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Requires(ComponentType componentType)
         {
@@ -598,17 +520,14 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityFilter"/> includes the specified component
-        /// type.
+        /// Determines whether the <see cref="EntityFilter"/> includes the specified component type.
         /// </summary>
-        /// 
         /// <param name="componentType">
-        /// The component type.
+        /// The component type to search for.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityFilter"/> includes the component type;
-        /// otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the <see cref="EntityFilter"/> includes
+        /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Includes(ComponentType componentType)
         {
@@ -617,17 +536,14 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityFilter"/> excludes the specified component
-        /// type.
+        /// Determines whether the <see cref="EntityFilter"/> excludes the specified component type.
         /// </summary>
-        /// 
         /// <param name="componentType">
-        /// The component type.
+        /// The component type to search for.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityFilter"/> excludes the component type;
-        /// otherwise, <see langword="false"/>.
+        /// <see langword="true"/> if the <see cref="EntityFilter"/> excludes
+        /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Excludes(ComponentType componentType)
         {
@@ -636,60 +552,61 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the specified entity archetype meets the criteria defined by the
+        /// Determines whether the specified archetype meets the criteria defined by the
         /// <see cref="EntityFilter"/>.
         /// </summary>
-        /// 
         /// <param name="archetype">
-        /// The entity archetype to compare against the criteria defined by the
-        /// <see cref="EntityFilter"/>.
+        /// The archetype to compare against the criteria defined by the <see cref="EntityFilter"/>.
         /// </param>
-        /// 
         /// <returns>
-        /// <see langword="true"/> if the entity archtype meets the criteria defined by the
+        /// <see langword="true"/> if <paramref name="archetype"/> meets the criteria defined by the
         /// <see cref="EntityFilter"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Matches(EntityArchetype archetype)
         {
-            ReadOnlySpan<int> bitmask;
-            return archetype != null
-                && BitmaskOperations.Requires(RequiredComponentBitmask, bitmask = archetype.ComponentBitmask)
+            if (archetype is null)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<int> bitmask = archetype.ComponentBitmask;
+
+            return BitmaskOperations.Requires(RequiredComponentBitmask, bitmask)
                 && BitmaskOperations.Includes(IncludedComponentBitmask, bitmask)
                 && BitmaskOperations.Excludes(ExcludedComponentBitmask, bitmask);
         }
 
         /// <summary>
-        /// Creates an <see cref="Builder"/> that contains required, included, and excluded
-        /// component types from the <see cref="EntityFilter"/>.
+        /// Creates an <see cref="Builder"/> that can be used to construct
+        /// <see cref="EntityFilter"/> instances based on the criteria defined by the
+        /// <see cref="EntityFilter"/>.
         /// </summary>
-        /// 
         /// <returns>
-        /// An <see cref="Builder"/> that contains required, included, and excluded component types
-        /// from the <see cref="EntityFilter"/>.
+        /// An <see cref="Builder"/> that can be used to construct <see cref="EntityFilter"/>
+        /// instances based on the criteria defined by the <see cref="EntityFilter"/>.
         /// </returns>
         public Builder ToBuilder()
         {
             return new Builder(this);
         }
 
+        /// <inheritdoc cref="IEquatable{T}.Equals"/>
         public bool Equals(EntityFilter? other)
         {
-            return this == other
-                || other != null
+            return ReferenceEquals(other, this)
+                || other is not null
                 && RequiredComponentBitmask.SequenceEqual(other.RequiredComponentBitmask)
                 && IncludedComponentBitmask.SequenceEqual(other.IncludedComponentBitmask)
                 && ExcludedComponentBitmask.SequenceEqual(other.ExcludedComponentBitmask);
         }
 
+        /// <inheritdoc cref="object.Equals"/>
         public override bool Equals(object? obj)
         {
-            return this == obj
-                || obj is EntityFilter other
-                && RequiredComponentBitmask.SequenceEqual(other.RequiredComponentBitmask)
-                && IncludedComponentBitmask.SequenceEqual(other.IncludedComponentBitmask)
-                && ExcludedComponentBitmask.SequenceEqual(other.ExcludedComponentBitmask);
+            return Equals(obj as EntityFilter);
         }
 
+        /// <inheritdoc cref="object.GetHashCode"/>
         public override int GetHashCode()
         {
             return HashCode.Combine(BitmaskOperations.GetHashCode(RequiredComponentBitmask),
@@ -697,9 +614,107 @@ namespace Logos.Entities
                                     BitmaskOperations.GetHashCode(ExcludedComponentBitmask));
         }
 
+        /// <inheritdoc cref="object.ToString"/>
+        public override string ToString()
+        {
+            string requiredComponentTypes = string.Join(", ", (object[])m_requiredComponentTypes);
+            string includedComponentTypes = string.Join(", ", (object[])m_includedComponentTypes);
+            string excludedComponentTypes = string.Join(", ", (object[])m_excludedComponentTypes);
+
+            return $"EntityFilter {{ RequiredComponentTypes = [{requiredComponentTypes}]" +
+                                  $" IncludedComponentTypes = [{includedComponentTypes}]" +
+                                  $" ExcludedComponentTypes = [{excludedComponentTypes}] }}";
+        }
+
+        private static EntityFilter CreateInstance(ComponentType[] requiredComponentTypes)
+        {
+            if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmask))
+            {
+                return new EntityFilter(requiredComponentTypes, requiredComponentBitmask);
+            }
+
+            return s_universal;
+        }
+
+        private static EntityFilter CreateInstance(ComponentType[] requiredComponentTypes,
+                                                   ComponentType[] includedComponentTypes,
+                                                   ComponentType[] excludedComponentTypes)
+        {
+            if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmask) |
+                TryBuild(ref includedComponentTypes, out int[] includedComponentBitmask) |
+                TryBuild(ref excludedComponentTypes, out int[] excludedComponentBitmask))
+            {
+                return new EntityFilter(requiredComponentTypes, requiredComponentBitmask,
+                                        includedComponentTypes, includedComponentBitmask,
+                                        excludedComponentTypes, excludedComponentBitmask);
+            }
+
+            return s_universal;
+        }
+
+        private static bool TryBuild(ref ComponentType[] componentTypes, out int[] componentBitmask)
+        {
+            ComponentType[] localComponentTypes = componentTypes;
+
+            if (localComponentTypes.Length == 0)
+            {
+                componentBitmask = Array.Empty<int>();
+                return false;
+            }
+
+            Array.Sort(localComponentTypes);
+
+            ComponentType? previousComponentType = localComponentTypes[^1];
+
+            if (previousComponentType == null)
+            {
+                componentTypes = Array.Empty<ComponentType>();
+                componentBitmask = Array.Empty<int>();
+                return false;
+            }
+
+            int[] localComponentBitmask = new int[previousComponentType.TypeId + 32 >> 5];
+            int count = 0;
+
+            previousComponentType = null;
+
+            foreach (ComponentType? currentComponentType in localComponentTypes)
+            {
+                if (currentComponentType != previousComponentType)
+                {
+                    int typeId = currentComponentType.TypeId;
+
+                    localComponentTypes[count++] = previousComponentType = currentComponentType;
+                    localComponentBitmask[typeId >> 5] |= 1 << typeId;
+                }
+            }
+
+            Array.Resize(ref localComponentTypes, count);
+            componentTypes = localComponentTypes;
+            componentBitmask = localComponentBitmask;
+            return true;
+        }
+
+        /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator =="/>
+        public static bool operator ==(EntityFilter? left, EntityFilter? right)
+        {
+            return ReferenceEquals(left, right)
+                || left is not null
+                && right is not null
+                && left.RequiredComponentBitmask.SequenceEqual(right.RequiredComponentBitmask)
+                && left.IncludedComponentBitmask.SequenceEqual(right.IncludedComponentBitmask)
+                && left.ExcludedComponentBitmask.SequenceEqual(right.ExcludedComponentBitmask);
+        }
+
+        /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>
+        public static bool operator !=(EntityFilter? left, EntityFilter? right)
+        {
+            return !(left == right);
+        }
+
         /// <summary>
-        /// Represents a writable buffer that can be converted into instances of the
-        /// <see cref="EntityFilter"/> class without allocating extra memory.
+        /// Represents a builder that can be used to construct <see cref="EntityFilter"/> instances
+        /// that require, include, and exclude specific component types from a variety of inputs.
         /// </summary>
         public sealed class Builder
         {
@@ -710,30 +725,13 @@ namespace Logos.Entities
             private int[] m_includedComponentBitmask;
             private int[] m_excludedComponentBitmask;
 
-            /// <summary>
-            /// Initializes an new instance of the <see cref="Builder"/> class.
-            /// </summary>
-            public Builder()
+            internal Builder()
             {
                 Reset();
             }
 
-            /// <summary>
-            /// Initializes an new instance of the <see cref="Builder"/> class that contains
-            /// required, included, and excluded component types from the specified entity filter.
-            /// </summary>
-            /// 
-            /// <param name="filter">
-            /// The entity filter to draw required, included, and excluded component types from.
-            /// </param>
-            /// 
-            /// <exception cref="ArgumentNullException">
-            /// <paramref name="filter"/> is <see langword="null"/>.
-            /// </exception>
-            public Builder(EntityFilter filter)
+            internal Builder(EntityFilter filter)
             {
-                ArgumentNullException.ThrowIfNull(filter);
-
                 m_requiredComponentTypes = filter.m_requiredComponentTypes;
                 m_includedComponentTypes = filter.m_includedComponentTypes;
                 m_excludedComponentTypes = filter.m_excludedComponentTypes;
@@ -743,7 +741,31 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Resets the state of the <see cref="Builder"/>.
+            /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes
+            /// component types specified by the <see cref="Builder"/>.
+            /// </summary>
+            /// <returns>
+            /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
+            /// specified by the <see cref="Builder"/>, or <see cref="Universal"/> if the
+            /// <see cref="Builder"/> does not specify any component types.
+            /// </returns>
+            public EntityFilter Construct()
+            {
+                if (m_requiredComponentTypes.Length > 0 ||
+                    m_includedComponentTypes.Length > 0 ||
+                    m_excludedComponentTypes.Length > 0)
+                {
+                    return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBitmask,
+                                            m_includedComponentTypes, m_includedComponentBitmask,
+                                            m_excludedComponentTypes, m_excludedComponentBitmask);
+                }
+
+                return s_universal;
+            }
+
+            /// <summary>
+            /// Sets the <see cref="Builder"/> to its default state, which specifies a criteria
+            /// identical to the one defined by <see cref="Universal"/>.
             /// </summary>
             [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBitmask),
                            nameof(m_includedComponentTypes), nameof(m_includedComponentBitmask),
@@ -759,216 +781,195 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the required component types from the
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> requires specific component types from the
             /// specified array, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
+            /// <param name="array">
             /// The array of required component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            /// 
             /// <exception cref="ArgumentNullException">
-            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// <paramref name="array"/> is <see langword="null"/>.
             /// </exception>
-            public Builder Require(ComponentType[] componentTypes)
+            public Builder Require(ComponentType[] array)
             {
-                ArgumentNullException.ThrowIfNull(componentTypes);
-                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
-                return this;
+                ArgumentNullException.ThrowIfNull(array);
+                return BuildRequiredParameters(new ReadOnlySpan<ComponentType>(array).ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the required component types from the
-            /// specified sequence, if any.
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> requires specific component types from the
+            /// specified collection, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
-            /// The sequence of required component types.
+            /// <param name="collection">
+            /// The collection of required component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            /// 
             /// <exception cref="ArgumentNullException">
-            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// <paramref name="collection"/> is <see langword="null"/>.
             /// </exception>
-            public Builder Require(IEnumerable<ComponentType> componentTypes)
+            public Builder Require(IEnumerable<ComponentType> collection)
             {
-                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
-                return this;
+                return BuildRequiredParameters(collection.ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the required component types from the
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> requires specific component types from the
             /// specified span, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
+            /// <param name="span">
             /// The span of required component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            public Builder Require(ReadOnlySpan<ComponentType> componentTypes)
+            public Builder Require(ReadOnlySpan<ComponentType> span)
             {
-                TryBuild(componentTypes, out m_requiredComponentTypes, out m_requiredComponentBitmask);
-                return this;
+                return BuildRequiredParameters(span.ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the included component types from the
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> includes specific component types from the
             /// specified array, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
+            /// <param name="array">
             /// The array of included component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            /// 
             /// <exception cref="ArgumentNullException">
-            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// <paramref name="array"/> is <see langword="null"/>.
             /// </exception>
-            public Builder Include(ComponentType[] componentTypes)
+            public Builder Include(ComponentType[] array)
             {
-                ArgumentNullException.ThrowIfNull(componentTypes);
-                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
-                return this;
+                ArgumentNullException.ThrowIfNull(array);
+                return BuildIncludedParameters(new ReadOnlySpan<ComponentType>(array).ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the included component types from the
-            /// specified sequence, if any.
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> includes specific component types from the
+            /// specified collection, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
-            /// The sequence of included component types.
+            /// <param name="collection">
+            /// The collection of included component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            /// 
             /// <exception cref="ArgumentNullException">
-            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// <paramref name="collection"/> is <see langword="null"/>.
             /// </exception>
-            public Builder Include(IEnumerable<ComponentType> componentTypes)
+            public Builder Include(IEnumerable<ComponentType> collection)
             {
-                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
-                return this;
+                return BuildIncludedParameters(collection.ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the included component types from the
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> includes specific component types from the
             /// specified span, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
+            /// <param name="span">
             /// The span of included component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            public Builder Include(ReadOnlySpan<ComponentType> componentTypes)
+            public Builder Include(ReadOnlySpan<ComponentType> span)
             {
-                TryBuild(componentTypes, out m_includedComponentTypes, out m_includedComponentBitmask);
-                return this;
+                return BuildIncludedParameters(span.ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the excluded component types from the
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> excludes specific component types from the
             /// specified array, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
+            /// <param name="array">
             /// The array of excluded component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            /// 
             /// <exception cref="ArgumentNullException">
-            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// <paramref name="array"/> is <see langword="null"/>.
             /// </exception>
-            public Builder Exclude(ComponentType[] componentTypes)
+            public Builder Exclude(ComponentType[] array)
             {
-                ArgumentNullException.ThrowIfNull(componentTypes);
-                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
-                return this;
+                ArgumentNullException.ThrowIfNull(array);
+                return BuildExcludedParameters(new ReadOnlySpan<ComponentType>(array).ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the excluded component types from the
-            /// specified sequence, if any.
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> excludes specific component types from the
+            /// specified collection, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
-            /// The sequence of excluded component types.
+            /// <param name="collection">
+            /// The collection of excluded component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            /// 
             /// <exception cref="ArgumentNullException">
-            /// <paramref name="componentTypes"/> is <see langword="null"/>.
+            /// <paramref name="collection"/> is <see langword="null"/>.
             /// </exception>
-            public Builder Exclude(IEnumerable<ComponentType> componentTypes)
+            public Builder Exclude(IEnumerable<ComponentType> collection)
             {
-                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
-                return this;
+                return BuildExcludedParameters(collection.ToArray());
             }
 
             /// <summary>
-            /// Modifies the <see cref="Builder"/> to contain the excluded component types from the
+            /// Updates the criteria specified by the <see cref="Builder"/> such that the
+            /// constructed <see cref="EntityFilter"/> excludes specific component types from the
             /// specified span, if any.
             /// </summary>
-            /// 
-            /// <param name="componentTypes">
+            /// <param name="span">
             /// The span of excluded component types.
             /// </param>
-            /// 
             /// <returns>
-            /// The <see cref="Builder"/>.
+            /// The <see cref="Builder"/> which can be used to chain method calls.
             /// </returns>
-            public Builder Exclude(ReadOnlySpan<ComponentType> componentTypes)
+            public Builder Exclude(ReadOnlySpan<ComponentType> span)
             {
-                TryBuild(componentTypes, out m_excludedComponentTypes, out m_excludedComponentBitmask);
+                return BuildExcludedParameters(span.ToArray());
+            }
+
+            private Builder BuildRequiredParameters(ComponentType[] componentTypes)
+            {
+                TryBuild(ref componentTypes, out int[] componentBitmask);
+
+                m_requiredComponentTypes = componentTypes;
+                m_requiredComponentBitmask = componentBitmask;
                 return this;
             }
 
-            /// <summary>
-            /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes
-            /// component types specified by the <see cref="Builder"/>.
-            /// </summary>
-            /// 
-            /// <returns>
-            /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
-            /// specified by the <see cref="Builder"/>, or <see cref="Universal"/> if the
-            /// <see cref="Builder"/> does not specify any component types.
-            /// </returns>
-            public EntityFilter Build()
+            private Builder BuildIncludedParameters(ComponentType[] componentTypes)
             {
-                if (m_requiredComponentTypes.Length > 0 ||
-                    m_includedComponentTypes.Length > 0 ||
-                    m_excludedComponentTypes.Length > 0)
-                {
-                    return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBitmask,
-                                            m_includedComponentTypes, m_includedComponentBitmask,
-                                            m_excludedComponentTypes, m_excludedComponentBitmask);
-                }
+                TryBuild(ref componentTypes, out int[] componentBitmask);
 
-                return s_universal;
+                m_includedComponentTypes = componentTypes;
+                m_includedComponentBitmask = componentBitmask;
+                return this;
+            }
+
+            private Builder BuildExcludedParameters(ComponentType[] componentTypes)
+            {
+                TryBuild(ref componentTypes, out int[] componentBitmask);
+
+                m_excludedComponentTypes = componentTypes;
+                m_excludedComponentBitmask = componentBitmask;
+                return this;
             }
         }
     }

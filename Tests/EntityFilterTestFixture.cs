@@ -15,11 +15,11 @@ namespace Logos.Entities.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(null!);
+                EntityFilter.Create(requiredArray: null!);
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create((IEnumerable<ComponentType>)null!);
+                EntityFilter.Create(requiredCollection: null!);
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -50,7 +50,7 @@ namespace Logos.Entities.Tests
         [TestCaseSource(typeof(EntityFilterTestCaseSource), nameof(EntityFilterTestCaseSource.CreateTestCases))]
         public static void CreateTest(ComponentType[] arguments, ComponentType[] expectedComponentTypes)
         {
-            IEnumerable<ComponentType> enumerable = arguments;
+            IEnumerable<ComponentType> collection = arguments;
             ReadOnlySpan<ComponentType> span = new ReadOnlySpan<ComponentType>(arguments);
 
             for (int method = 0; method < 6; method++)
@@ -58,11 +58,11 @@ namespace Logos.Entities.Tests
                 EntityFilter filter = method switch
                 {
                     0 => EntityFilter.Create(arguments, arguments, arguments),
-                    1 => EntityFilter.Create(enumerable, enumerable, enumerable),
+                    1 => EntityFilter.Create(collection, collection, collection),
                     2 => EntityFilter.Create(span, span, span),
-                    3 => EntityFilter.Require(arguments).Include(enumerable).Exclude(span).Build(),
-                    4 => EntityFilter.Require(enumerable).Include(span).Exclude(arguments).Build(),
-                    _ => EntityFilter.Require(span).Include(arguments).Exclude(enumerable).Build(),
+                    3 => EntityFilter.Require(arguments).Include(collection).Exclude(span).Construct(),
+                    4 => EntityFilter.Require(collection).Include(span).Exclude(arguments).Construct(),
+                    _ => EntityFilter.Require(span).Include(arguments).Exclude(collection).Construct(),
                 };
 
                 using (Assert.EnterMultipleScope())
