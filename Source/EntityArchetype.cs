@@ -68,11 +68,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only bitmask that compactly stores flags indicating whether a specific
-        /// component type can be found in <see cref="ComponentTypes"/>.
+        /// component type is contained by the <see cref="EntityArchetype"/>.
         /// </summary>
         /// <returns>
         /// A read-only bitmask that compactly stores flags indicating whether a specific component
-        /// type can be found in <see cref="ComponentTypes"/>.
+        /// type is contained by the <see cref="EntityArchetype"/>.
         /// </returns>
         public ReadOnlySpan<int> ComponentBitmask
         {
@@ -80,10 +80,10 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the total number of component types in <see cref="ComponentTypes"/>.
+        /// Gets the total number of component types contained by the <see cref="EntityArchetype"/>.
         /// </summary>
         /// <returns>
-        /// The total number of component types in <see cref="ComponentTypes"/>.
+        /// The total number of component types contained by the <see cref="EntityArchetype"/>.
         /// </returns>
         public int ComponentCount
         {
@@ -91,10 +91,11 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of managed component types in <see cref="ComponentTypes"/>.
+        /// Gets the number of managed component types contained by the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
         /// <returns>
-        /// The number of managed component types in <see cref="ComponentTypes"/>.
+        /// The number of managed component types contained by the <see cref="EntityArchetype"/>.
         /// </returns>
         public int ManagedComponentCount
         {
@@ -102,10 +103,11 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of unmanaged component types in <see cref="ComponentTypes"/>.
+        /// Gets the number of unmanaged component types contained by the
+        /// <see cref="EntityArchetype"/>.
         /// </summary>
         /// <returns>
-        /// The number of unmanaged component types in <see cref="ComponentTypes"/>.
+        /// The number of unmanaged component types contained by the <see cref="EntityArchetype"/>.
         /// </returns>
         public int UnmanagedComponentCount
         {
@@ -113,10 +115,10 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of tag component types in <see cref="ComponentTypes"/>.
+        /// Gets the number of tag component types contained by the <see cref="EntityArchetype"/>.
         /// </summary>
         /// <returns>
-        /// The number of tag component types in <see cref="ComponentTypes"/>.
+        /// The number of tag component types contained by the <see cref="EntityArchetype"/>.
         /// </returns>
         public int TagComponentCount
         {
