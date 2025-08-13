@@ -797,7 +797,7 @@ namespace Logos.Entities
             public Builder Require(ComponentType[] array)
             {
                 ArgumentNullException.ThrowIfNull(array);
-                return BuildRequiredParameters(new ReadOnlySpan<ComponentType>(array).ToArray());
+                return BuildRequiredMembers(new ReadOnlySpan<ComponentType>(array).ToArray());
             }
 
             /// <summary>
@@ -816,7 +816,7 @@ namespace Logos.Entities
             /// </exception>
             public Builder Require(IEnumerable<ComponentType> collection)
             {
-                return BuildRequiredParameters(collection.ToArray());
+                return BuildRequiredMembers(collection.ToArray());
             }
 
             /// <summary>
@@ -832,7 +832,7 @@ namespace Logos.Entities
             /// </returns>
             public Builder Require(ReadOnlySpan<ComponentType> span)
             {
-                return BuildRequiredParameters(span.ToArray());
+                return BuildRequiredMembers(span.ToArray());
             }
 
             /// <summary>
@@ -852,7 +852,7 @@ namespace Logos.Entities
             public Builder Include(ComponentType[] array)
             {
                 ArgumentNullException.ThrowIfNull(array);
-                return BuildIncludedParameters(new ReadOnlySpan<ComponentType>(array).ToArray());
+                return BuildIncludedMembers(new ReadOnlySpan<ComponentType>(array).ToArray());
             }
 
             /// <summary>
@@ -871,7 +871,7 @@ namespace Logos.Entities
             /// </exception>
             public Builder Include(IEnumerable<ComponentType> collection)
             {
-                return BuildIncludedParameters(collection.ToArray());
+                return BuildIncludedMembers(collection.ToArray());
             }
 
             /// <summary>
@@ -887,7 +887,7 @@ namespace Logos.Entities
             /// </returns>
             public Builder Include(ReadOnlySpan<ComponentType> span)
             {
-                return BuildIncludedParameters(span.ToArray());
+                return BuildIncludedMembers(span.ToArray());
             }
 
             /// <summary>
@@ -907,7 +907,7 @@ namespace Logos.Entities
             public Builder Exclude(ComponentType[] array)
             {
                 ArgumentNullException.ThrowIfNull(array);
-                return BuildExcludedParameters(new ReadOnlySpan<ComponentType>(array).ToArray());
+                return BuildExcludedMembers(new ReadOnlySpan<ComponentType>(array).ToArray());
             }
 
             /// <summary>
@@ -926,7 +926,7 @@ namespace Logos.Entities
             /// </exception>
             public Builder Exclude(IEnumerable<ComponentType> collection)
             {
-                return BuildExcludedParameters(collection.ToArray());
+                return BuildExcludedMembers(collection.ToArray());
             }
 
             /// <summary>
@@ -942,10 +942,10 @@ namespace Logos.Entities
             /// </returns>
             public Builder Exclude(ReadOnlySpan<ComponentType> span)
             {
-                return BuildExcludedParameters(span.ToArray());
+                return BuildExcludedMembers(span.ToArray());
             }
 
-            private Builder BuildRequiredParameters(ComponentType[] componentTypes)
+            private Builder BuildRequiredMembers(ComponentType[] componentTypes)
             {
                 TryBuild(ref componentTypes, out int[] componentBitmask);
 
@@ -954,7 +954,7 @@ namespace Logos.Entities
                 return this;
             }
 
-            private Builder BuildIncludedParameters(ComponentType[] componentTypes)
+            private Builder BuildIncludedMembers(ComponentType[] componentTypes)
             {
                 TryBuild(ref componentTypes, out int[] componentBitmask);
 
@@ -963,7 +963,7 @@ namespace Logos.Entities
                 return this;
             }
 
-            private Builder BuildExcludedParameters(ComponentType[] componentTypes)
+            private Builder BuildExcludedMembers(ComponentType[] componentTypes)
             {
                 TryBuild(ref componentTypes, out int[] componentBitmask);
 
