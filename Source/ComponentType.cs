@@ -149,8 +149,7 @@ namespace Logos.Entities
         [DoesNotReturn]
         private static void ThrowForInvalidComparandType()
         {
-            throw new ArgumentException(
-                "The specified comparand is not of the same type as this instance.", "obj");
+            throw new ArgumentException("Object must be of type ComponentType.", "obj");
         }
 
         private sealed class GenericComponentType<[DynamicallyAccessedMembers(FieldMembers)] T> : ComponentType
