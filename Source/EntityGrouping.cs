@@ -13,15 +13,34 @@ namespace Logos.Entities
     /// Represents a collection of tables that have a common archetype.
     /// </summary>
     public sealed class EntityGrouping : IGrouping<EntityArchetype, EntityTable>,
-        ICollection<EntityTable>, ICollection, IReadOnlyCollection<EntityTable>
+        IList<EntityTable>, IList, IReadOnlyList<EntityTable>
     {
+        private static readonly EntityGrouping s_empty = new EntityGrouping();
+
         private readonly EntityArchetype m_key;
         private readonly EntityTable[] m_values;
+
+        private EntityGrouping()
+        {
+            m_key = EntityArchetype.Base;
+            m_values = Array.Empty<EntityTable>();
+        }
 
         private EntityGrouping(EntityArchetype key, EntityTable[] values)
         {
             m_key = key;
             m_values = values;
+        }
+
+        /// <summary>
+        /// Gets an empty <see cref="EntityGrouping"/> that groups tables by the base archetype.
+        /// </summary>
+        /// <returns>
+        /// An empty <see cref="EntityGrouping"/> that groups tables by the base archetype.
+        /// </returns>
+        public static EntityGrouping Empty
+        {
+            get => s_empty;
         }
 
         /// <summary>
@@ -36,14 +55,46 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the number of tables contained in the <see cref="EntityGrouping"/>.
+        /// Gets the number of elements contained in the <see cref="EntityGrouping"/>.
         /// </summary>
         /// <returns>
-        /// The number of tables contained in the <see cref="EntityGrouping"/>.
+        /// The number of elements contained in the <see cref="EntityGrouping"/>.
         /// </returns>
         public int Count
         {
             get => m_values.Length;
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether the <see cref="EntityGrouping"/> is empty.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityGrouping"/> is empty; otherwise,
+        /// <see langword="false"/>.
+        /// </returns>
+        public bool IsEmpty
+        {
+            get => m_values.Length == 0;
+        }
+
+        /// <summary>
+        /// Gets the element at the specified index in the <see cref="EntityGrouping"/>.
+        /// </summary>
+        /// <param name="index">
+        /// The zero-based index of the element to get.
+        /// </param>
+        /// <returns>
+        /// The element at the specified index in the <see cref="EntityGrouping"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityGrouping"/>.
+        /// </exception>
+        public EntityTable this[int index]
+        {
+            get => m_values[index];
         }
 
         bool ICollection<EntityTable>.IsReadOnly
@@ -61,6 +112,28 @@ namespace Logos.Entities
             get => this;
         }
 
+        bool IList.IsFixedSize
+        {
+            get => true;
+        }
+
+        bool IList.IsReadOnly
+        {
+            get => true;
+        }
+
+        EntityTable IList<EntityTable>.this[int index]
+        {
+            get => m_values[index];
+            set => throw new NotSupportedException();
+        }
+
+        object? IList.this[int index]
+        {
+            get => m_values[index];
+            set => throw new NotSupportedException();
+        }
+
         /// <summary>
         /// Creates an empty <see cref="EntityGrouping"/> that groups tables by the specified key.
         /// </summary>
@@ -76,20 +149,25 @@ namespace Logos.Entities
         public static EntityGrouping Create(EntityArchetype key)
         {
             ArgumentNullException.ThrowIfNull(key);
+
+            if (key.Equals(EntityArchetype.Base))
+            {
+                return s_empty;
+            }
+
             return new EntityGrouping(key, Array.Empty<EntityTable>());
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityGrouping"/> that groups tables by the archetype that models
-        /// entities in the specified table and adds the table to the <see cref="EntityGrouping"/>.
+        /// Creates an <see cref="EntityGrouping"/> that contains the specified table and groups
+        /// additional tables by the archetype that models entities in it.
         /// </summary>
         /// <param name="item">
-        /// The table to add to the <see cref="EntityGrouping"/>.
+        /// The object to add to the <see cref="EntityGrouping"/>.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityGrouping"/> that groups tables by the archetype that models entities
-        /// in <paramref name="item"/> and adds <paramref name="item"/> to the
-        /// <see cref="EntityGrouping"/>.
+        /// An <see cref="EntityGrouping"/> that contains the specified table and groups additional
+        /// tables by the archetype that models entities in it.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="item"/> is <see langword="null"/>.
@@ -101,43 +179,65 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates a copy of the <see cref="EntityGrouping"/> with the specified table added to it.
+        /// Creates a copy of the <see cref="EntityGrouping"/> with the specified item added to it.
         /// </summary>
         /// <param name="item">
-        /// The table to add to the <see cref="EntityGrouping"/>.
+        /// The object to add to the copy of the <see cref="EntityGrouping"/>.
         /// </param>
         /// <returns>
-        /// A copy of the <see cref="EntityGrouping"/> with <paramref name="item"/> added to it, or
-        /// the <see cref="EntityGrouping"/> if the archetype that models entities stored in
-        /// <paramref name="item"/> does not match the key of the <see cref="EntityGrouping"/>.
+        /// A copy of the <see cref="EntityGrouping"/> with <paramref name="item"/> added to it.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The archetype that models entities in <paramref name="item"/> does not match the key of
+        /// the <see cref="EntityGrouping"/>.
         /// </exception>
         public EntityGrouping Add(EntityTable item)
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            EntityArchetype key = m_key;
-
-            if (key.Equals(item.Archetype))
+            if (!m_key.Equals(item.Archetype))
             {
-                ReadOnlySpan<EntityTable> sourceSpan = new ReadOnlySpan<EntityTable>(m_values);
-                EntityTable[] values = new EntityTable[sourceSpan.Length + 1];
-
-                sourceSpan.CopyTo(new Span<EntityTable>(values));
-                values[sourceSpan.Length] = item;
-                return new EntityGrouping(key, values);
+                ThrowForKeyMismatch();
             }
 
-            return this;
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+            EntityTable[] values = new EntityTable[source.Length + 1];
+
+            source.CopyTo(new Span<EntityTable>(values));
+            values[source.Length] = item;
+            return new EntityGrouping(m_key, values);
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityGrouping"/> contains a specific table.
+        /// Creates a copy of the <see cref="EntityGrouping"/> with all items removed from it.
+        /// </summary>
+        /// <returns>
+        /// A copy of the <see cref="EntityGrouping"/> with all items removed from it, or the
+        /// <see cref="EntityGrouping"/> if it is empty.
+        /// </returns>
+        public EntityGrouping Clear()
+        {
+            if (m_values.Length == 0)
+            {
+                return this;
+            }
+
+            if (m_key.Equals(EntityArchetype.Base))
+            {
+                return s_empty;
+            }
+
+            return new EntityGrouping(m_key, Array.Empty<EntityTable>());
+        }
+
+        /// <summary>
+        /// Determines whether the <see cref="EntityGrouping"/> contains a specific value.
         /// </summary>
         /// <param name="item">
-        /// The table to locate in the <see cref="EntityGrouping"/>.
+        /// The object to locate in the <see cref="EntityGrouping"/>.
         /// </param>
         /// <returns>
         /// <see langword="true"/> if <paramref name="item"/> is found in the
@@ -145,7 +245,9 @@ namespace Logos.Entities
         /// </returns>
         public bool Contains(EntityTable item)
         {
-            return Array.IndexOf(m_values, item) != -1;
+            return item != null
+                && m_key.Equals(item.Archetype)
+                && Array.IndexOf(m_values, item) != -1;
         }
 
         /// <summary>
@@ -153,8 +255,9 @@ namespace Logos.Entities
         /// starting at a particular <see cref="Array"/> index.
         /// </summary>
         /// <param name="array">
-        /// The one-dimensional <see cref="Array"/> that is the destination of the copied from the
-        /// <see cref="EntityGrouping"/>. The <see cref="Array"/> must have zero-based indexing.
+        /// The one-dimensional <see cref="Array"/> that is the destination of the elements copied
+        /// from the <see cref="EntityGrouping"/>. The <see cref="Array"/> must have zero-based
+        /// indexing.
         /// </param>
         /// <param name="arrayIndex">
         /// The zero-based index in <paramref name="array"/> at which copying begins.
@@ -167,7 +270,7 @@ namespace Logos.Entities
         /// </exception>
         /// <exception cref="ArgumentException">
         /// The number of elements in the <see cref="EntityGrouping"/> is greater than the available
-        /// space from <paramref name="arrayIndex"/> to the end of <paramref name="array"/>. 
+        /// space from <paramref name="arrayIndex"/> to the end of <paramref name="array"/>.
         /// </exception>
         public void CopyTo(EntityTable[] array, int arrayIndex)
         {
@@ -175,50 +278,37 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates a copy of the <see cref="EntityGrouping"/> with the specified table removed from
+        /// Creates a copy of the <see cref="EntityGrouping"/> with the specified item removed from
         /// it.
         /// </summary>
         /// <param name="item">
-        /// The table to remove from the <see cref="EntityGrouping"/>.
+        /// The object to remove from the copy of the <see cref="EntityGrouping"/>.
         /// </param>
         /// <returns>
         /// A copy of the <see cref="EntityGrouping"/> with <paramref name="item"/> removed from it,
-        /// or the <see cref="EntityGrouping"/> if it does not contain <paramref name="item"/>.
+        /// or the <see cref="EntityGrouping"/> if <paramref name="item"/> is not found in it.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The archetype that models entities in <paramref name="item"/> does not match the key of
+        /// the <see cref="EntityGrouping"/>.
         /// </exception>
         public EntityGrouping Remove(EntityTable item)
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            EntityArchetype key = m_key;
-
-            if (key.Equals(item.Archetype))
+            if (!m_key.Equals(item.Archetype))
             {
-                ReadOnlySpan<EntityTable> sourceSpan = new ReadOnlySpan<EntityTable>(m_values);
+                ThrowForKeyMismatch();
+            }
 
-                // The MemoryExtensions.IndexOf method only works for spans that store types derived
-                // from IEquatable for some reason, hence this workaround. The Array.IndexOf method
-                // may seem like a reasonable replacement, though the span does offer better
-                // performance.
-                for (int i = 0; i < sourceSpan.Length; i++)
-                {
-                    if (sourceSpan[i] == item)
-                    {
-                        if (sourceSpan.Length == 1)
-                        {
-                            return new EntityGrouping(key, Array.Empty<EntityTable>());
-                        }
+            int index = Array.IndexOf(m_values, item);
 
-                        EntityTable[] values = new EntityTable[sourceSpan.Length - 1];
-                        Span<EntityTable> destinationSpan = new Span<EntityTable>(values);
-
-                        sourceSpan.Slice(0, i).CopyTo(destinationSpan);
-                        sourceSpan.Slice(i + 1).CopyTo(destinationSpan.Slice(i));
-                        return new EntityGrouping(key, values);
-                    }
-                }
+            if (index != -1)
+            {
+                return RemoveAt(index);
             }
 
             return this;
@@ -235,6 +325,180 @@ namespace Logos.Entities
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
+        }
+
+        /// <summary>
+        /// Determines the index of a specific item in the <see cref="EntityGrouping"/>.
+        /// </summary>
+        /// <param name="item">
+        /// The object to locate in the <see cref="EntityGrouping"/>.
+        /// </param>
+        /// <returns>
+        /// The index of <paramref name="item"/> if found in the <see cref="EntityGrouping"/>;
+        /// otherwise, -1.
+        /// </returns>
+        public int IndexOf(EntityTable item)
+        {
+            if (item != null && m_key.Equals(item.Archetype))
+            {
+                return Array.IndexOf(m_values, item);
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityGrouping"/> with the specified item inserted at
+        /// the specified index.
+        /// </summary>
+        /// <param name="index">
+        /// The zero-based index at which <paramref name="item"/> should be inserted in the copy of
+        /// the <see cref="EntityGrouping"/>.
+        /// </param>
+        /// <param name="item">
+        /// The object to insert into the copy of the <see cref="EntityGrouping"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityGrouping"/> with <paramref name="item"/> inserted at
+        /// <paramref name="index"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The archetype that models entities in <paramref name="item"/> does not match the key of
+        /// the <see cref="EntityGrouping"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityGrouping"/>.
+        /// </exception>
+        public EntityGrouping Insert(int index, EntityTable item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+
+            if (!m_key.Equals(item.Archetype))
+            {
+                ThrowForKeyMismatch();
+            }
+
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+
+            if ((uint)index > (uint)source.Length)
+            {
+                ThrowForIndexOutOfRange(index);
+            }
+
+            EntityTable[] values = new EntityTable[source.Length + 1];
+            Span<EntityTable> destination = new Span<EntityTable>(values);
+
+            source.Slice(0, index).CopyTo(destination);
+            destination[index] = item;
+            source.Slice(index).CopyTo(destination.Slice(index + 1));
+            return new EntityGrouping(m_key, values);
+        }
+
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityGrouping"/> with the item at the specified index
+        /// removed from it.
+        /// </summary>
+        /// <param name="index">
+        /// The zero-based index of the item to remove from the copy of the
+        /// <see cref="EntityGrouping"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityGrouping"/> with the item at <paramref name="index"/>
+        /// removed from it.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityGrouping"/>.
+        /// </exception>
+        public EntityGrouping RemoveAt(int index)
+        {
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+
+            if ((uint)index >= (uint)source.Length)
+            {
+                ThrowForIndexOutOfRange(index);
+            }
+
+            if (source.Length == 1)
+            {
+                if (m_key.Equals(EntityArchetype.Base))
+                {
+                    return s_empty;
+                }
+
+                return new EntityGrouping(m_key, Array.Empty<EntityTable>());
+            }
+
+            EntityTable[] values = new EntityTable[source.Length - 1];
+            Span<EntityTable> destination = new Span<EntityTable>(values);
+
+            source.Slice(0, index).CopyTo(destination);
+            source.Slice(index + 1).CopyTo(destination.Slice(index));
+            return new EntityGrouping(m_key, values);
+        }
+
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityGrouping"/> with the specified item set at the
+        /// specified index.
+        /// </summary>
+        /// <param name="index">
+        /// The zero-based index at which <paramref name="item"/> should be set in the copy of the
+        /// <see cref="EntityGrouping"/>.
+        /// </param>
+        /// <param name="item">
+        /// The object to set in the copy of the <see cref="EntityGrouping"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityGrouping"/> with <paramref name="item"/> set at
+        /// <paramref name="index"/>, or the <see cref="EntityGrouping"/> if it contains
+        /// <paramref name="item"/> at <paramref name="index"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The archetype that models entities in <paramref name="item"/> does not match the key of
+        /// the <see cref="EntityGrouping"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityGrouping"/>.
+        /// </exception>
+        public EntityGrouping Set(int index, EntityTable item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+
+            if (!m_key.Equals(item.Archetype))
+            {
+                ThrowForKeyMismatch();
+            }
+
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+
+            if ((uint)index >= (uint)source.Length)
+            {
+                ThrowForIndexOutOfRange(index);
+            }
+
+            if (source[index] == item)
+            {
+                return this;
+            }
+
+            EntityTable[] values = source.ToArray();
+
+            values[index] = item;
+            return new EntityGrouping(m_key, values);
         }
 
         void ICollection<EntityTable>.Add(EntityTable item)
@@ -277,6 +541,67 @@ namespace Logos.Entities
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new Enumerator(this);
+        }
+
+        void IList<EntityTable>.Insert(int index, EntityTable item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<EntityTable>.RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        int IList.Add(object? value)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList.Clear()
+        {
+            throw new NotSupportedException();
+        }
+
+        bool IList.Contains(object? value)
+        {
+            return Contains((value as EntityTable)!);
+        }
+
+        int IList.IndexOf(object? value)
+        {
+            return IndexOf((value as EntityTable)!);
+        }
+
+        void IList.Insert(int index, object? value)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList.Remove(object? value)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList.RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        [DoesNotReturn]
+        private static void ThrowForKeyMismatch()
+        {
+            throw new ArgumentException(
+                "The archetype that models entities in the table does not match the key of the " +
+                "EntityGrouping.", "item");
+        }
+
+        [DoesNotReturn]
+        private static void ThrowForIndexOutOfRange(int index)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), index, message: (index < 0)
+                ? "The index is negative."
+                : "The index exceeds the bounds of the EntityGrouping.");
         }
 
         [DoesNotReturn]
