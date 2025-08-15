@@ -519,7 +519,7 @@ namespace Logos.Entities
 
                 container.MoveEntity(entity, destination);
 
-                if (destination.TryGetComponents(out Span<T?> components))
+                if (destination.TryGetComponentColumn(out Span<T?> components))
                 {
                     components[index] = component;
                 }
@@ -567,7 +567,7 @@ namespace Logos.Entities
 
                 if (source.Archetype.Contains(componentType))
                 {
-                    component = source.TryGetComponents(out Span<T?> components)
+                    component = source.TryGetComponentColumn(out Span<T?> components)
                         ? components[index]
                         : default;
                     container.MoveEntity(entity, GetInclusiveTable(source.Archetype, componentType));
@@ -616,14 +616,14 @@ namespace Logos.Entities
 
                 if (source.Archetype.Contains(componentType))
                 {
-                    hasDataMembers = source.TryGetComponents(out components);
+                    hasDataMembers = source.TryGetComponentColumn(out components);
                 }
                 else
                 {
                     EntityTable destination = GetInclusiveTable(source.Archetype, componentType);
 
                     index = destination.Count;
-                    hasDataMembers = destination.TryGetComponents(out components);
+                    hasDataMembers = destination.TryGetComponentColumn(out components);
                     container.MoveEntity(entity, destination);
 
                     if (source.IsEmpty)
@@ -668,7 +668,7 @@ namespace Logos.Entities
         {
             EntityTable source = m_container.FindEntity(entity, out int index);
 
-            if (source.TryGetComponents(out Span<T?> components))
+            if (source.TryGetComponentColumn(out Span<T?> components))
             {
                 component = components[index];
                 return true;
@@ -841,16 +841,16 @@ namespace Logos.Entities
                 }
 
                 EntityTable table = entry.Table;
-                int index = entry.TableIndex;
+                int tableIndex = entry.TableIndex;
 
                 entry.Table = null!;
                 entry.TableIndex = -1;
                 entry.Version++;
-                table.RemoveAt(index);
+                table.Delete(tableIndex);
 
-                if (index < table.Count)
+                if (tableIndex < table.Count)
                 {
-                    m_entries[table.GetEntities()[index].Index].TableIndex = index;
+                    m_entries[table.GetEntityColumn()[tableIndex].Index].TableIndex = tableIndex;
                 }
 
                 m_indexPool[m_nextIndex - m_size--] = entity.Index;
@@ -861,17 +861,16 @@ namespace Logos.Entities
             {
                 ref Entry entry = ref m_entries[entity.Index];
                 EntityTable source = entry.Table;
-                int tableIndex = entry.TableIndex;
+                int sourceIndex = entry.TableIndex;
 
                 entry.Table = destination;
                 entry.TableIndex = destination.Count;
+                destination.Add(entity, source, sourceIndex);
+                source.Delete(sourceIndex);
 
-                destination.AddRange(source, tableIndex, 1);
-                source.RemoveAt(tableIndex);
-
-                if (tableIndex < source.Count)
+                if (sourceIndex < source.Count)
                 {
-                    m_entries[source.GetEntities()[tableIndex].Index].TableIndex = tableIndex;
+                    m_entries[source.GetEntityColumn()[sourceIndex].Index].TableIndex = sourceIndex;
                 }
             }
 

@@ -8,13 +8,15 @@ namespace Logos.Entities.Tests
     [TestFixture]
     public static class EntityTableTestFixture
     {
+        private const int EntityTableCapacity = 8;
+
         [Test]
         public static void AddTest()
         {
             EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntities();
-            Span<Name> names = table.GetComponents<Name>();
-            Span<Position2D> positions = table.GetComponents<Position2D>();
+            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
+            Span<Name> names = table.GetComponentColumn<Name>();
+            Span<Position2D> positions = table.GetComponentColumn<Position2D>();
             Entity entity = new Entity(-1, -1);
             Name name = new Name()
             {
@@ -52,18 +54,12 @@ namespace Logos.Entities.Tests
         }
 
         [Test]
-        public static void AddRangeTest()
-        {
-            Assert.Ignore();
-        }
-
-        [Test]
         public static void ClearTest()
         {
             EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntities();
-            Span<Name> names = table.GetComponents<Name>();
-            Span<Position2D> positions = table.GetComponents<Position2D>();
+            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
+            Span<Name> names = table.GetComponentColumn<Name>();
+            Span<Position2D> positions = table.GetComponentColumn<Position2D>();
             Entity entity = new Entity(-1, -1);
             Name name = new Name()
             {
@@ -97,7 +93,7 @@ namespace Logos.Entities.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                new EntityTable(null!);
+                new EntityTable(null!, EntityTableCapacity);
             });
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
@@ -108,7 +104,7 @@ namespace Logos.Entities.Tests
         [TestCaseSource(typeof(EntityTableTestCaseSource), nameof(EntityTableTestCaseSource.ConstructorTestCases))]
         public static void ConstructorTest(EntityArchetype archetype)
         {
-            EntityTable table = new EntityTable(archetype);
+            EntityTable table = new EntityTable(archetype, EntityTableCapacity);
 
             AssertHelper<Name>();
             AssertHelper<Disabled>();
@@ -121,7 +117,7 @@ namespace Logos.Entities.Tests
 
             void AssertHelper<T>()
             {
-                if (table.TryGetComponents(out Span<T> components))
+                if (table.TryGetComponentColumn(out Span<T> components))
                 {
                     using (Assert.EnterMultipleScope())
                     {
@@ -140,19 +136,19 @@ namespace Logos.Entities.Tests
 
                     Assert.Throws<ComponentNotFoundException>(() =>
                     {
-                        table.GetComponents<T>();
+                        table.GetComponentColumn<T>();
                     });
                 }
             }
         }
 
         [Test]
-        public static void RemoveTest()
+        public static void DeleteTest()
         {
             EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntities();
-            Span<Name> names = table.GetComponents<Name>();
-            Span<Position2D> positions = table.GetComponents<Position2D>();
+            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
+            Span<Name> names = table.GetComponentColumn<Name>();
+            Span<Position2D> positions = table.GetComponentColumn<Position2D>();
             Name name = new Name()
             {
                 Value = "FREE ME"
@@ -163,10 +159,9 @@ namespace Logos.Entities.Tests
                 Y = 2
             };
 
-            Assert.That(table.Remove(default), Is.False);
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                table.RemoveAt(0);
+                table.Delete(0);
             });
 
             for (int i = 0; i < table.Capacity; i++)
@@ -176,7 +171,7 @@ namespace Logos.Entities.Tests
 
             names.Fill(name);
             positions.Fill(position);
-            table.RemoveAt(0);
+            table.Delete(0);
 
             using (Assert.EnterMultipleScope())
             {
@@ -189,7 +184,7 @@ namespace Logos.Entities.Tests
 
             for (int i = 6; i >= 0; i--)
             {
-                table.RemoveAt(i);
+                table.Delete(i);
             }
 
             using (Assert.EnterMultipleScope())
@@ -200,62 +195,6 @@ namespace Logos.Entities.Tests
             }
         }
 
-        [Test]
-        public static void RemoveRangeTest()
-        {
-            EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntities();
-            Span<Name> names = table.GetComponents<Name>();
-            Span<Position2D> positions = table.GetComponents<Position2D>();
-            Entity entity = new Entity(4, 0);
-            Name name = new Name()
-            {
-                Value = "FREE ME"
-            };
-            Position2D position = new Position2D()
-            {
-                X = 1,
-                Y = 2
-            };
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                table.RemoveRange(0, 1);
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                table.RemoveRange(0, -1);
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                table.RemoveRange(-1, 1);
-            });
-
-            for (int i = 0; i < table.Capacity; i++)
-            {
-                table.Add(new Entity(i, 0));
-            }
-
-            names.Fill(name);
-            positions.Fill(position);
-            table.RemoveRange(0, 4);
-
-            using (Assert.EnterMultipleScope())
-            {
-                Assert.That(entities[0], Is.EqualTo(new Entity(4, 0)));
-                Assert.That(entities[1], Is.EqualTo(new Entity(5, 0)));
-                Assert.That(entities[2], Is.EqualTo(new Entity(6, 0)));
-                Assert.That(entities[3], Is.EqualTo(new Entity(7, 0)));
-                Assert.That(entities[4], Is.EqualTo(new Entity(4, 0)));
-                Assert.That(entities[5], Is.EqualTo(new Entity(5, 0)));
-                Assert.That(entities[6], Is.EqualTo(new Entity(6, 0)));
-                Assert.That(entities[7], Is.EqualTo(new Entity(7, 0)));
-                Assert.That(positions.Count(position), Is.EqualTo(table.Capacity));
-                Assert.That(names.Slice(0, 4).Count(name), Is.EqualTo(4));
-                Assert.That(names.Slice(4).Count(name), Is.Zero);
-            }
-        }
-
         private static EntityTable CreateTestTable()
         {
             return new EntityTable(EntityArchetype.Create(new ComponentType[]
@@ -263,30 +202,26 @@ namespace Logos.Entities.Tests
                 ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Disabled>()
-            }));
+            }), EntityTableCapacity);
         }
 
         [Test]
-        public static void VerifyAccessTest()
+        public static void InvalidStructureModificationTest()
         {
-            EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry());
+            EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry(), EntityTableCapacity);
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.Add(new Entity());
+                table.Add(default);
             });
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.AddRange(table, 0, 1);
+                table.Add(default, null!, 0);
             });
             Assert.Throws<InvalidOperationException>(table.Clear);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.RemoveAt(0);
-            });
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                table.RemoveRange(0, 1);
+                table.Delete(0);
             });
         }
     }
