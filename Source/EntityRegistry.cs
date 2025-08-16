@@ -51,6 +51,15 @@ namespace Logos.Entities
         }
 
         /// <summary>
+        /// Gets the <see cref="EntityLookup"/> that stores the entity tables populated by entities
+        /// within the <see cref="EntityRegistry"/>.
+        /// </summary>
+        public EntityLookup Lookup
+        {
+            get => m_lookup;
+        }
+
+        /// <summary>
         /// Gets the total number of entities the internal data structure can hold without
         /// resizing.
         /// </summary>
@@ -74,15 +83,6 @@ namespace Logos.Entities
         public bool IsSyncPointEntered
         {
             get => Monitor.IsEntered(m_lock);
-        }
-
-        /// <summary>
-        /// Gets the <see cref="EntityLookup"/> that stores the entity tables populated by entities
-        /// within the <see cref="EntityRegistry"/>.
-        /// </summary>
-        public EntityLookup Lookup
-        {
-            get => m_lookup;
         }
 
         /// <summary>
@@ -519,7 +519,7 @@ namespace Logos.Entities
 
                 container.MoveEntity(entity, destination);
 
-                if (destination.TryGetComponentColumn(out Span<T?> components))
+                if (destination.TryGetComponents(out Span<T?> components))
                 {
                     components[index] = component;
                 }
@@ -567,7 +567,7 @@ namespace Logos.Entities
 
                 if (source.Archetype.Contains(componentType))
                 {
-                    component = source.TryGetComponentColumn(out Span<T?> components)
+                    component = source.TryGetComponents(out Span<T?> components)
                         ? components[index]
                         : default;
                     container.MoveEntity(entity, GetInclusiveTable(source.Archetype, componentType));
@@ -616,14 +616,14 @@ namespace Logos.Entities
 
                 if (source.Archetype.Contains(componentType))
                 {
-                    hasDataMembers = source.TryGetComponentColumn(out components);
+                    hasDataMembers = source.TryGetComponents(out components);
                 }
                 else
                 {
                     EntityTable destination = GetInclusiveTable(source.Archetype, componentType);
 
                     index = destination.Count;
-                    hasDataMembers = destination.TryGetComponentColumn(out components);
+                    hasDataMembers = destination.TryGetComponents(out components);
                     container.MoveEntity(entity, destination);
 
                     if (source.IsEmpty)
@@ -668,7 +668,7 @@ namespace Logos.Entities
         {
             EntityTable source = m_container.FindEntity(entity, out int index);
 
-            if (source.TryGetComponentColumn(out Span<T?> components))
+            if (source.TryGetComponents(out Span<T?> components))
             {
                 component = components[index];
                 return true;
@@ -690,7 +690,7 @@ namespace Logos.Entities
         private static void ThrowForFullEntityTable()
         {
             throw new ArgumentException(
-                "The destination EntityTable is full", "destination");
+                "The destination EntityTable is full.", "destination");
         }
 
         [DoesNotReturn]
@@ -850,7 +850,7 @@ namespace Logos.Entities
 
                 if (tableIndex < table.Count)
                 {
-                    m_entries[table.GetEntityColumn()[tableIndex].Index].TableIndex = tableIndex;
+                    m_entries[table.GetEntities()[tableIndex].Index].TableIndex = tableIndex;
                 }
 
                 m_indexPool[m_nextIndex - m_size--] = entity.Index;
@@ -865,12 +865,12 @@ namespace Logos.Entities
 
                 entry.Table = destination;
                 entry.TableIndex = destination.Count;
-                destination.Add(entity, source, sourceIndex);
+                destination.Import(entity, source, sourceIndex);
                 source.Delete(sourceIndex);
 
                 if (sourceIndex < source.Count)
                 {
-                    m_entries[source.GetEntityColumn()[sourceIndex].Index].TableIndex = sourceIndex;
+                    m_entries[source.GetEntities()[sourceIndex].Index].TableIndex = sourceIndex;
                 }
             }
 

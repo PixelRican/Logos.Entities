@@ -157,18 +157,6 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the version of the <see cref="EntityTable"/>, which is incremented after a
-        /// structure modification has occurred.
-        /// </summary>
-        /// <returns>
-        /// The version of the <see cref="EntityTable"/>.
-        /// </returns>
-        public int Version
-        {
-            get => m_version;
-        }
-
-        /// <summary>
         /// Gets a value that indicates whether the <see cref="EntityTable"/> is empty.
         /// </summary>
         /// <returns>
@@ -193,78 +181,15 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a span over the column containing components of type <typeparamref name="T"/> in
-        /// the <see cref="EntityTable"/>.
-        /// </summary>
-        /// <typeparam name="T">
-        /// The type of the components.
-        /// </typeparam>
-        /// <returns>
-        /// A span over the column containing components of type <typeparamref name="T"/> in the
-        /// <see cref="EntityTable"/>.
-        /// </returns>
-        /// <exception cref="ComponentNotFoundException">
-        /// Unable to find a column containing components of type <typeparamref name="T"/> in the
-        /// <see cref="EntityTable"/>.
-        /// </exception>
-        /// <exception cref="ComponentNotFoundException">
-        /// <typeparamref name="T"/> is a tag component type.
-        /// </exception>
-        public Span<T> GetComponentColumn<T>()
-        {
-            Array[] components = m_components;
-            int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
-
-            if ((uint)index >= (uint)components.Length)
-            {
-                ThrowForComponentNotFound(index, typeof(T));
-            }
-
-            return new Span<T>((T[])components[index]);
-        }
-
-        /// <summary>
-        /// Gets a span over the column containing components of type <typeparamref name="T"/> in
-        /// the <see cref="EntityTable"/>.
-        /// </summary>
-        /// <typeparam name="T">
-        /// The type of the components.
-        /// </typeparam>
-        /// <param name="column">
-        /// When this method returns, contains the span over the column containing components of
-        /// type <typeparamref name="T"/> in the <see cref="EntityTable"/>, if it is found;
-        /// otherwise, an empty span. This parameter is passed uninitialized.
-        /// </param>
-        /// <returns>
-        /// <see langword="true"/> if the column containing components of type
-        /// <typeparamref name="T"/> is found in the <see cref="EntityTable"/>; otherwise,
-        /// <see langword="false"/>.
-        /// </returns>
-        public bool TryGetComponentColumn<T>(out Span<T> column)
-        {
-            Array[] components = m_components;
-            int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
-
-            if ((uint)index >= (uint)components.Length)
-            {
-                column = default;
-                return false;
-            }
-
-            column = new Span<T>((T[])components[index]);
-            return true;
-        }
-
-        /// <summary>
-        /// Gets a read-only span over the column containing entities in the
-        /// <see cref="EntityTable"/>.
+        /// Gets the version of the <see cref="EntityTable"/>, which is incremented after a
+        /// structure modification has occurred.
         /// </summary>
         /// <returns>
-        /// A read-only span over the column containing entities in the <see cref="EntityTable"/>.
+        /// The version of the <see cref="EntityTable"/>.
         /// </returns>
-        public ReadOnlySpan<Entity> GetEntityColumn()
+        public int Version
         {
-            return new ReadOnlySpan<Entity>(m_entities);
+            get => m_version;
         }
 
         /// <summary>
@@ -272,7 +197,7 @@ namespace Logos.Entities
         /// zero-initializes its components.
         /// </summary>
         /// <param name="entity">
-        /// The entity to be added to the new row at the end of the <see cref="EntityTable"/>.
+        /// The entity to be added to a new row at the end of the <see cref="EntityTable"/>.
         /// </param>
         /// <exception cref="InvalidOperationException">
         /// The structure of the <see cref="EntityTable"/> cannot be modified unless
@@ -308,20 +233,157 @@ namespace Logos.Entities
         }
 
         /// <summary>
+        /// Removes all entities from the <see cref="EntityTable"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
+        /// <see cref="Registry"/> has entered its sync point.
+        /// </exception>
+        public void Clear()
+        {
+            ThrowIfInvalidStructureModification();
+
+            Array[] components = m_components;
+            int managedComponentCount = m_archetype.ManagedComponentCount;
+            int size = m_size;
+
+            // Free references in managed components. No need to clear unmanaged components.
+            for (int i = 0; i < managedComponentCount; i++)
+            {
+                Array.Clear(components[i], 0, size);
+            }
+
+            m_size = 0;
+            m_version++;
+        }
+
+        /// <summary>
+        /// Removes the entity at the specified row index of the <see cref="EntityTable"/>.
+        /// </summary>
+        /// <param name="index">
+        /// The zero-based row index of the entity to remove.
+        /// </param>
+        /// <exception cref="InvalidOperationException">
+        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
+        /// <see cref="Registry"/> has entered its sync point.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityTable"/>.
+        /// </exception>
+        public void Delete(int index)
+        {
+            ThrowIfInvalidStructureModification();
+            
+            int size = m_size;
+
+            if ((uint)index >= (uint)size)
+            {
+                ThrowForIndexOutOfRange(index);
+            }
+
+            Array[] components = m_components;
+            int deleteLength = m_archetype.ManagedComponentCount;
+
+            if (index < --size)
+            {
+                // Fill the hole occupied by the deleted row with data imported from the last row.
+                int deleteIndex = 0;
+
+                // Free references in managed components after importing them from the last row.
+                while (deleteIndex < deleteLength)
+                {
+                    Array column = components[deleteIndex++];
+
+                    Array.Copy(column, size, column, index, 1);
+                    Array.Clear(column, size, 1);
+                }
+
+                deleteLength += m_archetype.UnmanagedComponentCount;
+
+                // Import unmanaged components from the last row. No need to clear them.
+                while (deleteIndex < deleteLength)
+                {
+                    Array column = components[deleteIndex++];
+
+                    Array.Copy(column, size, column, index, 1);
+                }
+
+                // Import entity from the last row. No need to clear it.
+                m_entities[index] = m_entities[size];
+            }
+            else
+            {
+                // Free references in managed components. No need to clear unmanaged components.
+                for (int i = 0; i < deleteLength; i++)
+                {
+                    Array.Clear(components[i], size, 1);
+                }
+            }
+
+            m_size = size;
+            m_version++;
+        }
+
+        /// <summary>
+        /// Gets a span over the column containing components of type <typeparamref name="T"/> in
+        /// the <see cref="EntityTable"/>.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The type of the components.
+        /// </typeparam>
+        /// <returns>
+        /// A span over the column containing components of type <typeparamref name="T"/> in the
+        /// <see cref="EntityTable"/>.
+        /// </returns>
+        /// <exception cref="ComponentNotFoundException">
+        /// Unable to find a column containing components of type <typeparamref name="T"/> in the
+        /// <see cref="EntityTable"/>.
+        /// </exception>
+        /// <exception cref="ComponentNotFoundException">
+        /// <typeparamref name="T"/> is a tag component type.
+        /// </exception>
+        public Span<T> GetComponents<T>()
+        {
+            Array[] components = m_components;
+            int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
+
+            if ((uint)index >= (uint)components.Length)
+            {
+                ThrowForComponentNotFound(index, typeof(T));
+            }
+
+            return new Span<T>((T[])components[index]);
+        }
+
+        /// <summary>
+        /// Gets a read-only span over the column containing entities in the
+        /// <see cref="EntityTable"/>.
+        /// </summary>
+        /// <returns>
+        /// A read-only span over the column containing entities in the <see cref="EntityTable"/>.
+        /// </returns>
+        public ReadOnlySpan<Entity> GetEntities()
+        {
+            return new ReadOnlySpan<Entity>(m_entities);
+        }
+
+        /// <summary>
         /// Adds the specified entity to a new row at the end of the <see cref="EntityTable"/> and
-        /// copies its components from the specified table at the specified row index. Any
-        /// components that could not be copied from the table are zero-initialized instead.
+        /// imports its components from the specified table at the specified row index. Any
+        /// components that could not be imported from the table are zero-initialized instead.
         /// </summary>
         /// <param name="entity">
-        /// The entity to be added to the new row at the end of the <see cref="EntityTable"/>.
+        /// The entity to be added to a new row at the end of the <see cref="EntityTable"/>.
         /// </param>
         /// <param name="source">
-        /// The table containing the row of components that should be added to the end of the
-        /// <see cref="EntityTable"/> alongside <paramref name="entity"/>.
+        /// The table containing the row of components that should be imported.
         /// </param>
         /// <param name="index">
         /// The zero-based row index in <paramref name="source"/> at which components should be
-        /// copied.
+        /// imported.
         /// </param>
         /// <exception cref="InvalidOperationException">
         /// The structure of the <see cref="EntityTable"/> cannot be modified unless
@@ -339,7 +401,7 @@ namespace Logos.Entities
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="index"/> exceeds the bounds of <paramref name="source"/>.
         /// </exception>
-        public void Add(Entity entity, EntityTable source, int index)
+        public void Import(Entity entity, EntityTable source, int index)
         {
             ThrowIfInvalidStructureModification();
 
@@ -386,14 +448,15 @@ namespace Logos.Entities
 
                 if (comparison == 0)
                 {
-                    // If a matching column is found, copy the components from the source column to
-                    // the destination column.
+                    // If a matching column is found, import the components from the source column
+                    // to the destination column.
                     Array.Copy(sourceColumn, index, destinationColumn, size, 1);
                 }
                 else if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
                 {
-                    // If no matching column is found, zero-initialize the unmanaged components in
-                    // the destination column.
+                    // If a matching column could not be found, zero-initialize the unmanaged
+                    // components in the destination column. Managed components are cleared on
+                    // removal.
                     Array.Clear(destinationColumn, size, 1);
                 }
             }
@@ -404,80 +467,35 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Removes all entities from the <see cref="EntityTable"/>.
+        /// Gets a span over the column containing components of type <typeparamref name="T"/> in
+        /// the <see cref="EntityTable"/>.
         /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
-        /// <see cref="Registry"/> has entered its sync point.
-        /// </exception>
-        public void Clear()
-        {
-            ThrowIfInvalidStructureModification();
-
-            Array[] components = m_components;
-            int managedComponentCount = m_archetype.ManagedComponentCount;
-            int size = m_size;
-
-            // Free references in managed components. Unmanaged components are left untouched.
-            for (int i = 0; i < managedComponentCount; i++)
-            {
-                Array.Clear(components[i], 0, size);
-            }
-
-            m_size = 0;
-            m_version++;
-        }
-
-        /// <summary>
-        /// Removes the entity at the specified row index of the <see cref="EntityTable"/>.
-        /// </summary>
-        /// <param name="index">
-        /// The zero-based row index of the entity to remove.
+        /// <typeparam name="T">
+        /// The type of the components.
+        /// </typeparam>
+        /// <param name="span">
+        /// When this method returns, contains the span over the column containing components of
+        /// type <typeparamref name="T"/> in the <see cref="EntityTable"/>, if it is found;
+        /// otherwise, an empty span. This parameter is passed uninitialized.
         /// </param>
-        /// <exception cref="InvalidOperationException">
-        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
-        /// <see cref="Registry"/> has entered its sync point.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="index"/> is negative.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityTable"/>.
-        /// </exception>
-        public void Delete(int index)
+        /// <returns>
+        /// <see langword="true"/> if the column containing components of type
+        /// <typeparamref name="T"/> is found in the <see cref="EntityTable"/>; otherwise,
+        /// <see langword="false"/>.
+        /// </returns>
+        public bool TryGetComponents<T>(out Span<T> span)
         {
-            ThrowIfInvalidStructureModification();
-            
-            int size = m_size;
-
-            if ((uint)index >= (uint)size)
-            {
-                ThrowForIndexOutOfRange(index);
-            }
-
             Array[] components = m_components;
+            int index = m_archetype.IndexOf(ComponentType.TypeOf<T>());
 
-            if (index < --size)
+            if ((uint)index >= (uint)components.Length)
             {
-                for (int i = 0; i < components.Length; i++)
-                {
-                    Array array = components[i];
-                    Array.Copy(array, size, array, index, 1);
-                }
-
-                m_entities[index] = m_entities[size];
+                span = default;
+                return false;
             }
 
-            int managedComponentCount = m_archetype.ManagedComponentCount;
-
-            // Free references in managed components. Unmanaged components are left untouched.
-            for (int i = 0; i < managedComponentCount; i++)
-            {
-                Array.Clear(components[i], size, 1);
-            }
-
-            m_size = size;
-            m_version++;
+            span = new Span<T>((T[])components[index]);
+            return true;
         }
 
         [DoesNotReturn]

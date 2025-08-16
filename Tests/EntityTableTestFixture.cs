@@ -14,9 +14,9 @@ namespace Logos.Entities.Tests
         public static void AddTest()
         {
             EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
-            Span<Name> names = table.GetComponentColumn<Name>();
-            Span<Position2D> positions = table.GetComponentColumn<Position2D>();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
+            Span<Name> names = table.GetComponents<Name>();
+            Span<Position2D> positions = table.GetComponents<Position2D>();
             Entity entity = new Entity(-1, -1);
             Name name = new Name()
             {
@@ -57,9 +57,9 @@ namespace Logos.Entities.Tests
         public static void ClearTest()
         {
             EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
-            Span<Name> names = table.GetComponentColumn<Name>();
-            Span<Position2D> positions = table.GetComponentColumn<Position2D>();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
+            Span<Name> names = table.GetComponents<Name>();
+            Span<Position2D> positions = table.GetComponents<Position2D>();
             Entity entity = new Entity(-1, -1);
             Name name = new Name()
             {
@@ -93,7 +93,7 @@ namespace Logos.Entities.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                new EntityTable(null!, EntityTableCapacity);
+                new EntityTable(null!, 0);
             });
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
@@ -104,7 +104,7 @@ namespace Logos.Entities.Tests
         [TestCaseSource(typeof(EntityTableTestCaseSource), nameof(EntityTableTestCaseSource.ConstructorTestCases))]
         public static void ConstructorTest(EntityArchetype archetype)
         {
-            EntityTable table = new EntityTable(archetype, EntityTableCapacity);
+            EntityTable table = new EntityTable(archetype, 1);
 
             AssertHelper<Name>();
             AssertHelper<Disabled>();
@@ -117,7 +117,7 @@ namespace Logos.Entities.Tests
 
             void AssertHelper<T>()
             {
-                if (table.TryGetComponentColumn(out Span<T> components))
+                if (table.TryGetComponents(out Span<T> components))
                 {
                     using (Assert.EnterMultipleScope())
                     {
@@ -136,7 +136,7 @@ namespace Logos.Entities.Tests
 
                     Assert.Throws<ComponentNotFoundException>(() =>
                     {
-                        table.GetComponentColumn<T>();
+                        table.GetComponents<T>();
                     });
                 }
             }
@@ -146,9 +146,9 @@ namespace Logos.Entities.Tests
         public static void DeleteTest()
         {
             EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
-            Span<Name> names = table.GetComponentColumn<Name>();
-            Span<Position2D> positions = table.GetComponentColumn<Position2D>();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
+            Span<Name> names = table.GetComponents<Name>();
+            Span<Position2D> positions = table.GetComponents<Position2D>();
             Name name = new Name()
             {
                 Value = "FREE ME"
@@ -202,13 +202,13 @@ namespace Logos.Entities.Tests
                 ComponentType.TypeOf<Name>(),
                 ComponentType.TypeOf<Position2D>(),
                 ComponentType.TypeOf<Disabled>()
-            }), EntityTableCapacity);
+            }), 8);
         }
 
         [Test]
         public static void InvalidStructureModificationTest()
         {
-            EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry(), EntityTableCapacity);
+            EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry(), 0);
 
             Assert.Throws<InvalidOperationException>(() =>
             {
@@ -216,7 +216,7 @@ namespace Logos.Entities.Tests
             });
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.Add(default, null!, 0);
+                table.Import(default, null!, 0);
             });
             Assert.Throws<InvalidOperationException>(table.Clear);
             Assert.Throws<InvalidOperationException>(() =>

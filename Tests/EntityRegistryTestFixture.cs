@@ -58,7 +58,7 @@ namespace Logos.Entities.Tests
                     Assert.That(new Entity(i, 0), Is.EqualTo(entity));
                     Assert.That(registry.Contains(entity));
                     Assert.That(registry.Find(entity, out _).Archetype, Is.SameAs(EntityArchetype.Base));
-                    Assert.That(registry.Find(entity, out _).GetEntityColumn()[i], Is.EqualTo(entity));
+                    Assert.That(registry.Find(entity, out _).GetEntities()[i], Is.EqualTo(entity));
                 }
             }
 
@@ -75,7 +75,7 @@ namespace Logos.Entities.Tests
                     Assert.That(new Entity(i + 10, 0), Is.EqualTo(entity));
                     Assert.That(registry.HasComponent(entity, ComponentType.TypeOf<Name>()));
                     Assert.That(registry.Find(entity, out _).Archetype, Is.SameAs(archetype));
-                    Assert.That(registry.Find(entity, out _).GetEntityColumn()[i], Is.EqualTo(entity));
+                    Assert.That(registry.Find(entity, out _).GetEntities()[i], Is.EqualTo(entity));
                 }
             }
 
@@ -93,7 +93,7 @@ namespace Logos.Entities.Tests
             }
 
             EntityTable table = registry.Find(new Entity(), out _);
-            ReadOnlySpan<Entity> entities = table.GetEntityColumn();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
             int count = table.Count;
 
             for (int i = 0; i < count; i++)
