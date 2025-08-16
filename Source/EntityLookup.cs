@@ -11,10 +11,13 @@ using System.Runtime.CompilerServices;
 
 namespace Logos.Entities
 {
+    /// <summary>
+    /// Represents a collection of archetypes each mapped to one or more tables.
+    /// </summary>
     public sealed class EntityLookup : ILookup<EntityArchetype, EntityTable>,
         ICollection<EntityGrouping>, ICollection, IReadOnlyCollection<EntityGrouping>
     {
-        private const uint MaximumStackAllocSize = 8;
+        private const int StackallocIntBufferSizeLimit = 32;
 
         private static readonly EntityLookup s_empty = new EntityLookup();
 
@@ -33,16 +36,57 @@ namespace Logos.Entities
             m_entries = entries;
         }
 
+        /// <summary>
+        /// Gets an empty <see cref="EntityLookup"/>.
+        /// </summary>
+        /// <returns>
+        /// An empty <see cref="EntityLookup"/>.
+        /// </returns>
         public static EntityLookup Empty
         {
             get => s_empty;
         }
 
+        /// <summary>
+        /// Gets the number of key/value collection pairs in the <see cref="EntityLookup"/>.
+        /// </summary>
+        /// <returns>
+        /// The number of key/value collection pairs in the <see cref="EntityLookup"/>.
+        /// </returns>
         public int Count
         {
             get => m_entries.Length;
         }
 
+        /// <summary>
+        /// Gets a value that indicates whether the <see cref="EntityLookup"/> is empty.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityLookup"/> is empty; otherwise,
+        /// <see langword="false"/>.
+        /// </returns>
+        public bool IsEmpty
+        {
+            get => m_entries.Length == 0;
+        }
+
+        /// <summary>
+        /// Gets the sequence of values indexed by the specified key in the
+        /// <see cref="EntityLookup"/>.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the desired sequence of values.
+        /// </param>
+        /// <returns>
+        /// The sequence of values indexed by <paramref name="key"/> in the
+        /// <see cref="EntityLookup"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="KeyNotFoundException">
+        /// <paramref name="key"/> does not exist in the <see cref="EntityLookup"/>.
+        /// </exception>
         public EntityGrouping this[EntityArchetype key]
         {
             get
@@ -77,9 +121,36 @@ namespace Logos.Entities
 
         IEnumerable<EntityTable> ILookup<EntityArchetype, EntityTable>.this[EntityArchetype key]
         {
-            get => this[key];
+            get
+            {
+                if (key is not null)
+                {
+                    ref readonly Entry entry = ref FindEntry(key.ComponentBitmask, out _);
+
+                    if (!Unsafe.IsNullRef(in entry))
+                    {
+                        return entry.Grouping;
+                    }
+                }
+
+                return Enumerable.Empty<EntityTable>();
+            }
         }
 
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityLookup"/> with the specified key/value collection
+        /// pair added to it.
+        /// </summary>
+        /// <param name="item">
+        /// The key/value collection pair to add to the copy of the <see cref="EntityLookup"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityLookup"/> with <paramref name="item"/> added to it, or
+        /// the <see cref="EntityLookup"/> if it contains an element with an equivalent key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public EntityLookup Add(EntityGrouping item)
         {
             ArgumentNullException.ThrowIfNull(item);
@@ -92,6 +163,21 @@ namespace Logos.Entities
             return this;
         }
 
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityLookup"/> with the specified key/value collection
+        /// pair added to it. If the <see cref="EntityLookup"/> contains an element with an
+        /// equavalent key, the element is replaced by the pair instead.
+        /// </summary>
+        /// <param name="item">
+        /// The key/value collection pair to add to the copy of the <see cref="EntityLookup"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityLookup"/> with <paramref name="item"/> added to it, or
+        /// the <see cref="EntityLookup"/> if it contains <paramref name="item"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public EntityLookup AddOrUpdate(EntityGrouping item)
         {
             ArgumentNullException.ThrowIfNull(item);
@@ -132,39 +218,37 @@ namespace Logos.Entities
             return new EntityLookup(m_buckets, destinationEntries);
         }
 
-        public EntityLookup Remove(EntityArchetype key)
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityLookup"/> with all key/value collection pairs
+        /// removed from it.
+        /// </summary>
+        /// <returns>
+        /// A copy of the <see cref="EntityLookup"/> with all key/value collection pairs removed
+        /// from it, or the <see cref="EntityLookup"/> if it is empty.
+        /// </returns>
+        public EntityLookup Clear()
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            ref readonly Entry entry = ref FindEntry(key.ComponentBitmask, out _);
-
-            if (Unsafe.IsNullRef(in entry))
+            // This method is redundant considering that the only instance that should be empty is
+            // s_empty. This method was only added to mirror the API of the EntityGrouping class.
+            if (m_entries.Length == 0)
             {
                 return this;
             }
 
-            return RemoveEntry(entry.Grouping);
+            return s_empty;
         }
 
-        public EntityLookup Remove(EntityGrouping item)
-        {
-            ArgumentNullException.ThrowIfNull(item);
-
-            ref readonly Entry entry = ref FindEntry(item.Key.ComponentBitmask, out _);
-
-            if (Unsafe.IsNullRef(in entry) || entry.Grouping != item)
-            {
-                return this;
-            }
-
-            return RemoveEntry(item);
-        }
-
-        public bool Contains(EntityArchetype key)
-        {
-            return key != null && !Unsafe.IsNullRef(in FindEntry(key.ComponentBitmask, out _));
-        }
-
+        /// <summary>
+        /// Determines whether the <see cref="EntityLookup"/> contains a specific key/value
+        /// collection pair.
+        /// </summary>
+        /// <param name="item">
+        /// The key/value collection pair to locate in the <see cref="EntityLookup"/>.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="item"/> is found in the
+        /// <see cref="EntityLookup"/>; otherwise, <see langword="false"/>.
+        /// </returns>
         public bool Contains(EntityGrouping item)
         {
             if (item == null)
@@ -174,11 +258,139 @@ namespace Logos.Entities
 
             ref readonly Entry entry = ref FindEntry(item.Key.ComponentBitmask, out _);
 
-            return !Unsafe.IsNullRef(in entry)
-                && entry.Grouping == item;
+            return !Unsafe.IsNullRef(in entry) && entry.Grouping == item;
         }
 
-        public bool TryGetValue(EntityArchetype key, [NotNullWhen(true)] out EntityGrouping? value)
+        /// <summary>
+        /// Copies the elements of the <see cref="EntityLookup"/> to an <see cref="Array"/>,
+        /// starting at a particular <see cref="Array"/> index.
+        /// </summary>
+        /// <param name="array">
+        /// The one-dimensional <see cref="Array"/> that is the destination of the elements copied
+        /// from the <see cref="EntityLookup"/>. The <see cref="Array"/> must have zero-based
+        /// indexing.
+        /// </param>
+        /// <param name="arrayIndex">
+        /// The zero-based index in <paramref name="array"/> at which copying begins.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="array"/> is null.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="arrayIndex"/> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The number of elements in the <see cref="EntityLookup"/> is greater than the available
+        /// space from <paramref name="arrayIndex"/> to the end of <paramref name="array"/>.
+        /// </exception>
+        public void CopyTo(EntityGrouping[] array, int arrayIndex)
+        {
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+
+            Entry[] entries = m_entries;
+            int upperBound = arrayIndex + entries.Length;
+
+            if ((uint)array.Length < (uint)upperBound)
+            {
+                ThrowForInsufficientArraySpace();
+            }
+
+            while (arrayIndex < upperBound)
+            {
+                array[arrayIndex] = entries[arrayIndex++].Grouping;
+            }
+        }
+
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityLookup"/> with the specified key/value collection
+        /// pair removed from it.
+        /// </summary>
+        /// <param name="item">
+        /// The key/value collection pair to remove from the copy of the <see cref="EntityLookup"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityLookup"/> with <paramref name="item"/> removed from it,
+        /// or the <see cref="EntityLookup"/> if <paramref name="item"/> is not found in it.
+        /// </returns>
+        public EntityLookup Remove(EntityGrouping item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+
+            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmask, out _);
+
+            if (Unsafe.IsNullRef(in targetEntry) || targetEntry.Grouping != item)
+            {
+                return this;
+            }
+
+            Entry[] sourceEntries = m_entries;
+            int sourceLength = sourceEntries.Length;
+
+            if (sourceLength == 1)
+            {
+                return s_empty;
+            }
+
+            uint destinationLength = (uint)sourceLength - 1;
+            int[] destinationBuckets = new int[destinationLength];
+            Entry[] destinationEntries = new Entry[destinationLength];
+            int sourceIndex = 0;
+            int destinationIndex = 0;
+
+            do
+            {
+                ref readonly Entry sourceEntry = ref sourceEntries[sourceIndex++];
+
+                if (!Unsafe.AreSame(in targetEntry, in sourceEntry))
+                {
+                    ref Entry destinationEntry = ref destinationEntries[destinationIndex];
+                    ref int destinationBucket = ref destinationBuckets[sourceEntry.HashCode % destinationLength];
+
+                    destinationEntry.Grouping = sourceEntry.Grouping;
+                    destinationEntry.HashCode = sourceEntry.HashCode;
+                    destinationEntry.Next = destinationBucket;
+                    destinationBucket = ~destinationIndex++;
+                }
+            }
+            while (sourceIndex < sourceLength);
+
+            return new EntityLookup(destinationBuckets, destinationEntries);
+        }
+
+        /// <summary>
+        /// Returns an <see cref="Enumerator"/> that iterates through the
+        /// <see cref="EntityLookup"/>.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="Enumerator"/> that can be used to iterate through the
+        /// <see cref="EntityLookup"/>.
+        /// </returns>
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        /// <summary>
+        /// Gets the sequence of values indexed by the specified key in the
+        /// <see cref="EntityLookup"/>.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the desired sequence of values.
+        /// </param>
+        /// <param name="values">
+        /// When this method returns, contains the sequence of values indexed by
+        /// <paramref name="key"/> in the <see cref="EntityLookup"/>, if <paramref name="key"/> is
+        /// found; otherwise, <see langword="null"/>. This parameter is passed uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityLookup"/> contains an element with
+        /// <paramref name="key"/>; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityGrouping? values)
         {
             ArgumentNullException.ThrowIfNull(key);
 
@@ -186,93 +398,61 @@ namespace Logos.Entities
 
             if (Unsafe.IsNullRef(in entry))
             {
-                value = null;
+                values = null;
                 return false;
             }
 
-            value = entry.Grouping;
+            values = entry.Grouping;
             return true;
         }
 
-        public bool TryGetInclusiveValue(EntityArchetype key, ComponentType keyElement,
-            [NotNullWhen(true)] out EntityGrouping? value)
+        /// <summary>
+        /// Gets the sequence of values indexed by a key in the <see cref="EntityLookup"/> that is
+        /// equivalent to the specified key with the specified component type removed from it.
+        /// </summary>
+        /// <param name="key">
+        /// The key whose component types form the superset of component types contained by the key
+        /// of the desired sequence of values.
+        /// </param>
+        /// <param name="componentType">
+        /// The component type to exclude from <paramref name="key"/> when searching for the desired
+        /// sequence of values.
+        /// </param>
+        /// <param name="values">
+        /// When this method returns, contains the sequence of values indexed by a key in the
+        /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
+        /// <paramref name="componentType"/> removed from it, if such a key is found; otherwise,
+        /// <see langword="null"/>. This parameter is passed uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityLookup"/> contains an element whose key
+        /// is equivalent to <paramref name="key"/> with <paramref name="componentType"/> removed
+        /// from it; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentType"/> is <see langword="null"/>.
+        /// </exception>
+        public bool TryGetSubgrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? values)
         {
             ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(keyElement);
+            ArgumentNullException.ThrowIfNull(componentType);
 
             ReadOnlySpan<int> bitmask = key.ComponentBitmask;
-            int index = keyElement.Index >> 5;
-            int bit = 1 << keyElement.Index;
-
-            int[]? rentedArray;
-            scoped Span<int> buffer;
-            int length;
-
-            if (index < bitmask.Length)
-            {
-                if ((bit & bitmask[index]) != 0)
-                {
-                    return TryGetValue(key, out value);
-                }
-
-                length = bitmask.Length;
-            }
-            else
-            {
-                length = index + 1;
-            }
-
-            if (length <= MaximumStackAllocSize)
-            {
-                rentedArray = null;
-                buffer = stackalloc int[length];
-            }
-            else
-            {
-                rentedArray = ArrayPool<int>.Shared.Rent(length);
-                buffer = new Span<int>(rentedArray, 0, length);
-            }
-
-            bitmask.CopyTo(buffer);
-            buffer.Slice(bitmask.Length).Clear();
-            buffer[index] |= bit;
-
-            ref readonly Entry entry = ref FindEntry(buffer, out _);
-
-            if (rentedArray != null)
-            {
-                ArrayPool<int>.Shared.Return(rentedArray);
-            }
-
-            if (Unsafe.IsNullRef(in entry))
-            {
-                value = null;
-                return false;
-            }
-
-            value = entry.Grouping;
-            return true;
-        }
-
-        public bool TryGetExclusiveValue(EntityArchetype key, ComponentType keyElement,
-            [NotNullWhen(true)] out EntityGrouping? value)
-        {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(keyElement);
-            
-            ReadOnlySpan<int> bitmask = key.ComponentBitmask;
-            int index = keyElement.Index >> 5;
-            int bit = 1 << keyElement.Index;
+            int index = componentType.Index >> 5;
+            int bit = 1 << componentType.Index;
 
             if (index >= bitmask.Length || (bit & bitmask[index]) == 0)
             {
-                return TryGetValue(key, out value);
+                return TryGetGrouping(key, out values);
             }
 
             int[]? rentedArray;
             scoped Span<int> buffer;
 
-            if (bitmask.Length <= MaximumStackAllocSize)
+            if (bitmask.Length <= StackallocIntBufferSizeLimit)
             {
                 rentedArray = null;
                 buffer = stackalloc int[bitmask.Length];
@@ -303,36 +483,104 @@ namespace Logos.Entities
 
             if (Unsafe.IsNullRef(in entry))
             {
-                value = null;
+                values = null;
                 return false;
             }
 
-            value = entry.Grouping;
+            values = entry.Grouping;
             return true;
         }
 
-        public void CopyTo(EntityGrouping[] array, int arrayIndex)
+        /// <summary>
+        /// Gets the sequence of values indexed by a key in the <see cref="EntityLookup"/> that is
+        /// equivalent to the specified key with the specified component type added to it.
+        /// </summary>
+        /// <param name="key">
+        /// The key whose component types form the subset of component types contained by the key of
+        /// the desired sequence of values.
+        /// </param>
+        /// <param name="componentType">
+        /// The component type to include with <paramref name="key"/> when searching for the desired
+        /// sequence of values.
+        /// </param>
+        /// <param name="values">
+        /// When this method returns, contains the sequence of values indexed by a key in the
+        /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
+        /// <paramref name="componentType"/> added to it, if such a key is found; otherwise,
+        /// <see langword="null"/>. This parameter is passed uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityLookup"/> contains an element whose key
+        /// is equivalent to <paramref name="key"/> with <paramref name="componentType"/> added to
+        /// it; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentType"/> is <see langword="null"/>.
+        /// </exception>
+        public bool TryGetSupergrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? values)
         {
-            ArgumentNullException.ThrowIfNull(array);
-            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(componentType);
 
-            Entry[] entries = m_entries;
-            int upperBound = arrayIndex + entries.Length;
+            ReadOnlySpan<int> bitmask = key.ComponentBitmask;
+            int index = componentType.Index >> 5;
+            int bit = 1 << componentType.Index;
+            int length;
+            int[]? rentedArray;
+            scoped Span<int> buffer;
 
-            if ((uint)array.Length < (uint)upperBound)
+            if (index < bitmask.Length)
             {
-                ThrowForInsufficientArraySpace();
+                if ((bit & bitmask[index]) != 0)
+                {
+                    return TryGetGrouping(key, out values);
+                }
+
+                length = bitmask.Length;
+            }
+            else
+            {
+                length = index + 1;
             }
 
-            while (arrayIndex < upperBound)
+            if (length <= StackallocIntBufferSizeLimit)
             {
-                array[arrayIndex] = entries[arrayIndex++].Grouping;
+                rentedArray = null;
+                buffer = stackalloc int[length];
             }
+            else
+            {
+                rentedArray = ArrayPool<int>.Shared.Rent(length);
+                buffer = new Span<int>(rentedArray, 0, length);
+            }
+
+            bitmask.CopyTo(buffer);
+            buffer.Slice(bitmask.Length).Clear();
+            buffer[index] |= bit;
+
+            ref readonly Entry entry = ref FindEntry(buffer, out _);
+
+            if (rentedArray != null)
+            {
+                ArrayPool<int>.Shared.Return(rentedArray);
+            }
+
+            if (Unsafe.IsNullRef(in entry))
+            {
+                values = null;
+                return false;
+            }
+
+            values = entry.Grouping;
+            return true;
         }
 
-        public Enumerator GetEnumerator()
+        bool ILookup<EntityArchetype, EntityTable>.Contains(EntityArchetype key)
         {
-            return new Enumerator(this);
+            return key is not null && !Unsafe.IsNullRef(in FindEntry(key.ComponentBitmask, out _));
         }
 
         void ICollection<EntityGrouping>.Add(EntityGrouping item)
@@ -340,12 +588,12 @@ namespace Logos.Entities
             throw new NotSupportedException();
         }
 
-        bool ICollection<EntityGrouping>.Remove(EntityGrouping item)
+        void ICollection<EntityGrouping>.Clear()
         {
             throw new NotSupportedException();
         }
 
-        void ICollection<EntityGrouping>.Clear()
+        bool ICollection<EntityGrouping>.Remove(EntityGrouping item)
         {
             throw new NotSupportedException();
         }
@@ -412,39 +660,35 @@ namespace Logos.Entities
         [DoesNotReturn]
         private static void ThrowForKeyNotFound()
         {
-            throw new KeyNotFoundException(
-                "The key does not exist in the EntityLookup.");
+            throw new KeyNotFoundException("The key does not exist in the EntityLookup.");
         }
 
         [DoesNotReturn]
         private static void ThrowForInvalidArrayRank()
         {
-            throw new ArgumentException(
-                "The array is multidimensional.", "array");
+            throw new ArgumentException("The array is multidimensional.", "array");
         }
 
         [DoesNotReturn]
         private static void ThrowForInvalidArrayLowerBound()
         {
-            throw new ArgumentException(
-                "The array does not have zero-based indexing.", "array");
+            throw new ArgumentException("The array does not have zero-based indexing.", "array");
         }
 
         [DoesNotReturn]
         private static void ThrowForInsufficientArraySpace()
         {
             throw new ArgumentException(
-                "The number of elements in the EntityLookup is greater than " +
-                "the available space from the index to the end of the " +
-                "destination array.");
+                "The number of elements in the EntityLookup is greater than the available space " +
+                "from the index to the end of the destination array.");
         }
 
         [DoesNotReturn]
         private static void ThrowForInvalidArrayType()
         {
             throw new ArgumentException(
-                "EntityGrouping cannot be cast automatically to the type of " +
-                "the destination array.", "array");
+                "EntityGrouping cannot be cast automatically to the type of the destination array.",
+                "array");
         }
 
         private EntityLookup AddEntry(EntityGrouping item, uint hashCode)
@@ -474,44 +718,7 @@ namespace Logos.Entities
             newEntry.HashCode = hashCode;
             newEntry.Next = newBucket;
             newBucket = ~sourceLength;
-
             return new EntityLookup(destinationBuckets, destinationEntries);
-        }
-
-        private EntityLookup RemoveEntry(EntityGrouping item)
-        {
-            Entry[] sourceEntries = m_entries;
-            int sourceLength = sourceEntries.Length;
-
-            if (sourceLength == 1)
-            {
-                return s_empty;
-            }
-
-            uint destinationLength = (uint)sourceLength - 1;
-            int[] newBuckets = new int[destinationLength];
-            Entry[] newEntries = new Entry[destinationLength];
-            int sourceIndex = 0;
-            int destinationIndex = 0;
-
-            do
-            {
-                ref readonly Entry sourceEntry = ref sourceEntries[sourceIndex++];
-
-                if (sourceEntry.Grouping != item)
-                {
-                    ref Entry destinationEntry = ref newEntries[destinationIndex];
-                    ref int destinationBucket = ref newBuckets[sourceEntry.HashCode % destinationLength];
-
-                    destinationEntry.Grouping = sourceEntry.Grouping;
-                    destinationEntry.HashCode = sourceEntry.HashCode;
-                    destinationEntry.Next = destinationBucket;
-                    destinationBucket = ~destinationIndex++;
-                }
-            }
-            while (sourceIndex < sourceLength);
-
-            return new EntityLookup(newBuckets, newEntries);
         }
 
         private ref readonly Entry FindEntry(ReadOnlySpan<int> bitmask, out uint hashCode)
@@ -540,13 +747,9 @@ namespace Logos.Entities
             return ref Unsafe.NullRef<Entry>();
         }
 
-        private struct Entry
-        {
-            public EntityGrouping Grouping;
-            public uint HashCode;
-            public int Next;
-        }
-
+        /// <summary>
+        /// Enumerates the elements of a <see cref="EntityLookup"/>.
+        /// </summary>
         public struct Enumerator : IEnumerator<EntityGrouping>
         {
             private readonly Entry[] m_entries;
@@ -560,6 +763,14 @@ namespace Logos.Entities
                 m_index = -1;
             }
 
+            /// <summary>
+            /// Gets the element in the <see cref="EntityLookup"/> at the current position of the
+            /// <see cref="Enumerator"/>.
+            /// </summary>
+            /// <returns>
+            /// The element in the <see cref="EntityLookup"/> at the current position of the
+            /// <see cref="Enumerator"/>.
+            /// </returns>
             public readonly EntityGrouping Current
             {
                 get => m_entries[m_index].Grouping;
@@ -570,10 +781,20 @@ namespace Logos.Entities
                 get => m_entries[m_index].Grouping;
             }
 
+            /// <inheritdoc cref="IDisposable.Dispose"/>
             public readonly void Dispose()
             {
             }
 
+            /// <summary>
+            /// Advances the <see cref="Enumerator"/> to the next element of the
+            /// <see cref="EntityLookup"/>.
+            /// </summary>
+            /// <returns>
+            /// <see langword="true"/> if the <see cref="Enumerator"/> was successfully advanced to
+            /// the next element; <see langword="false"/> if the <see cref="Enumerator"/> has passed
+            /// the end of the <see cref="EntityLookup"/>.
+            /// </returns>
             public bool MoveNext()
             {
                 int index = m_index + 1;
@@ -587,10 +808,21 @@ namespace Logos.Entities
                 return false;
             }
 
+            /// <summary>
+            /// Sets the <see cref="Enumerator"/> to its initial position, which is before the first
+            /// element in the <see cref="EntityLookup"/>.
+            /// </summary>
             public void Reset()
             {
                 m_index = -1;
             }
+        }
+
+        private struct Entry
+        {
+            public EntityGrouping Grouping;
+            public uint HashCode;
+            public int Next;
         }
     }
 }
