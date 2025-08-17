@@ -45,7 +45,7 @@ namespace Logos.Entities.Tests
         }
 
         [Test]
-        public static void CreateEntityTest()
+        public static void CreateTest()
         {
             EntityRegistry registry = new EntityRegistry();
 
@@ -83,7 +83,7 @@ namespace Logos.Entities.Tests
         }
 
         [Test]
-        public static void DestroyEntityTest()
+        public static void DeleteTest()
         {
             EntityRegistry registry = new EntityRegistry();
 
@@ -102,7 +102,7 @@ namespace Logos.Entities.Tests
 
                 using (Assert.EnterMultipleScope())
                 {
-                    Assert.That(registry.Destroy(entity));
+                    Assert.That(registry.Delete(entity));
                     Assert.That(registry.Contains(entity), Is.False);
                 }
             }
