@@ -378,7 +378,7 @@ namespace Logos.Entities
         /// <param name="key">
         /// The key of the desired sequence of values.
         /// </param>
-        /// <param name="values">
+        /// <param name="grouping">
         /// When this method returns, contains the sequence of values indexed by
         /// <paramref name="key"/> in the <see cref="EntityLookup"/>, if <paramref name="key"/> is
         /// found; otherwise, <see langword="null"/>. This parameter is passed uninitialized.
@@ -390,7 +390,7 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="key"/> is <see langword="null"/>.
         /// </exception>
-        public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityGrouping? values)
+        public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityGrouping? grouping)
         {
             ArgumentNullException.ThrowIfNull(key);
 
@@ -398,11 +398,11 @@ namespace Logos.Entities
 
             if (Unsafe.IsNullRef(in entry))
             {
-                values = null;
+                grouping = null;
                 return false;
             }
 
-            values = entry.Grouping;
+            grouping = entry.Grouping;
             return true;
         }
 
@@ -418,7 +418,7 @@ namespace Logos.Entities
         /// The component type to exclude from <paramref name="key"/> when searching for the desired
         /// sequence of values.
         /// </param>
-        /// <param name="values">
+        /// <param name="grouping">
         /// When this method returns, contains the sequence of values indexed by a key in the
         /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
         /// <paramref name="componentType"/> removed from it, if such a key is found; otherwise,
@@ -435,7 +435,7 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="componentType"/> is <see langword="null"/>.
         /// </exception>
-        public bool TryGetSubgrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? values)
+        public bool TryGetSubgrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? grouping)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(componentType);
@@ -446,7 +446,7 @@ namespace Logos.Entities
 
             if (index >= bitmask.Length || (bit & bitmask[index]) == 0)
             {
-                return TryGetGrouping(key, out values);
+                return TryGetGrouping(key, out grouping);
             }
 
             int[]? rentedArray;
@@ -483,11 +483,11 @@ namespace Logos.Entities
 
             if (Unsafe.IsNullRef(in entry))
             {
-                values = null;
+                grouping = null;
                 return false;
             }
 
-            values = entry.Grouping;
+            grouping = entry.Grouping;
             return true;
         }
 
@@ -503,7 +503,7 @@ namespace Logos.Entities
         /// The component type to include with <paramref name="key"/> when searching for the desired
         /// sequence of values.
         /// </param>
-        /// <param name="values">
+        /// <param name="grouping">
         /// When this method returns, contains the sequence of values indexed by a key in the
         /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
         /// <paramref name="componentType"/> added to it, if such a key is found; otherwise,
@@ -520,7 +520,7 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="componentType"/> is <see langword="null"/>.
         /// </exception>
-        public bool TryGetSupergrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? values)
+        public bool TryGetSupergrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? grouping)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(componentType);
@@ -536,7 +536,7 @@ namespace Logos.Entities
             {
                 if ((bit & bitmask[index]) != 0)
                 {
-                    return TryGetGrouping(key, out values);
+                    return TryGetGrouping(key, out grouping);
                 }
 
                 length = bitmask.Length;
@@ -570,11 +570,11 @@ namespace Logos.Entities
 
             if (Unsafe.IsNullRef(in entry))
             {
-                values = null;
+                grouping = null;
                 return false;
             }
 
-            values = entry.Grouping;
+            grouping = entry.Grouping;
             return true;
         }
 
@@ -748,7 +748,7 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Enumerates the elements of a <see cref="EntityLookup"/>.
+        /// Enumerates the elements of an <see cref="EntityLookup"/>.
         /// </summary>
         public struct Enumerator : IEnumerator<EntityGrouping>
         {
