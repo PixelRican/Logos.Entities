@@ -193,16 +193,8 @@ namespace Logos.Entities.Tests
         {
             using (Assert.EnterMultipleScope())
             {
-                if (left != null)
-                {
-                    Assert.That(left.CompareTo(right), Is.EqualTo(expectedValue));
-                    Assert.That(left.CompareTo(right as object), Is.EqualTo(expectedValue));
-                }
-                else
-                {
-                    Assert.That(-right!.CompareTo(left), Is.EqualTo(expectedValue));
-                    Assert.That(-right.CompareTo(left as object), Is.EqualTo(expectedValue));
-                }
+                Assert.That(left?.CompareTo(right) ?? -1, Is.EqualTo(expectedValue));
+                Assert.That(left?.CompareTo(right as object) ?? -1, Is.EqualTo(expectedValue));
             }
         }
 
