@@ -93,7 +93,7 @@ namespace Logos.Entities
             {
                 ArgumentNullException.ThrowIfNull(key);
 
-                ref readonly Entry entry = ref FindEntry(key.ComponentBitmask, out _);
+                ref readonly Entry entry = ref FindEntry(key.ComponentBitmap, out _);
 
                 if (Unsafe.IsNullRef(in entry))
                 {
@@ -125,7 +125,7 @@ namespace Logos.Entities
             {
                 if (key is not null)
                 {
-                    ref readonly Entry entry = ref FindEntry(key.ComponentBitmask, out _);
+                    ref readonly Entry entry = ref FindEntry(key.ComponentBitmap, out _);
 
                     if (!Unsafe.IsNullRef(in entry))
                     {
@@ -155,7 +155,7 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            if (Unsafe.IsNullRef(in FindEntry(item.Key.ComponentBitmask, out uint hashCode)))
+            if (Unsafe.IsNullRef(in FindEntry(item.Key.ComponentBitmap, out uint hashCode)))
             {
                 return AddEntry(item, hashCode);
             }
@@ -182,7 +182,7 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmask, out uint hashCode);
+            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmap, out uint hashCode);
 
             if (Unsafe.IsNullRef(in targetEntry))
             {
@@ -256,7 +256,7 @@ namespace Logos.Entities
                 return false;
             }
 
-            ref readonly Entry entry = ref FindEntry(item.Key.ComponentBitmask, out _);
+            ref readonly Entry entry = ref FindEntry(item.Key.ComponentBitmap, out _);
 
             return !Unsafe.IsNullRef(in entry) && entry.Grouping == item;
         }
@@ -317,7 +317,7 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(item);
 
-            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmask, out _);
+            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmap, out _);
 
             if (Unsafe.IsNullRef(in targetEntry) || targetEntry.Grouping != item)
             {
@@ -394,7 +394,7 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            ref readonly Entry entry = ref FindEntry(key.ComponentBitmask, out _);
+            ref readonly Entry entry = ref FindEntry(key.ComponentBitmap, out _);
 
             if (Unsafe.IsNullRef(in entry))
             {
@@ -440,11 +440,11 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> bitmask = key.ComponentBitmask;
+            ReadOnlySpan<int> bitmap = key.ComponentBitmap;
             int index = componentType.Index >> 5;
             int bit = 1 << componentType.Index;
 
-            if (index >= bitmask.Length || (bit & bitmask[index]) == 0)
+            if (index >= bitmap.Length || (bit & bitmap[index]) == 0)
             {
                 return TryGetGrouping(key, out grouping);
             }
@@ -452,18 +452,18 @@ namespace Logos.Entities
             int[]? rentedArray;
             scoped Span<int> buffer;
 
-            if (bitmask.Length <= StackallocIntBufferSizeLimit)
+            if (bitmap.Length <= StackallocIntBufferSizeLimit)
             {
                 rentedArray = null;
-                buffer = stackalloc int[bitmask.Length];
+                buffer = stackalloc int[bitmap.Length];
             }
             else
             {
-                rentedArray = ArrayPool<int>.Shared.Rent(bitmask.Length);
-                buffer = new Span<int>(rentedArray, 0, bitmask.Length);
+                rentedArray = ArrayPool<int>.Shared.Rent(bitmap.Length);
+                buffer = new Span<int>(rentedArray, 0, bitmap.Length);
             }
 
-            bitmask.CopyTo(buffer);
+            bitmap.CopyTo(buffer);
 
             if ((buffer[index] ^= bit) == 0 && buffer.Length == index + 1)
             {
@@ -525,21 +525,21 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> bitmask = key.ComponentBitmask;
+            ReadOnlySpan<int> bitmap = key.ComponentBitmap;
             int index = componentType.Index >> 5;
             int bit = 1 << componentType.Index;
             int length;
             int[]? rentedArray;
             scoped Span<int> buffer;
 
-            if (index < bitmask.Length)
+            if (index < bitmap.Length)
             {
-                if ((bit & bitmask[index]) != 0)
+                if ((bit & bitmap[index]) != 0)
                 {
                     return TryGetGrouping(key, out grouping);
                 }
 
-                length = bitmask.Length;
+                length = bitmap.Length;
             }
             else
             {
@@ -557,8 +557,8 @@ namespace Logos.Entities
                 buffer = new Span<int>(rentedArray, 0, length);
             }
 
-            bitmask.CopyTo(buffer);
-            buffer.Slice(bitmask.Length).Clear();
+            bitmap.CopyTo(buffer);
+            buffer.Slice(bitmap.Length).Clear();
             buffer[index] |= bit;
 
             ref readonly Entry entry = ref FindEntry(buffer, out _);
@@ -580,7 +580,7 @@ namespace Logos.Entities
 
         bool ILookup<EntityArchetype, EntityTable>.Contains(EntityArchetype key)
         {
-            return key is not null && !Unsafe.IsNullRef(in FindEntry(key.ComponentBitmask, out _));
+            return key is not null && !Unsafe.IsNullRef(in FindEntry(key.ComponentBitmap, out _));
         }
 
         void ICollection<EntityGrouping>.Add(EntityGrouping item)
@@ -721,10 +721,10 @@ namespace Logos.Entities
             return new EntityLookup(destinationBuckets, destinationEntries);
         }
 
-        private ref readonly Entry FindEntry(ReadOnlySpan<int> bitmask, out uint hashCode)
+        private ref readonly Entry FindEntry(ReadOnlySpan<int> bitmap, out uint hashCode)
         {
             Entry[] entries = m_entries;
-            hashCode = (uint)BitmaskOperations.GetHashCode(bitmask);
+            hashCode = (uint)BitmapOperations.GetHashCode(bitmap);
 
             if (entries.Length > 0)
             {
@@ -735,7 +735,7 @@ namespace Logos.Entities
                     ref readonly Entry entry = ref entries[~index];
 
                     if (entry.HashCode == hashCode &&
-                        entry.Grouping.Key.ComponentBitmask.SequenceEqual(bitmask))
+                        entry.Grouping.Key.ComponentBitmap.SequenceEqual(bitmap))
                     {
                         return ref entry;
                     }

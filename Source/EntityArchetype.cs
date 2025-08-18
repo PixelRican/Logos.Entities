@@ -17,7 +17,7 @@ namespace Logos.Entities
         private static readonly EntityArchetype s_base = new EntityArchetype();
 
         private readonly ComponentType[] m_componentTypes;
-        private readonly int[] m_componentBitmask;
+        private readonly int[] m_componentBitmap;
         private readonly int m_managedComponentCount;
         private readonly int m_unmanagedComponentCount;
         private readonly int m_tagComponentCount;
@@ -26,16 +26,16 @@ namespace Logos.Entities
         private EntityArchetype()
         {
             m_componentTypes = Array.Empty<ComponentType>();
-            m_componentBitmask = Array.Empty<int>();
+            m_componentBitmap = Array.Empty<int>();
             m_entitySize = Unsafe.SizeOf<Entity>();
         }
 
-        private EntityArchetype(ComponentType[] componentTypes, int[] componentBitmask,
+        private EntityArchetype(ComponentType[] componentTypes, int[] componentBitmap,
             int managedComponentCount, int unmanagedComponentCount, int tagComponentCount,
             int entitySize)
         {
             m_componentTypes = componentTypes;
-            m_componentBitmask = componentBitmask;
+            m_componentBitmap = componentBitmap;
             m_managedComponentCount = managedComponentCount;
             m_unmanagedComponentCount = unmanagedComponentCount;
             m_tagComponentCount = tagComponentCount;
@@ -67,16 +67,16 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether a specific
+        /// Gets a read-only bitmap that compactly stores flags indicating whether a specific
         /// component type is contained by the <see cref="EntityArchetype"/>.
         /// </summary>
         /// <returns>
-        /// A read-only bitmask that compactly stores flags indicating whether a specific component
+        /// A read-only bitmap that compactly stores flags indicating whether a specific component
         /// type is contained by the <see cref="EntityArchetype"/>.
         /// </returns>
-        public ReadOnlySpan<int> ComponentBitmask
+        public ReadOnlySpan<int> ComponentBitmap
         {
-            get => new ReadOnlySpan<int>(m_componentBitmask);
+            get => new ReadOnlySpan<int>(m_componentBitmap);
         }
 
         /// <summary>
@@ -214,11 +214,11 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> sourceBitmask = ComponentBitmask;
+            ReadOnlySpan<int> sourceBitmap = ComponentBitmap;
             int commponentTypeIndex = componentType.Index;
 
             // Return this instance if it already contains the component type.
-            if (BitmaskOperations.Test(sourceBitmask, commponentTypeIndex))
+            if (BitmapOperations.Test(sourceBitmap, commponentTypeIndex))
             {
                 return this;
             }
@@ -233,12 +233,12 @@ namespace Logos.Entities
             destinationSpan[index] = componentType;
             sourceSpan.Slice(index).CopyTo(destinationSpan.Slice(index + 1));
 
-            // Update component bitmask.
-            int[] componentBitmask = new int[destinationSpan[^1].Index + 32 >> 5];
-            Span<int> destinationBitmask = new Span<int>(componentBitmask);
+            // Update component bitmap.
+            int[] componentBitmap = new int[destinationSpan[^1].Index + 32 >> 5];
+            Span<int> destinationBitmap = new Span<int>(componentBitmap);
 
-            sourceBitmask.CopyTo(destinationBitmask);
-            destinationBitmask[commponentTypeIndex >> 5] |= 1 << commponentTypeIndex;
+            sourceBitmap.CopyTo(destinationBitmap);
+            destinationBitmap[commponentTypeIndex >> 5] |= 1 << commponentTypeIndex;
 
             // Update component count and entity size based on the category of the component type.
             int managedComponentCount = m_managedComponentCount;
@@ -262,7 +262,7 @@ namespace Logos.Entities
                     break;
             }
 
-            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
+            return new EntityArchetype(componentTypes, componentBitmap, managedComponentCount,
                 unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
@@ -280,7 +280,7 @@ namespace Logos.Entities
         public bool Contains(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ComponentBitmask, componentType.Index);
+                && BitmapOperations.Test(ComponentBitmap, componentType.Index);
         }
 
         /// <summary>
@@ -329,11 +329,11 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> sourceBitmask = ComponentBitmask;
+            ReadOnlySpan<int> sourceBitmap = ComponentBitmap;
             int componentTypeIndex = componentType.Index;
 
             // Return this instance if it does not contain the component type.
-            if (!BitmaskOperations.Test(sourceBitmask, componentTypeIndex))
+            if (!BitmapOperations.Test(sourceBitmap, componentTypeIndex))
             {
                 return this;
             }
@@ -354,16 +354,16 @@ namespace Logos.Entities
             sourceSpan.Slice(0, index).CopyTo(destinationSpan);
             sourceSpan.Slice(index + 1).CopyTo(destinationSpan.Slice(index));
 
-            // Update component bitmask.
-            int[] componentBitmask = new int[destinationSpan[^1].Index + 32 >> 5];
-            Span<int> destinationBitmask = new Span<int>(componentBitmask);
+            // Update component bitmap.
+            int[] componentBitmap = new int[destinationSpan[^1].Index + 32 >> 5];
+            Span<int> destinationBitmap = new Span<int>(componentBitmap);
 
-            sourceBitmask.Slice(0, destinationBitmask.Length).CopyTo(destinationBitmask);
+            sourceBitmap.Slice(0, destinationBitmap.Length).CopyTo(destinationBitmap);
             index = componentTypeIndex >> 5;
 
-            if (index < destinationBitmask.Length)
+            if (index < destinationBitmap.Length)
             {
-                destinationBitmask[index] ^= 1 << componentTypeIndex;
+                destinationBitmap[index] ^= 1 << componentTypeIndex;
             }
 
             // Update component count and entity size based on the category of the component type.
@@ -388,7 +388,7 @@ namespace Logos.Entities
                     break;
             }
 
-            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
+            return new EntityArchetype(componentTypes, componentBitmap, managedComponentCount,
                 unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
@@ -397,7 +397,7 @@ namespace Logos.Entities
         {
             return ReferenceEquals(other, this)
                 || other is not null
-                && ComponentBitmask.SequenceEqual(other.ComponentBitmask);
+                && ComponentBitmap.SequenceEqual(other.ComponentBitmap);
         }
 
         /// <inheritdoc cref="object.Equals"/>
@@ -409,7 +409,7 @@ namespace Logos.Entities
         /// <inheritdoc cref="object.GetHashCode"/>
         public override int GetHashCode()
         {
-            return BitmaskOperations.GetHashCode(ComponentBitmask);
+            return BitmapOperations.GetHashCode(ComponentBitmap);
         }
 
         /// <inheritdoc cref="object.ToString"/>
@@ -436,7 +436,7 @@ namespace Logos.Entities
                 return s_base;
             }
 
-            int[] componentBitmask = new int[previousComponentType.Index + 32 >> 5];
+            int[] componentBitmap = new int[previousComponentType.Index + 32 >> 5];
             int componentCount = 0;
             int managedComponentCount = 0;
             int unmanagedComponentCount = 0;
@@ -452,7 +452,7 @@ namespace Logos.Entities
                     int componentTypeIndex = currentComponentType.Index;
 
                     componentTypes[componentCount++] = previousComponentType = currentComponentType;
-                    componentBitmask[componentTypeIndex >> 5] |= 1 << componentTypeIndex;
+                    componentBitmap[componentTypeIndex >> 5] |= 1 << componentTypeIndex;
 
                     switch (currentComponentType.Category)
                     {
@@ -472,7 +472,7 @@ namespace Logos.Entities
             }
 
             Array.Resize(ref componentTypes, componentCount);
-            return new EntityArchetype(componentTypes, componentBitmask, managedComponentCount,
+            return new EntityArchetype(componentTypes, componentBitmap, managedComponentCount,
                 unmanagedComponentCount, tagComponentCount, entitySize);
         }
 
@@ -537,7 +537,7 @@ namespace Logos.Entities
             return ReferenceEquals(left, right)
                 || left is not null
                 && right is not null
-                && left.ComponentBitmask.SequenceEqual(right.ComponentBitmask);
+                && left.ComponentBitmap.SequenceEqual(right.ComponentBitmap);
         }
 
         /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>

@@ -19,40 +19,40 @@ namespace Logos.Entities
         private readonly ComponentType[] m_requiredComponentTypes;
         private readonly ComponentType[] m_includedComponentTypes;
         private readonly ComponentType[] m_excludedComponentTypes;
-        private readonly int[] m_requiredComponentBitmask;
-        private readonly int[] m_includedComponentBitmask;
-        private readonly int[] m_excludedComponentBitmask;
+        private readonly int[] m_requiredComponentBitmap;
+        private readonly int[] m_includedComponentBitmap;
+        private readonly int[] m_excludedComponentBitmap;
 
         private EntityFilter()
         {
             m_requiredComponentTypes = Array.Empty<ComponentType>();
             m_includedComponentTypes = Array.Empty<ComponentType>();
             m_excludedComponentTypes = Array.Empty<ComponentType>();
-            m_requiredComponentBitmask = Array.Empty<int>();
-            m_includedComponentBitmask = Array.Empty<int>();
-            m_excludedComponentBitmask = Array.Empty<int>();
+            m_requiredComponentBitmap = Array.Empty<int>();
+            m_includedComponentBitmap = Array.Empty<int>();
+            m_excludedComponentBitmap = Array.Empty<int>();
         }
 
-        private EntityFilter(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmask)
+        private EntityFilter(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap)
         {
             m_requiredComponentTypes = requiredComponentTypes;
             m_includedComponentTypes = Array.Empty<ComponentType>();
             m_excludedComponentTypes = Array.Empty<ComponentType>();
-            m_requiredComponentBitmask = requiredComponentBitmask;
-            m_includedComponentBitmask = Array.Empty<int>();
-            m_excludedComponentBitmask = Array.Empty<int>();
+            m_requiredComponentBitmap = requiredComponentBitmap;
+            m_includedComponentBitmap = Array.Empty<int>();
+            m_excludedComponentBitmap = Array.Empty<int>();
         }
 
-        private EntityFilter(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmask,
-                             ComponentType[] includedComponentTypes, int[] includedComponentBitmask,
-                             ComponentType[] excludedComponentTypes, int[] excludedComponentBitmask)
+        private EntityFilter(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap,
+                             ComponentType[] includedComponentTypes, int[] includedComponentBitmap,
+                             ComponentType[] excludedComponentTypes, int[] excludedComponentBitmap)
         {
             m_requiredComponentTypes = requiredComponentTypes;
             m_includedComponentTypes = includedComponentTypes;
             m_excludedComponentTypes = excludedComponentTypes;
-            m_requiredComponentBitmask = requiredComponentBitmask;
-            m_includedComponentBitmask = includedComponentBitmask;
-            m_excludedComponentBitmask = excludedComponentBitmask;
+            m_requiredComponentBitmap = requiredComponentBitmap;
+            m_includedComponentBitmap = includedComponentBitmap;
+            m_excludedComponentBitmap = excludedComponentBitmap;
         }
 
         /// <summary>
@@ -106,42 +106,42 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether the
+        /// Gets a read-only bitmap that compactly stores flags indicating whether the
         /// <see cref="EntityFilter"/> requires a specific component type.
         /// </summary>
         /// <returns>
-        /// A read-only bitmask that compactly stores flags indicating whether the
+        /// A read-only bitmap that compactly stores flags indicating whether the
         /// <see cref="EntityFilter"/> requires a specific component type.
         /// </returns>
-        public ReadOnlySpan<int> RequiredComponentBitmask
+        public ReadOnlySpan<int> RequiredComponentBitmap
         {
-            get => new ReadOnlySpan<int>(m_requiredComponentBitmask);
+            get => new ReadOnlySpan<int>(m_requiredComponentBitmap);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether the
+        /// Gets a read-only bitmap that compactly stores flags indicating whether the
         /// <see cref="EntityFilter"/> includes a specific component type.
         /// </summary>
         /// <returns>
-        /// A read-only bitmask that compactly stores flags indicating whether the
+        /// A read-only bitmap that compactly stores flags indicating whether the
         /// <see cref="EntityFilter"/> includes a specific component type.
         /// </returns>
-        public ReadOnlySpan<int> IncludedComponentBitmask
+        public ReadOnlySpan<int> IncludedComponentBitmap
         {
-            get => new ReadOnlySpan<int>(m_includedComponentBitmask);
+            get => new ReadOnlySpan<int>(m_includedComponentBitmap);
         }
 
         /// <summary>
-        /// Gets a read-only bitmask that compactly stores flags indicating whether the
+        /// Gets a read-only bitmap that compactly stores flags indicating whether the
         /// <see cref="EntityFilter"/> excludes a specific component type.
         /// </summary>
         /// <returns>
-        /// A read-only bitmask that compactly stores flags indicating whether the
+        /// A read-only bitmap that compactly stores flags indicating whether the
         /// <see cref="EntityFilter"/> excludes a specific component type.
         /// </returns>
-        public ReadOnlySpan<int> ExcludedComponentBitmask
+        public ReadOnlySpan<int> ExcludedComponentBitmap
         {
-            get => new ReadOnlySpan<int>(m_excludedComponentBitmask);
+            get => new ReadOnlySpan<int>(m_excludedComponentBitmap);
         }
 
         /// <summary>
@@ -516,7 +516,7 @@ namespace Logos.Entities
         public bool Requires(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(RequiredComponentBitmask, componentType.Index);
+                && BitmapOperations.Test(RequiredComponentBitmap, componentType.Index);
         }
 
         /// <summary>
@@ -532,7 +532,7 @@ namespace Logos.Entities
         public bool Includes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(IncludedComponentBitmask, componentType.Index);
+                && BitmapOperations.Test(IncludedComponentBitmap, componentType.Index);
         }
 
         /// <summary>
@@ -548,7 +548,7 @@ namespace Logos.Entities
         public bool Excludes(ComponentType componentType)
         {
             return componentType != null
-                && BitmaskOperations.Test(ExcludedComponentBitmask, componentType.Index);
+                && BitmapOperations.Test(ExcludedComponentBitmap, componentType.Index);
         }
 
         /// <summary>
@@ -569,11 +569,62 @@ namespace Logos.Entities
                 return false;
             }
 
-            ReadOnlySpan<int> bitmask = archetype.ComponentBitmask;
+            // Compare against the required component bitmap.
+            ReadOnlySpan<int> targetBitmap = archetype.ComponentBitmap;
+            int[] sourceBitmap = m_requiredComponentBitmap;
+            int length = sourceBitmap.Length;
 
-            return BitmaskOperations.Requires(RequiredComponentBitmask, bitmask)
-                && BitmaskOperations.Includes(IncludedComponentBitmask, bitmask)
-                && BitmaskOperations.Excludes(ExcludedComponentBitmask, bitmask);
+            if (length > targetBitmap.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < length; i++)
+            {
+                if ((sourceBitmap[i] & ~targetBitmap[i]) != 0)
+                {
+                    return false;
+                }
+            }
+
+            // Compare against the included component bitmap.
+            sourceBitmap = m_includedComponentBitmap;
+            length = sourceBitmap.Length;
+
+            if (length > 0)
+            {
+                if (length > targetBitmap.Length)
+                {
+                    length = targetBitmap.Length;
+                }
+
+                int index = 0;
+
+                while (index < length && (sourceBitmap[index] & targetBitmap[index]) == 0)
+                {
+                    index++;
+                }
+
+                if (index == length)
+                {
+                    return false;
+                }
+            }
+
+            // Compare against the excluded component bitmap.
+            sourceBitmap = m_excludedComponentBitmap;
+            length = Math.Min(sourceBitmap.Length, targetBitmap.Length);
+
+            for (int i = 0; i < length; i++)
+            {
+                if ((sourceBitmap[i] & targetBitmap[i]) != 0)
+                {
+                    return false;
+                }
+            }
+
+            // Return true after passing every comparison.
+            return true;
         }
 
         /// <summary>
@@ -595,9 +646,9 @@ namespace Logos.Entities
         {
             return ReferenceEquals(other, this)
                 || other is not null
-                && RequiredComponentBitmask.SequenceEqual(other.RequiredComponentBitmask)
-                && IncludedComponentBitmask.SequenceEqual(other.IncludedComponentBitmask)
-                && ExcludedComponentBitmask.SequenceEqual(other.ExcludedComponentBitmask);
+                && RequiredComponentBitmap.SequenceEqual(other.RequiredComponentBitmap)
+                && IncludedComponentBitmap.SequenceEqual(other.IncludedComponentBitmap)
+                && ExcludedComponentBitmap.SequenceEqual(other.ExcludedComponentBitmap);
         }
 
         /// <inheritdoc cref="object.Equals"/>
@@ -609,9 +660,9 @@ namespace Logos.Entities
         /// <inheritdoc cref="object.GetHashCode"/>
         public override int GetHashCode()
         {
-            return HashCode.Combine(BitmaskOperations.GetHashCode(RequiredComponentBitmask),
-                                    BitmaskOperations.GetHashCode(IncludedComponentBitmask),
-                                    BitmaskOperations.GetHashCode(ExcludedComponentBitmask));
+            return HashCode.Combine(BitmapOperations.GetHashCode(RequiredComponentBitmap),
+                                    BitmapOperations.GetHashCode(IncludedComponentBitmap),
+                                    BitmapOperations.GetHashCode(ExcludedComponentBitmap));
         }
 
         /// <inheritdoc cref="object.ToString"/>
@@ -628,9 +679,9 @@ namespace Logos.Entities
 
         private static EntityFilter CreateInstance(ComponentType[] requiredComponentTypes)
         {
-            if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmask))
+            if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmap))
             {
-                return new EntityFilter(requiredComponentTypes, requiredComponentBitmask);
+                return new EntityFilter(requiredComponentTypes, requiredComponentBitmap);
             }
 
             return s_universal;
@@ -640,25 +691,25 @@ namespace Logos.Entities
                                                    ComponentType[] includedComponentTypes,
                                                    ComponentType[] excludedComponentTypes)
         {
-            if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmask) |
-                TryBuild(ref includedComponentTypes, out int[] includedComponentBitmask) |
-                TryBuild(ref excludedComponentTypes, out int[] excludedComponentBitmask))
+            if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmap) |
+                TryBuild(ref includedComponentTypes, out int[] includedComponentBitmap) |
+                TryBuild(ref excludedComponentTypes, out int[] excludedComponentBitmap))
             {
-                return new EntityFilter(requiredComponentTypes, requiredComponentBitmask,
-                                        includedComponentTypes, includedComponentBitmask,
-                                        excludedComponentTypes, excludedComponentBitmask);
+                return new EntityFilter(requiredComponentTypes, requiredComponentBitmap,
+                                        includedComponentTypes, includedComponentBitmap,
+                                        excludedComponentTypes, excludedComponentBitmap);
             }
 
             return s_universal;
         }
 
-        private static bool TryBuild(ref ComponentType[] componentTypes, out int[] componentBitmask)
+        private static bool TryBuild(ref ComponentType[] componentTypes, out int[] componentBitmap)
         {
             ComponentType[] localComponentTypes = componentTypes;
 
             if (localComponentTypes.Length == 0)
             {
-                componentBitmask = Array.Empty<int>();
+                componentBitmap = Array.Empty<int>();
                 return false;
             }
 
@@ -669,11 +720,11 @@ namespace Logos.Entities
             if (previousComponentType == null)
             {
                 componentTypes = Array.Empty<ComponentType>();
-                componentBitmask = Array.Empty<int>();
+                componentBitmap = Array.Empty<int>();
                 return false;
             }
 
-            int[] localComponentBitmask = new int[previousComponentType.Index + 32 >> 5];
+            int[] localComponentBitmap = new int[previousComponentType.Index + 32 >> 5];
             int count = 0;
 
             previousComponentType = null;
@@ -685,13 +736,13 @@ namespace Logos.Entities
                     int componentTypeIndex = currentComponentType.Index;
 
                     localComponentTypes[count++] = previousComponentType = currentComponentType;
-                    localComponentBitmask[componentTypeIndex >> 5] |= 1 << componentTypeIndex;
+                    localComponentBitmap[componentTypeIndex >> 5] |= 1 << componentTypeIndex;
                 }
             }
 
             Array.Resize(ref localComponentTypes, count);
             componentTypes = localComponentTypes;
-            componentBitmask = localComponentBitmask;
+            componentBitmap = localComponentBitmap;
             return true;
         }
 
@@ -701,9 +752,9 @@ namespace Logos.Entities
             return ReferenceEquals(left, right)
                 || left is not null
                 && right is not null
-                && left.RequiredComponentBitmask.SequenceEqual(right.RequiredComponentBitmask)
-                && left.IncludedComponentBitmask.SequenceEqual(right.IncludedComponentBitmask)
-                && left.ExcludedComponentBitmask.SequenceEqual(right.ExcludedComponentBitmask);
+                && left.RequiredComponentBitmap.SequenceEqual(right.RequiredComponentBitmap)
+                && left.IncludedComponentBitmap.SequenceEqual(right.IncludedComponentBitmap)
+                && left.ExcludedComponentBitmap.SequenceEqual(right.ExcludedComponentBitmap);
         }
 
         /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>
@@ -721,9 +772,9 @@ namespace Logos.Entities
             private ComponentType[] m_requiredComponentTypes;
             private ComponentType[] m_includedComponentTypes;
             private ComponentType[] m_excludedComponentTypes;
-            private int[] m_requiredComponentBitmask;
-            private int[] m_includedComponentBitmask;
-            private int[] m_excludedComponentBitmask;
+            private int[] m_requiredComponentBitmap;
+            private int[] m_includedComponentBitmap;
+            private int[] m_excludedComponentBitmap;
 
             internal Builder()
             {
@@ -735,9 +786,9 @@ namespace Logos.Entities
                 m_requiredComponentTypes = filter.m_requiredComponentTypes;
                 m_includedComponentTypes = filter.m_includedComponentTypes;
                 m_excludedComponentTypes = filter.m_excludedComponentTypes;
-                m_requiredComponentBitmask = filter.m_requiredComponentBitmask;
-                m_includedComponentBitmask = filter.m_includedComponentBitmask;
-                m_excludedComponentBitmask = filter.m_excludedComponentBitmask;
+                m_requiredComponentBitmap = filter.m_requiredComponentBitmap;
+                m_includedComponentBitmap = filter.m_includedComponentBitmap;
+                m_excludedComponentBitmap = filter.m_excludedComponentBitmap;
             }
 
             /// <summary>
@@ -755,9 +806,9 @@ namespace Logos.Entities
                     m_includedComponentTypes.Length > 0 ||
                     m_excludedComponentTypes.Length > 0)
                 {
-                    return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBitmask,
-                                            m_includedComponentTypes, m_includedComponentBitmask,
-                                            m_excludedComponentTypes, m_excludedComponentBitmask);
+                    return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBitmap,
+                                            m_includedComponentTypes, m_includedComponentBitmap,
+                                            m_excludedComponentTypes, m_excludedComponentBitmap);
                 }
 
                 return s_universal;
@@ -767,17 +818,17 @@ namespace Logos.Entities
             /// Sets the <see cref="Builder"/> to its default state, which specifies a criteria
             /// identical to the one defined by <see cref="Universal"/>.
             /// </summary>
-            [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBitmask),
-                           nameof(m_includedComponentTypes), nameof(m_includedComponentBitmask),
-                           nameof(m_excludedComponentTypes), nameof(m_excludedComponentBitmask))]
+            [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBitmap),
+                           nameof(m_includedComponentTypes), nameof(m_includedComponentBitmap),
+                           nameof(m_excludedComponentTypes), nameof(m_excludedComponentBitmap))]
             public void Reset()
             {
                 m_requiredComponentTypes = Array.Empty<ComponentType>();
                 m_includedComponentTypes = Array.Empty<ComponentType>();
                 m_excludedComponentTypes = Array.Empty<ComponentType>();
-                m_requiredComponentBitmask = Array.Empty<int>();
-                m_includedComponentBitmask = Array.Empty<int>();
-                m_excludedComponentBitmask = Array.Empty<int>();
+                m_requiredComponentBitmap = Array.Empty<int>();
+                m_includedComponentBitmap = Array.Empty<int>();
+                m_excludedComponentBitmap = Array.Empty<int>();
             }
 
             /// <summary>
@@ -947,28 +998,28 @@ namespace Logos.Entities
 
             private Builder BuildRequiredMembers(ComponentType[] componentTypes)
             {
-                TryBuild(ref componentTypes, out int[] componentBitmask);
+                TryBuild(ref componentTypes, out int[] componentBitmap);
 
                 m_requiredComponentTypes = componentTypes;
-                m_requiredComponentBitmask = componentBitmask;
+                m_requiredComponentBitmap = componentBitmap;
                 return this;
             }
 
             private Builder BuildIncludedMembers(ComponentType[] componentTypes)
             {
-                TryBuild(ref componentTypes, out int[] componentBitmask);
+                TryBuild(ref componentTypes, out int[] componentBitmap);
 
                 m_includedComponentTypes = componentTypes;
-                m_includedComponentBitmask = componentBitmask;
+                m_includedComponentBitmap = componentBitmap;
                 return this;
             }
 
             private Builder BuildExcludedMembers(ComponentType[] componentTypes)
             {
-                TryBuild(ref componentTypes, out int[] componentBitmask);
+                TryBuild(ref componentTypes, out int[] componentBitmap);
 
                 m_excludedComponentTypes = componentTypes;
-                m_excludedComponentBitmask = componentBitmask;
+                m_excludedComponentBitmap = componentBitmap;
                 return this;
             }
         }
