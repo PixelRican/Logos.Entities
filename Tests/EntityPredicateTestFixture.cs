@@ -8,46 +8,46 @@ using System.Linq;
 namespace Logos.Entities.Tests
 {
     [TestFixture]
-    public static class EntityFilterTestFixture
+    public static class EntityPredicateTestFixture
     {
         [Test]
         public static void CreateExceptionTest()
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(requiredArray: null!);
+                EntityPredicate.Create(requiredArray: null!);
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(requiredCollection: null!);
+                EntityPredicate.Create(requiredCollection: null!);
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(null!, Array.Empty<ComponentType>(), Array.Empty<ComponentType>());
+                EntityPredicate.Create(null!, Array.Empty<ComponentType>(), Array.Empty<ComponentType>());
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(Array.Empty<ComponentType>(), null!, Array.Empty<ComponentType>());
+                EntityPredicate.Create(Array.Empty<ComponentType>(), null!, Array.Empty<ComponentType>());
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(Array.Empty<ComponentType>(), Array.Empty<ComponentType>(), null!);
+                EntityPredicate.Create(Array.Empty<ComponentType>(), Array.Empty<ComponentType>(), null!);
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(null!, Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>());
+                EntityPredicate.Create(null!, Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>());
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(Enumerable.Empty<ComponentType>(), null!, Enumerable.Empty<ComponentType>());
+                EntityPredicate.Create(Enumerable.Empty<ComponentType>(), null!, Enumerable.Empty<ComponentType>());
             });
             Assert.Throws<ArgumentNullException>(() =>
             {
-                EntityFilter.Create(Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>(), null!);
+                EntityPredicate.Create(Enumerable.Empty<ComponentType>(), Enumerable.Empty<ComponentType>(), null!);
             });
         }
 
-        [TestCaseSource(typeof(EntityFilterTestCaseSource), nameof(EntityFilterTestCaseSource.CreateTestCases))]
+        [TestCaseSource(typeof(EntityPredicateTestCaseSource), nameof(EntityPredicateTestCaseSource.CreateTestCases))]
         public static void CreateTest(ComponentType[] arguments, ComponentType[] expectedComponentTypes)
         {
             IEnumerable<ComponentType> collection = arguments;
@@ -55,29 +55,29 @@ namespace Logos.Entities.Tests
 
             for (int method = 0; method < 6; method++)
             {
-                EntityFilter filter = method switch
+                EntityPredicate predicate = method switch
                 {
-                    0 => EntityFilter.Create(arguments, arguments, arguments),
-                    1 => EntityFilter.Create(collection, collection, collection),
-                    2 => EntityFilter.Create(span, span, span),
-                    3 => EntityFilter.Require(arguments).Include(collection).Exclude(span).Construct(),
-                    4 => EntityFilter.Require(collection).Include(span).Exclude(arguments).Construct(),
-                    _ => EntityFilter.Require(span).Include(arguments).Exclude(collection).Construct(),
+                    0 => EntityPredicate.Create(arguments, arguments, arguments),
+                    1 => EntityPredicate.Create(collection, collection, collection),
+                    2 => EntityPredicate.Create(span, span, span),
+                    3 => EntityPredicate.Require(arguments).Include(collection).Exclude(span).Construct(),
+                    4 => EntityPredicate.Require(collection).Include(span).Exclude(arguments).Construct(),
+                    _ => EntityPredicate.Require(span).Include(arguments).Exclude(collection).Construct(),
                 };
 
                 using (Assert.EnterMultipleScope())
                 {
-                    Assert.That(filter.RequiredComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
-                    Assert.That(filter.IncludedComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
-                    Assert.That(filter.ExcludedComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
+                    Assert.That(predicate.RequiredComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
+                    Assert.That(predicate.IncludedComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
+                    Assert.That(predicate.ExcludedComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
                 }
             }
         }
 
-        [TestCaseSource(typeof(EntityFilterTestCaseSource), nameof(EntityFilterTestCaseSource.EqualsTestCases))]
-        public static void EqualsTest(EntityFilter? source, EntityFilter? other)
+        [TestCaseSource(typeof(EntityPredicateTestCaseSource), nameof(EntityPredicateTestCaseSource.EqualsTestCases))]
+        public static void EqualsTest(EntityPredicate? source, EntityPredicate? other)
         {
-            EqualityComparer<EntityFilter> comparer = EqualityComparer<EntityFilter>.Default;
+            EqualityComparer<EntityPredicate> comparer = EqualityComparer<EntityPredicate>.Default;
 
             using (Assert.EnterMultipleScope())
             {
@@ -91,7 +91,7 @@ namespace Logos.Entities.Tests
         [Test]
         public static void MatchesTest()
         {
-            EntityFilter filter = EntityFilter.Create(
+            EntityPredicate predicate = EntityPredicate.Create(
                 new ComponentType[]
                 {
                     ComponentType.TypeOf<Position2D>(),
@@ -138,7 +138,7 @@ namespace Logos.Entities.Tests
                     })
                 };
 
-                Assert.That(filter.Matches(archetype), Is.True);
+                Assert.That(predicate.Matches(archetype), Is.True);
             }
 
             for (int mismatch = 0; mismatch < 5; mismatch++)
@@ -173,7 +173,7 @@ namespace Logos.Entities.Tests
                     })
                 };
 
-                Assert.That(filter.Matches(archetype), Is.False);
+                Assert.That(predicate.Matches(archetype), Is.False);
             }
         }
     }

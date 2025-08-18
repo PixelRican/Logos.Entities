@@ -5,7 +5,7 @@ using System;
 
 namespace Logos.Entities.Tests
 {
-    public static class EntityFilterTestCaseSource
+    public static class EntityPredicateTestCaseSource
     {
         public static object[][] CreateTestCases
         {
@@ -109,13 +109,13 @@ namespace Logos.Entities.Tests
             {
                 new object[]
                 {
-                    EntityFilter.Universal,
+                    EntityPredicate.Universal,
                     null!
                 },
                 new object[]
                 {
-                    EntityFilter.Universal,
-                    EntityFilter.Create(
+                    EntityPredicate.Universal,
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Name>()
@@ -125,8 +125,8 @@ namespace Logos.Entities.Tests
                 },
                 new object[]
                 {
-                    EntityFilter.Universal,
-                    EntityFilter.Create(
+                    EntityPredicate.Universal,
+                    EntityPredicate.Create(
                         Array.Empty<ComponentType>(),
                         new ComponentType[]
                         {
@@ -136,8 +136,8 @@ namespace Logos.Entities.Tests
                 },
                 new object[]
                 {
-                    EntityFilter.Universal,
-                    EntityFilter.Create(
+                    EntityPredicate.Universal,
+                    EntityPredicate.Create(
                         Array.Empty<ComponentType>(),
                         Array.Empty<ComponentType>(),
                         new ComponentType[]
@@ -147,7 +147,7 @@ namespace Logos.Entities.Tests
                 },
                 new object[]
                 {
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Name>()
@@ -160,7 +160,7 @@ namespace Logos.Entities.Tests
                         {
                             ComponentType.TypeOf<Disabled>()
                         }),
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Name>()
@@ -176,7 +176,7 @@ namespace Logos.Entities.Tests
                 },
                 new object[]
                 {
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Name>()
@@ -189,7 +189,7 @@ namespace Logos.Entities.Tests
                         {
                             ComponentType.TypeOf<Disabled>()
                         }),
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Disabled>()
@@ -205,7 +205,7 @@ namespace Logos.Entities.Tests
                 },
                 new object[]
                 {
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Name>()
@@ -218,7 +218,7 @@ namespace Logos.Entities.Tests
                         {
                             ComponentType.TypeOf<Disabled>()
                         }),
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Position2D>()
@@ -234,7 +234,7 @@ namespace Logos.Entities.Tests
                 },
                 new object[]
                 {
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Name>()
@@ -247,7 +247,7 @@ namespace Logos.Entities.Tests
                         {
                             ComponentType.TypeOf<Disabled>()
                         }),
-                    EntityFilter.Create(
+                    EntityPredicate.Create(
                         new ComponentType[]
                         {
                             ComponentType.TypeOf<Position2D>()

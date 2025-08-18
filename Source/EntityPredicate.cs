@@ -12,9 +12,9 @@ namespace Logos.Entities
     /// Represents a predicate that determines whether archetypes match a set of criteria in terms
     /// of required, included, and excluded component types.
     /// </summary>
-    public sealed class EntityFilter : IEquatable<EntityFilter>
+    public sealed class EntityPredicate : IEquatable<EntityPredicate>
     {
-        private static readonly EntityFilter s_universal = new EntityFilter();
+        private static readonly EntityPredicate s_universal = new EntityPredicate();
 
         private readonly ComponentType[] m_requiredComponentTypes;
         private readonly ComponentType[] m_includedComponentTypes;
@@ -23,7 +23,7 @@ namespace Logos.Entities
         private readonly int[] m_includedComponentBitmap;
         private readonly int[] m_excludedComponentBitmap;
 
-        private EntityFilter()
+        private EntityPredicate()
         {
             m_requiredComponentTypes = Array.Empty<ComponentType>();
             m_includedComponentTypes = Array.Empty<ComponentType>();
@@ -33,7 +33,7 @@ namespace Logos.Entities
             m_excludedComponentBitmap = Array.Empty<int>();
         }
 
-        private EntityFilter(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap)
+        private EntityPredicate(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap)
         {
             m_requiredComponentTypes = requiredComponentTypes;
             m_includedComponentTypes = Array.Empty<ComponentType>();
@@ -43,7 +43,7 @@ namespace Logos.Entities
             m_excludedComponentBitmap = Array.Empty<int>();
         }
 
-        private EntityFilter(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap,
+        private EntityPredicate(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap,
                              ComponentType[] includedComponentTypes, int[] includedComponentBitmap,
                              ComponentType[] excludedComponentTypes, int[] excludedComponentBitmap)
         {
@@ -56,23 +56,23 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets an <see cref="EntityFilter"/> that matches all archetypes.
+        /// Gets an <see cref="EntityPredicate"/> that matches all archetypes.
         /// </summary>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that matches all archetypes.
+        /// An <see cref="EntityPredicate"/> that matches all archetypes.
         /// </returns>
-        public static EntityFilter Universal
+        public static EntityPredicate Universal
         {
             get => s_universal;
         }
 
         /// <summary>
         /// Gets a read-only span of component types that archetypes must contain in order to match
-        /// with the <see cref="EntityFilter"/>.
+        /// with the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
         /// A read-only span of component types that archetypes must contain in order to match with
-        /// the <see cref="EntityFilter"/>.
+        /// the <see cref="EntityPredicate"/>.
         /// </returns>
         public ReadOnlySpan<ComponentType> RequiredComponentTypes
         {
@@ -81,11 +81,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only span of component types that archetypes must contain at least one
-        /// instance of in order to match with the <see cref="EntityFilter"/>.
+        /// instance of in order to match with the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
         /// A read-only span of component types that, if not empty, archetypes must contain at least
-        /// one instance of in order to match with the <see cref="EntityFilter"/>.
+        /// one instance of in order to match with the <see cref="EntityPredicate"/>.
         /// </returns>
         public ReadOnlySpan<ComponentType> IncludedComponentTypes
         {
@@ -94,11 +94,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only span of component types that archetypes must not contain in order to
-        /// match with the <see cref="EntityFilter"/>.
+        /// match with the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
         /// A read-only span of component types that archetypes must not contain in order to match
-        /// with the <see cref="EntityFilter"/>.
+        /// with the <see cref="EntityPredicate"/>.
         /// </returns>
         public ReadOnlySpan<ComponentType> ExcludedComponentTypes
         {
@@ -107,11 +107,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only bitmap that compactly stores flags indicating whether the
-        /// <see cref="EntityFilter"/> requires a specific component type.
+        /// <see cref="EntityPredicate"/> requires a specific component type.
         /// </summary>
         /// <returns>
         /// A read-only bitmap that compactly stores flags indicating whether the
-        /// <see cref="EntityFilter"/> requires a specific component type.
+        /// <see cref="EntityPredicate"/> requires a specific component type.
         /// </returns>
         public ReadOnlySpan<int> RequiredComponentBitmap
         {
@@ -120,11 +120,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only bitmap that compactly stores flags indicating whether the
-        /// <see cref="EntityFilter"/> includes a specific component type.
+        /// <see cref="EntityPredicate"/> includes a specific component type.
         /// </summary>
         /// <returns>
         /// A read-only bitmap that compactly stores flags indicating whether the
-        /// <see cref="EntityFilter"/> includes a specific component type.
+        /// <see cref="EntityPredicate"/> includes a specific component type.
         /// </returns>
         public ReadOnlySpan<int> IncludedComponentBitmap
         {
@@ -133,11 +133,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only bitmap that compactly stores flags indicating whether the
-        /// <see cref="EntityFilter"/> excludes a specific component type.
+        /// <see cref="EntityPredicate"/> excludes a specific component type.
         /// </summary>
         /// <returns>
         /// A read-only bitmap that compactly stores flags indicating whether the
-        /// <see cref="EntityFilter"/> excludes a specific component type.
+        /// <see cref="EntityPredicate"/> excludes a specific component type.
         /// </returns>
         public ReadOnlySpan<int> ExcludedComponentBitmap
         {
@@ -145,28 +145,28 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires specific component types from the
+        /// Creates an <see cref="EntityPredicate"/> that requires specific component types from the
         /// specified array.
         /// </summary>
         /// <param name="requiredArray">
         /// The array of required component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires specific component types from
+        /// An <see cref="EntityPredicate"/> that requires specific component types from
         /// <paramref name="requiredArray"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredArray"/> does not contain any component types.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="requiredArray"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityFilter Create(ComponentType[] requiredArray)
+        public static EntityPredicate Create(ComponentType[] requiredArray)
         {
             ArgumentNullException.ThrowIfNull(requiredArray);
             return CreateInstance(new ReadOnlySpan<ComponentType>(requiredArray).ToArray());
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes specific
+        /// Creates an <see cref="EntityPredicate"/> that requires, includes, and excludes specific
         /// component types from the specified arrays.
         /// </summary>
         /// <param name="requiredArray">
@@ -179,7 +179,7 @@ namespace Logos.Entities
         /// The array of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires, includes, and excludes specific component
+        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific component
         /// types from <paramref name="requiredArray"/>, <paramref name="includedArray"/>, and
         /// <paramref name="excludedArray"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredArray"/>, <paramref name="includedArray"/>, and
@@ -194,7 +194,7 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="excludedArray"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityFilter Create(ComponentType[] requiredArray,
+        public static EntityPredicate Create(ComponentType[] requiredArray,
                                           ComponentType[] includedArray,
                                           ComponentType[] excludedArray)
         {
@@ -208,27 +208,27 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires specific component types from the
+        /// Creates an <see cref="EntityPredicate"/> that requires specific component types from the
         /// specified collection.
         /// </summary>
         /// <param name="requiredCollection">
         /// The collection of required component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires specific component types from
+        /// An <see cref="EntityPredicate"/> that requires specific component types from
         /// <paramref name="requiredCollection"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredCollection"/> does not contain any component types.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="requiredCollection"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityFilter Create(IEnumerable<ComponentType> requiredCollection)
+        public static EntityPredicate Create(IEnumerable<ComponentType> requiredCollection)
         {
             return CreateInstance(requiredCollection.ToArray());
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes specific
+        /// Creates an <see cref="EntityPredicate"/> that requires, includes, and excludes specific
         /// component types from the specified collections.
         /// </summary>
         /// <param name="requiredCollection">
@@ -241,7 +241,7 @@ namespace Logos.Entities
         /// The collection of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires, includes, and excludes specific component
+        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific component
         /// types from <paramref name="requiredCollection"/>, <paramref name="includedCollection"/>, and
         /// <paramref name="excludedCollection"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredCollection"/>, <paramref name="includedCollection"/>, and
@@ -256,7 +256,7 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="excludedCollection"/> is <see langword="null"/>.
         /// </exception>
-        public static EntityFilter Create(IEnumerable<ComponentType> requiredCollection,
+        public static EntityPredicate Create(IEnumerable<ComponentType> requiredCollection,
                                           IEnumerable<ComponentType> includedCollection,
                                           IEnumerable<ComponentType> excludedCollection)
         {
@@ -266,24 +266,24 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires specific component types from the
+        /// Creates an <see cref="EntityPredicate"/> that requires specific component types from the
         /// specified span.
         /// </summary>
         /// <param name="requiredSpan">
         /// The span of required component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires specific component types from
+        /// An <see cref="EntityPredicate"/> that requires specific component types from
         /// <paramref name="requiredSpan"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredSpan"/> does not contain any component types.
         /// </returns>
-        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredSpan)
+        public static EntityPredicate Create(ReadOnlySpan<ComponentType> requiredSpan)
         {
             return CreateInstance(requiredSpan.ToArray());
         }
 
         /// <summary>
-        /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes specific
+        /// Creates an <see cref="EntityPredicate"/> that requires, includes, and excludes specific
         /// component types from the specified spans.
         /// </summary>
         /// <param name="requiredSpan">
@@ -296,13 +296,13 @@ namespace Logos.Entities
         /// The span of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityFilter"/> that requires, includes, and excludes specific component
+        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific component
         /// types from <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>, and
         /// <paramref name="excludedSpan"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>, and
         /// <paramref name="excludedSpan"/> do not contain any component types.
         /// </returns>
-        public static EntityFilter Create(ReadOnlySpan<ComponentType> requiredSpan,
+        public static EntityPredicate Create(ReadOnlySpan<ComponentType> requiredSpan,
                                           ReadOnlySpan<ComponentType> includedSpan,
                                           ReadOnlySpan<ComponentType> excludedSpan)
         {
@@ -313,11 +313,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct
-        /// <see cref="EntityFilter"/> instances that require, include, and exclude specific
+        /// <see cref="EntityPredicate"/> instances that require, include, and exclude specific
         /// component types from a variety of inputs.
         /// </summary>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct <see cref="EntityPredicate"/>
         /// instances that require, include, and exclude specific component types from a variety of
         /// inputs.
         /// </returns>
@@ -328,14 +328,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that requires specific component types from the specified
+        /// <see cref="EntityPredicate"/> that requires specific component types from the specified
         /// array.
         /// </summary>
         /// <param name="array">
         /// The array of required component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that requires specific component types from <paramref name="array"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -348,14 +348,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that requires specific component types from the specified
+        /// <see cref="EntityPredicate"/> that requires specific component types from the specified
         /// collection.
         /// </summary>
         /// <param name="collection">
         /// The collection of required component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that requires specific component types from <paramref name="collection"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -368,14 +368,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that requires specific component types from the specified
+        /// <see cref="EntityPredicate"/> that requires specific component types from the specified
         /// span.
         /// </summary>
         /// <param name="span">
         /// The span of required component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that requires specific component types from <paramref name="span"/>, if any.
         /// </returns>
         public static Builder Require(ReadOnlySpan<ComponentType> span)
@@ -385,14 +385,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that includes specific component types from the specified
+        /// <see cref="EntityPredicate"/> that includes specific component types from the specified
         /// array.
         /// </summary>
         /// <param name="array">
         /// The array of included component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that includes specific component types from <paramref name="array"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -405,14 +405,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that includes specific component types from the specified
+        /// <see cref="EntityPredicate"/> that includes specific component types from the specified
         /// collection.
         /// </summary>
         /// <param name="collection">
         /// The collection of included component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that includes specific component types from <paramref name="collection"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -425,14 +425,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that includes specific component types from the specified
+        /// <see cref="EntityPredicate"/> that includes specific component types from the specified
         /// span.
         /// </summary>
         /// <param name="span">
         /// The span of included component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that includes specific component types from <paramref name="span"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -445,14 +445,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that excludes specific component types from the specified
+        /// <see cref="EntityPredicate"/> that excludes specific component types from the specified
         /// array.
         /// </summary>
         /// <param name="array">
         /// The array of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that excludes specific component types from <paramref name="array"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -465,14 +465,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that excludes specific component types from the specified
+        /// <see cref="EntityPredicate"/> that excludes specific component types from the specified
         /// collection.
         /// </summary>
         /// <param name="collection">
         /// The collection of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that excludes specific component types from <paramref name="collection"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -485,14 +485,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct an
-        /// <see cref="EntityFilter"/> that excludes specific component types from the specified
+        /// <see cref="EntityPredicate"/> that excludes specific component types from the specified
         /// span.
         /// </summary>
         /// <param name="span">
         /// The span of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityFilter"/>
+        /// An <see cref="Builder"/> that can be used to construct an <see cref="EntityPredicate"/>
         /// that excludes specific component types from <paramref name="span"/>, if any.
         /// </returns>
         /// <exception cref="ArgumentNullException">
@@ -504,13 +504,13 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityFilter"/> requires the specified component type.
+        /// Determines whether the <see cref="EntityPredicate"/> requires the specified component type.
         /// </summary>
         /// <param name="componentType">
         /// The component type to search for.
         /// </param>
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityFilter"/> requires
+        /// <see langword="true"/> if the <see cref="EntityPredicate"/> requires
         /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Requires(ComponentType componentType)
@@ -520,13 +520,13 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityFilter"/> includes the specified component type.
+        /// Determines whether the <see cref="EntityPredicate"/> includes the specified component type.
         /// </summary>
         /// <param name="componentType">
         /// The component type to search for.
         /// </param>
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityFilter"/> includes
+        /// <see langword="true"/> if the <see cref="EntityPredicate"/> includes
         /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Includes(ComponentType componentType)
@@ -536,13 +536,13 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityFilter"/> excludes the specified component type.
+        /// Determines whether the <see cref="EntityPredicate"/> excludes the specified component type.
         /// </summary>
         /// <param name="componentType">
         /// The component type to search for.
         /// </param>
         /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityFilter"/> excludes
+        /// <see langword="true"/> if the <see cref="EntityPredicate"/> excludes
         /// <paramref name="componentType"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Excludes(ComponentType componentType)
@@ -553,14 +553,14 @@ namespace Logos.Entities
 
         /// <summary>
         /// Determines whether the specified archetype meets the criteria defined by the
-        /// <see cref="EntityFilter"/>.
+        /// <see cref="EntityPredicate"/>.
         /// </summary>
         /// <param name="archetype">
-        /// The archetype to compare against the criteria defined by the <see cref="EntityFilter"/>.
+        /// The archetype to compare against the criteria defined by the <see cref="EntityPredicate"/>.
         /// </param>
         /// <returns>
         /// <see langword="true"/> if <paramref name="archetype"/> meets the criteria defined by the
-        /// <see cref="EntityFilter"/>; otherwise, <see langword="false"/>.
+        /// <see cref="EntityPredicate"/>; otherwise, <see langword="false"/>.
         /// </returns>
         public bool Matches(EntityArchetype archetype)
         {
@@ -629,12 +629,12 @@ namespace Logos.Entities
 
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct
-        /// <see cref="EntityFilter"/> instances based on the criteria defined by the
-        /// <see cref="EntityFilter"/>.
+        /// <see cref="EntityPredicate"/> instances based on the criteria defined by the
+        /// <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="Builder"/> that can be used to construct <see cref="EntityFilter"/>
-        /// instances based on the criteria defined by the <see cref="EntityFilter"/>.
+        /// An <see cref="Builder"/> that can be used to construct <see cref="EntityPredicate"/>
+        /// instances based on the criteria defined by the <see cref="EntityPredicate"/>.
         /// </returns>
         public Builder ToBuilder()
         {
@@ -642,7 +642,7 @@ namespace Logos.Entities
         }
 
         /// <inheritdoc cref="IEquatable{T}.Equals"/>
-        public bool Equals(EntityFilter? other)
+        public bool Equals(EntityPredicate? other)
         {
             return ReferenceEquals(other, this)
                 || other is not null
@@ -654,7 +654,7 @@ namespace Logos.Entities
         /// <inheritdoc cref="object.Equals"/>
         public override bool Equals(object? obj)
         {
-            return Equals(obj as EntityFilter);
+            return Equals(obj as EntityPredicate);
         }
 
         /// <inheritdoc cref="object.GetHashCode"/>
@@ -672,22 +672,22 @@ namespace Logos.Entities
             string includedComponentTypes = string.Join(", ", (object[])m_includedComponentTypes);
             string excludedComponentTypes = string.Join(", ", (object[])m_excludedComponentTypes);
 
-            return $"EntityFilter {{ RequiredComponentTypes = [{requiredComponentTypes}]" +
-                                  $" IncludedComponentTypes = [{includedComponentTypes}]" +
-                                  $" ExcludedComponentTypes = [{excludedComponentTypes}] }}";
+            return $"EntityPredicate {{ RequiredComponentTypes = [{requiredComponentTypes}]" +
+                                     $" IncludedComponentTypes = [{includedComponentTypes}]" +
+                                     $" ExcludedComponentTypes = [{excludedComponentTypes}] }}";
         }
 
-        private static EntityFilter CreateInstance(ComponentType[] requiredComponentTypes)
+        private static EntityPredicate CreateInstance(ComponentType[] requiredComponentTypes)
         {
             if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmap))
             {
-                return new EntityFilter(requiredComponentTypes, requiredComponentBitmap);
+                return new EntityPredicate(requiredComponentTypes, requiredComponentBitmap);
             }
 
             return s_universal;
         }
 
-        private static EntityFilter CreateInstance(ComponentType[] requiredComponentTypes,
+        private static EntityPredicate CreateInstance(ComponentType[] requiredComponentTypes,
                                                    ComponentType[] includedComponentTypes,
                                                    ComponentType[] excludedComponentTypes)
         {
@@ -695,7 +695,7 @@ namespace Logos.Entities
                 TryBuild(ref includedComponentTypes, out int[] includedComponentBitmap) |
                 TryBuild(ref excludedComponentTypes, out int[] excludedComponentBitmap))
             {
-                return new EntityFilter(requiredComponentTypes, requiredComponentBitmap,
+                return new EntityPredicate(requiredComponentTypes, requiredComponentBitmap,
                                         includedComponentTypes, includedComponentBitmap,
                                         excludedComponentTypes, excludedComponentBitmap);
             }
@@ -747,7 +747,7 @@ namespace Logos.Entities
         }
 
         /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator =="/>
-        public static bool operator ==(EntityFilter? left, EntityFilter? right)
+        public static bool operator ==(EntityPredicate? left, EntityPredicate? right)
         {
             return ReferenceEquals(left, right)
                 || left is not null
@@ -758,13 +758,13 @@ namespace Logos.Entities
         }
 
         /// <inheritdoc cref="System.Numerics.IEqualityOperators{TSelf, TOther, TResult}.operator !="/>
-        public static bool operator !=(EntityFilter? left, EntityFilter? right)
+        public static bool operator !=(EntityPredicate? left, EntityPredicate? right)
         {
             return !(left == right);
         }
 
         /// <summary>
-        /// Represents a builder that can be used to construct <see cref="EntityFilter"/> instances
+        /// Represents a builder that can be used to construct <see cref="EntityPredicate"/> instances
         /// that require, include, and exclude specific component types from a variety of inputs.
         /// </summary>
         public sealed class Builder
@@ -781,32 +781,32 @@ namespace Logos.Entities
                 Reset();
             }
 
-            internal Builder(EntityFilter filter)
+            internal Builder(EntityPredicate predicate)
             {
-                m_requiredComponentTypes = filter.m_requiredComponentTypes;
-                m_includedComponentTypes = filter.m_includedComponentTypes;
-                m_excludedComponentTypes = filter.m_excludedComponentTypes;
-                m_requiredComponentBitmap = filter.m_requiredComponentBitmap;
-                m_includedComponentBitmap = filter.m_includedComponentBitmap;
-                m_excludedComponentBitmap = filter.m_excludedComponentBitmap;
+                m_requiredComponentTypes = predicate.m_requiredComponentTypes;
+                m_includedComponentTypes = predicate.m_includedComponentTypes;
+                m_excludedComponentTypes = predicate.m_excludedComponentTypes;
+                m_requiredComponentBitmap = predicate.m_requiredComponentBitmap;
+                m_includedComponentBitmap = predicate.m_includedComponentBitmap;
+                m_excludedComponentBitmap = predicate.m_excludedComponentBitmap;
             }
 
             /// <summary>
-            /// Creates an <see cref="EntityFilter"/> that requires, includes, and excludes
+            /// Creates an <see cref="EntityPredicate"/> that requires, includes, and excludes
             /// component types specified by the <see cref="Builder"/>.
             /// </summary>
             /// <returns>
-            /// An <see cref="EntityFilter"/> that requires, includes, and excludes component types
+            /// An <see cref="EntityPredicate"/> that requires, includes, and excludes component types
             /// specified by the <see cref="Builder"/>, or <see cref="Universal"/> if the
             /// <see cref="Builder"/> does not specify any component types.
             /// </returns>
-            public EntityFilter Construct()
+            public EntityPredicate Construct()
             {
                 if (m_requiredComponentTypes.Length > 0 ||
                     m_includedComponentTypes.Length > 0 ||
                     m_excludedComponentTypes.Length > 0)
                 {
-                    return new EntityFilter(m_requiredComponentTypes, m_requiredComponentBitmap,
+                    return new EntityPredicate(m_requiredComponentTypes, m_requiredComponentBitmap,
                                             m_includedComponentTypes, m_includedComponentBitmap,
                                             m_excludedComponentTypes, m_excludedComponentBitmap);
                 }
@@ -833,7 +833,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> requires specific component types from the
+            /// constructed <see cref="EntityPredicate"/> requires specific component types from the
             /// specified array, if any.
             /// </summary>
             /// <param name="array">
@@ -853,7 +853,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> requires specific component types from the
+            /// constructed <see cref="EntityPredicate"/> requires specific component types from the
             /// specified collection, if any.
             /// </summary>
             /// <param name="collection">
@@ -872,7 +872,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> requires specific component types from the
+            /// constructed <see cref="EntityPredicate"/> requires specific component types from the
             /// specified span, if any.
             /// </summary>
             /// <param name="span">
@@ -888,7 +888,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> includes specific component types from the
+            /// constructed <see cref="EntityPredicate"/> includes specific component types from the
             /// specified array, if any.
             /// </summary>
             /// <param name="array">
@@ -908,7 +908,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> includes specific component types from the
+            /// constructed <see cref="EntityPredicate"/> includes specific component types from the
             /// specified collection, if any.
             /// </summary>
             /// <param name="collection">
@@ -927,7 +927,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> includes specific component types from the
+            /// constructed <see cref="EntityPredicate"/> includes specific component types from the
             /// specified span, if any.
             /// </summary>
             /// <param name="span">
@@ -943,7 +943,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> excludes specific component types from the
+            /// constructed <see cref="EntityPredicate"/> excludes specific component types from the
             /// specified array, if any.
             /// </summary>
             /// <param name="array">
@@ -963,7 +963,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> excludes specific component types from the
+            /// constructed <see cref="EntityPredicate"/> excludes specific component types from the
             /// specified collection, if any.
             /// </summary>
             /// <param name="collection">
@@ -982,7 +982,7 @@ namespace Logos.Entities
 
             /// <summary>
             /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityFilter"/> excludes specific component types from the
+            /// constructed <see cref="EntityPredicate"/> excludes specific component types from the
             /// specified span, if any.
             /// </summary>
             /// <param name="span">
