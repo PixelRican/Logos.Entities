@@ -56,6 +56,11 @@ namespace Logos.Entities.Tests
                 Assert.That(left == right, Is.EqualTo(expected));
                 Assert.That(left != right, Is.Not.EqualTo(expected));
 
+                Assert.That(right.Equals(left), Is.EqualTo(expected));
+                Assert.That(right.Equals(left as object), Is.EqualTo(expected));
+                Assert.That(right == left, Is.EqualTo(expected));
+                Assert.That(right != left, Is.Not.EqualTo(expected));
+
                 if (expected)
                 {
                     Assert.That(left.GetHashCode(), Is.EqualTo(right.GetHashCode()));
