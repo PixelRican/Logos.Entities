@@ -2,7 +2,7 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Logos.Entities.Tests
@@ -10,154 +10,87 @@ namespace Logos.Entities.Tests
     [TestFixture, TestOf(typeof(EntityArchetype))]
     public static class EntityArchetypeTestFixture
     {
-        private static IEnumerable<object[]> AddTestCases
+        private static IEnumerable AddTestCases
         {
             get
             {
-                // Add tag component type to base archetype.
+                // Add Disabled component type to base archetype.
                 yield return new object[]
                 {
                     EntityArchetype.Base,
-                    ComponentType.TypeOf<Disabled>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    ComponentType.TypeOf<Disabled>()
                 };
 
-                // Add managed component type to base archetype.
+                // Add Name component type to base archetype.
                 yield return new object[]
                 {
                     EntityArchetype.Base,
-                    ComponentType.TypeOf<Name>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>()
-                    })
+                    ComponentType.TypeOf<Name>()
                 };
 
-                // Add unmanaged component type to base archetype.
+                // Add Position2D component type to base archetype.
                 yield return new object[]
                 {
                     EntityArchetype.Base,
-                    ComponentType.TypeOf<Position2D>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>()
-                    })
+                    ComponentType.TypeOf<Position2D>()
                 };
 
-                // Add managed component type to archetype with tag component type.
+                // Add Name component type to archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Name>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Disabled>(),
+                    ComponentType.TypeOf<Name>()
                 };
 
-                // Add tag component type to archetype with managed component type.
+                // Add Disabled component type to archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>()
-                    }),
-                    ComponentType.TypeOf<Disabled>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Name>(),
+                    ComponentType.TypeOf<Disabled>()
                 };
 
-                // Add managed component type to archetype with unmanaged and tag component types.
+                // Add Name component type to archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Name>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Position2D, Disabled>(),
+                    ComponentType.TypeOf<Name>()
                 };
 
-                // Add unmanaged component type to archetype with managed and tag component types.
+                // Add Position2D component type to archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Position2D>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Name, Disabled>(),
+                    ComponentType.TypeOf<Position2D>()
                 };
 
-                // Add tag component type to archetype with managed and unmanaged component types.
+                // Add Disabled component type to archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>()
-                    }),
-                    ComponentType.TypeOf<Disabled>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Name, Position2D>(),
+                    ComponentType.TypeOf<Disabled>()
                 };
             }
         }
 
-        private static IEnumerable<object[]> CreateTestCases
+        private static IEnumerable CreateTestCases
         {
             get
             {
-                // Get base archetype.
+                // Check throw condition.
                 yield return new object[]
                 {
-                    Array.Empty<ComponentType>(),
-                    Array.Empty<ComponentType>()
+                    null!
                 };
 
                 // Get base archetype.
                 yield return new object[]
                 {
-                    new ComponentType[]
-                    {
-                        null!
-                    },
                     Array.Empty<ComponentType>()
                 };
 
                 // Create archetype with Name component type.
                 yield return new object[]
                 {
-                    new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>()
-                    },
                     new ComponentType[]
                     {
                         ComponentType.TypeOf<Name>()
@@ -171,10 +104,6 @@ namespace Logos.Entities.Tests
                     {
                         ComponentType.TypeOf<Position2D>(),
                         null!
-                    },
-                    new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>()
                     }
                 };
 
@@ -185,63 +114,44 @@ namespace Logos.Entities.Tests
                     {
                         null!,
                         ComponentType.TypeOf<Disabled>()
-                    },
-                    new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
                     }
                 };
 
-                // Create archetype with Disabled component type.
+                // Create archetype with Position3D component type.
                 yield return new object[]
                 {
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Disabled>(),
-                        ComponentType.TypeOf<Disabled>()
-                    },
-                    new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
+                        ComponentType.TypeOf<Position3D>(),
+                        ComponentType.TypeOf<Position3D>()
                     }
                 };
 
-                // Create archetype with Name and Disabled component types.
+                // Create archetype with Rotation2D and Rotation3D component types.
                 yield return new object[]
                 {
                     new ComponentType[]
                     {
-                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Rotation2D>(),
                         null!,
-                        ComponentType.TypeOf<Disabled>()
-                    },
-                    new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
+                        ComponentType.TypeOf<Rotation3D>()
                     }
                 };
 
-                // Create archetype with Name, Position2D, and Disabled component types.
+                // Create archetype with Name, Scale2D, and Disabled component types.
                 yield return new object[]
                 {
                     new ComponentType[]
                     {
                         ComponentType.TypeOf<Disabled>(),
                         ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>()
-                    },
-                    new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
+                        ComponentType.TypeOf<Scale2D>()
                     }
                 };
             }
         }
 
-        private static IEnumerable<object[]> EqualsTestCases
+        private static IEnumerable EqualsTestCases
         {
             get
             {
@@ -272,14 +182,8 @@ namespace Logos.Entities.Tests
                 // Compare separate archetypes that contain the same component type.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
-                    }),
+                    CreateArchetype<Disabled>(),
+                    CreateArchetype<Disabled>(),
                     true
                 };
 
@@ -287,244 +191,207 @@ namespace Logos.Entities.Tests
                 yield return new object[]
                 {
                     EntityArchetype.Base,
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>()
-                    }),
+                    CreateArchetype<Name>(),
                     false
                 };
 
                 // Compare separate archetypes that contain the same component type.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Position2D>()
-                    }),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>()
-                    }),
+                    CreateArchetype<Position2D, Position2D>(),
+                    CreateArchetype<Position2D>(),
                     true
                 };
 
                 // Compare archetypes that contain the same set of component types.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Name>()
-                    }),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Name>()
-                    }),
+                    CreateArchetype<Disabled, Position2D, Name>(),
+                    CreateArchetype<Name, Position2D, Disabled>(),
                     true
                 };
 
                 // Compare archetypes with similar component types but with one subtle difference.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Name>()
-                    }),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>(),
-                        ComponentType.TypeOf<Position3D>(),
-                        ComponentType.TypeOf<Name>()
-                    }),
+                    CreateArchetype<Name, Position2D, Disabled>(),
+                    CreateArchetype<Name, Position3D, Disabled>(),
                     false
                 };
             }
         }
 
-        private static IEnumerable<object[]> RemoveTestCases
+        private static IEnumerable RemoveTestCases
         {
             get
             {
                 // Remove Name component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Name>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Name, Position2D, Disabled>(),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 // Remove Position2D component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Position2D>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Name, Position2D, Disabled>(),
+                    ComponentType.TypeOf<Position2D>()
                 };
 
                 // Remove Disabled component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Disabled>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Position2D>()
-                    })
+                    CreateArchetype<Name, Position2D, Disabled>(),
+                    ComponentType.TypeOf<Disabled>()
                 };
 
                 // Remove Name component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Name>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
-                    })
+                    CreateArchetype<Name, Position2D>(),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 // Remove Disabled component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>(),
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Disabled>(),
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>()
-                    })
+                    CreateArchetype<Name, Disabled>(),
+                    ComponentType.TypeOf<Disabled>()
                 };
 
                 // Remove Name component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Name>()
-                    }),
-                    ComponentType.TypeOf<Name>(),
-                    EntityArchetype.Base
+                    CreateArchetype<Name>(),
+                    ComponentType.TypeOf<Name>()
                 };
 
                 // Remove Position2D component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Position2D>()
-                    }),
-                    ComponentType.TypeOf<Position2D>(),
-                    EntityArchetype.Base
+                    CreateArchetype<Position2D>(),
+                    ComponentType.TypeOf<Position2D>()
                 };
 
                 // Remove Disabled component type from archetype.
                 yield return new object[]
                 {
-                    EntityArchetype.Create(new ComponentType[]
-                    {
-                        ComponentType.TypeOf<Disabled>()
-                    }),
-                    ComponentType.TypeOf<Disabled>(),
-                    EntityArchetype.Base
+                    CreateArchetype<Disabled>(),
+                    ComponentType.TypeOf<Disabled>()
                 };
             }
         }
 
         [TestCaseSource(nameof(AddTestCases))]
-        public static void AddTest(EntityArchetype archetype, ComponentType componentType, EntityArchetype expected)
+        public static void AddTest(EntityArchetype source, ComponentType value)
         {
-            AssertDeepEquality(archetype.Add(componentType), expected);
-            Assert.That(expected.Add(componentType), Is.SameAs(expected));
-        }
+            EntityArchetype result = source.Add(value);
+            ReadOnlySpan<ComponentType> resultComponentTypes = result.ComponentTypes;
+            ReadOnlySpan<ComponentType> sourceComponentTypes = source.ComponentTypes;
+            int expectedIndex = ~sourceComponentTypes.BinarySearch(value);
 
-        [Test]
-        public static void CreateExceptionTest()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
+            using (Assert.EnterMultipleScope())
             {
-                EntityArchetype.Create(array: null!);
-            });
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                EntityArchetype.Create(collection: null!);
-            });
-        }
+                Assert.That(resultComponentTypes.Slice(0, expectedIndex).SequenceEqual(sourceComponentTypes.Slice(0, expectedIndex)));
+                Assert.That(resultComponentTypes[expectedIndex], Is.EqualTo(value));
+                Assert.That(resultComponentTypes.Slice(expectedIndex + 1).SequenceEqual(sourceComponentTypes.Slice(expectedIndex)));
 
-        [TestCaseSource(nameof(CreateTestCases))]
-        public static void CreateTest(ComponentType[] arguments, ComponentType[] expectedComponentTypes)
-        {
-            int expectedManagedComponentCount = 0;
-            int expectedUnmanagedComponentCount = 0;
-            int expectedTagComponentCount = 0;
-            int expectedEntitySize = Unsafe.SizeOf<Entity>();
+                for (int i = 0; i < resultComponentTypes.Length; i++)
+                {
+                    Assert.That(result.Contains(resultComponentTypes[i]));
+                    Assert.That(result.IndexOf(resultComponentTypes[i]), Is.EqualTo(i));
+                }
 
-            foreach (ComponentType componentType in expectedComponentTypes)
-            {
-                switch (componentType.Category)
+                int expectedManagedComponentCount = source.ManagedComponentCount;
+                int expectedUnmanagedComponentCount = source.UnmanagedComponentCount;
+                int expectedTagComponentCount = source.TagComponentCount;
+                int expectedEntitySize = source.EntitySize;
+
+                switch (value.Category)
                 {
                     case ComponentTypeCategory.Managed:
                         expectedManagedComponentCount++;
-                        break;
+                        goto default;
                     case ComponentTypeCategory.Unmanaged:
                         expectedUnmanagedComponentCount++;
-                        break;
+                        goto default;
                     case ComponentTypeCategory.Tag:
                         expectedTagComponentCount++;
-                        continue;
+                        break;
+                    default:
+                        expectedEntitySize += value.Size;
+                        break;
                 }
 
-                expectedEntitySize += componentType.Size;
+                Assert.That(result.ManagedComponentCount, Is.EqualTo(expectedManagedComponentCount));
+                Assert.That(result.UnmanagedComponentCount, Is.EqualTo(expectedUnmanagedComponentCount));
+                Assert.That(result.TagComponentCount, Is.EqualTo(expectedTagComponentCount));
+                Assert.That(result.EntitySize, Is.EqualTo(expectedEntitySize));
+            }
+        }
+
+        [TestCaseSource(nameof(CreateTestCases))]
+        public static void CreateTest(ComponentType[]? array)
+        {
+            if (array != null)
+            {
+                AssertHelper(EntityArchetype.Create(array: array));
+                AssertHelper(EntityArchetype.Create(collection: array));
+                AssertHelper(EntityArchetype.Create(span: array));
+            }
+            else
+            {
+                Assert.Throws<ArgumentNullException>(() =>
+                {
+                    EntityArchetype.Create(array: array!);
+                });
+                Assert.Throws<ArgumentNullException>(() =>
+                {
+                    EntityArchetype.Create(collection: array!);
+                });
             }
 
-            for (int method = 0; method < 3; method++)
+            static void AssertHelper(EntityArchetype actual)
             {
-                EntityArchetype actual = method switch
+                ReadOnlySpan<ComponentType> actualComponentTypes = actual.ComponentTypes;
+                int expectedManagedComponentCount = 0;
+                int expectedUnmanagedComponentCount = 0;
+                int expectedTagComponentCount = 0;
+                int expectedEntitySize = Unsafe.SizeOf<Entity>();
+                ComponentType previousComponentType = null!;
+
+                for (int i = 0; i < actualComponentTypes.Length; i++)
                 {
-                    0 => EntityArchetype.Create(array: arguments),
-                    1 => EntityArchetype.Create(collection: arguments),
-                    _ => EntityArchetype.Create(span: arguments)
-                };
+                    ComponentType currentComponentType = actualComponentTypes[i];
+
+                    using (Assert.EnterMultipleScope())
+                    {
+                        Assert.That(currentComponentType.CompareTo(previousComponentType), Is.EqualTo(1));
+                        Assert.That(actual.Contains(currentComponentType));
+                        Assert.That(actual.IndexOf(currentComponentType), Is.EqualTo(i));
+                    }
+
+                    previousComponentType = currentComponentType;
+
+                    switch (currentComponentType.Category)
+                    {
+                        case ComponentTypeCategory.Managed:
+                            expectedManagedComponentCount++;
+                            break;
+                        case ComponentTypeCategory.Unmanaged:
+                            expectedUnmanagedComponentCount++;
+                            break;
+                        case ComponentTypeCategory.Tag:
+                            expectedTagComponentCount++;
+                            continue;
+                    }
+
+                    expectedEntitySize += currentComponentType.Size;
+                }
 
                 using (Assert.EnterMultipleScope())
                 {
-                    Assert.That(actual.ComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
                     Assert.That(actual.ManagedComponentCount, Is.EqualTo(expectedManagedComponentCount));
                     Assert.That(actual.UnmanagedComponentCount, Is.EqualTo(expectedUnmanagedComponentCount));
                     Assert.That(actual.TagComponentCount, Is.EqualTo(expectedTagComponentCount));
@@ -534,35 +401,93 @@ namespace Logos.Entities.Tests
         }
 
         [TestCaseSource(nameof(EqualsTestCases))]
-        public static void EqualsTest(EntityArchetype? source, EntityArchetype? target, bool expectedValue)
+        public static void EqualsTest(EntityArchetype? left, EntityArchetype? right, bool expected)
         {
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(source?.Equals(target) ?? false, Is.EqualTo(expectedValue));
-                Assert.That(source == target, Is.EqualTo(expectedValue));
-                Assert.That(source != target, Is.Not.EqualTo(expectedValue));
+                if (left is not null)
+                {
+                    Assert.That(left.Equals(right), Is.EqualTo(expected));
+                    Assert.That(left.Equals(right as object), Is.EqualTo(expected));
+                }
+
+                Assert.That(left == right, Is.EqualTo(expected));
+                Assert.That(left != right, Is.Not.EqualTo(expected));
+
+                if (right is not null)
+                {
+                    Assert.That(right.Equals(left), Is.EqualTo(expected));
+                    Assert.That(right.Equals(left as object), Is.EqualTo(expected));
+                }
+
+                Assert.That(right == left, Is.EqualTo(expected));
+                Assert.That(right != left, Is.Not.EqualTo(expected));
             }
         }
 
         [TestCaseSource(nameof(RemoveTestCases))]
-        public static void RemoveTest(EntityArchetype archetype, ComponentType componentType, EntityArchetype expected)
+        public static void RemoveTest(EntityArchetype source, ComponentType value)
         {
-            AssertDeepEquality(archetype.Remove(componentType), expected);
-            Assert.That(expected.Remove(componentType), Is.SameAs(expected));
-        }
+            EntityArchetype result = source.Remove(value);
+            ReadOnlySpan<ComponentType> resultComponentTypes = result.ComponentTypes;
+            ReadOnlySpan<ComponentType> sourceComponentTypes = source.ComponentTypes;
+            int expectedIndex = sourceComponentTypes.BinarySearch(value);
 
-        private static void AssertDeepEquality(EntityArchetype actual, EntityArchetype expected)
-        {
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(actual.ComponentCount, Is.EqualTo(expected.ComponentCount));
-                Assert.That(actual.ManagedComponentCount, Is.EqualTo(expected.ManagedComponentCount));
-                Assert.That(actual.UnmanagedComponentCount, Is.EqualTo(expected.UnmanagedComponentCount));
-                Assert.That(actual.TagComponentCount, Is.EqualTo(expected.TagComponentCount));
-                Assert.That(actual.EntitySize, Is.EqualTo(expected.EntitySize));
-                Assert.That(actual.ComponentTypes.SequenceEqual(expected.ComponentTypes));
-                Assert.That(actual.ComponentBitmap.SequenceEqual(expected.ComponentBitmap));
+                Assert.That(resultComponentTypes.Slice(0, expectedIndex).SequenceEqual(sourceComponentTypes.Slice(0, expectedIndex)));
+                Assert.That(resultComponentTypes.Slice(expectedIndex).SequenceEqual(sourceComponentTypes.Slice(expectedIndex + 1)));
+
+                for (int i = 0; i < resultComponentTypes.Length; i++)
+                {
+                    Assert.That(result.Contains(resultComponentTypes[i]));
+                    Assert.That(result.IndexOf(resultComponentTypes[i]), Is.EqualTo(i));
+                }
+
+                int expectedManagedComponentCount = source.ManagedComponentCount;
+                int expectedUnmanagedComponentCount = source.UnmanagedComponentCount;
+                int expectedTagComponentCount = source.TagComponentCount;
+                int expectedEntitySize = source.EntitySize;
+
+                switch (value.Category)
+                {
+                    case ComponentTypeCategory.Managed:
+                        expectedManagedComponentCount--;
+                        goto default;
+                    case ComponentTypeCategory.Unmanaged:
+                        expectedUnmanagedComponentCount--;
+                        goto default;
+                    case ComponentTypeCategory.Tag:
+                        expectedTagComponentCount--;
+                        break;
+                    default:
+                        expectedEntitySize -= value.Size;
+                        break;
+                }
+
+                Assert.That(result.ManagedComponentCount, Is.EqualTo(expectedManagedComponentCount));
+                Assert.That(result.UnmanagedComponentCount, Is.EqualTo(expectedUnmanagedComponentCount));
+                Assert.That(result.TagComponentCount, Is.EqualTo(expectedTagComponentCount));
+                Assert.That(result.EntitySize, Is.EqualTo(expectedEntitySize));
             }
+        }
+
+        private static EntityArchetype CreateArchetype<T>()
+        {
+            return EntityArchetype.Create([ComponentType.TypeOf<T>()]);
+        }
+
+        private static EntityArchetype CreateArchetype<T1, T2>()
+        {
+            return EntityArchetype.Create([ComponentType.TypeOf<T1>(),
+                                           ComponentType.TypeOf<T2>()]);
+        }
+
+        private static EntityArchetype CreateArchetype<T1, T2, T3>()
+        {
+            return EntityArchetype.Create([ComponentType.TypeOf<T1>(),
+                                           ComponentType.TypeOf<T2>(),
+                                           ComponentType.TypeOf<T3>()]);
         }
     }
 }
