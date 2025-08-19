@@ -135,7 +135,7 @@ namespace Logos.Entities
         /// A new one-dimensional array of the type associated with the <see cref="ComponentType"/>
         /// with the specified length, using zero-based indexing.
         /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
+        /// <exception cref="OverflowException">
         /// <paramref name="length"/> is negative.
         /// </exception>
         public abstract Array CreateArray(int length);

@@ -2,7 +2,7 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Logos.Entities.Tests
@@ -23,10 +23,18 @@ namespace Logos.Entities.Tests
             ComponentType.TypeOf<Scale3D>();
         }
 
-        private static IEnumerable<object[]> CompareToTestCases
+        private static IEnumerable CompareToTestCases
         {
             get
             {
+                // Compare instance with self.
+                yield return new object[]
+                {
+                    ComponentType.TypeOf<Disabled>(),
+                    ComponentType.TypeOf<Disabled>(),
+                    0
+                };
+
                 // Compare instance with null.
                 yield return new object[]
                 {
@@ -41,14 +49,6 @@ namespace Logos.Entities.Tests
                     null!,
                     ComponentType.TypeOf<Disabled>(),
                     -1
-                };
-
-                // Compare instance with self.
-                yield return new object[]
-                {
-                    ComponentType.TypeOf<Disabled>(),
-                    ComponentType.TypeOf<Disabled>(),
-                    0
                 };
 
                 // Compare managed component type with unmanaged component type.
@@ -70,7 +70,7 @@ namespace Logos.Entities.Tests
                 // Compare unmanaged component type with tag component type.
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Position2D>(),
+                    ComponentType.TypeOf<Position3D>(),
                     ComponentType.TypeOf<Disabled>(),
                     -1
                 };
@@ -78,22 +78,52 @@ namespace Logos.Entities.Tests
                 // Compare different component types with same category.
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Position2D>(),
-                    ComponentType.TypeOf<Position3D>(),
+                    ComponentType.TypeOf<Rotation2D>(),
+                    ComponentType.TypeOf<Rotation3D>(),
                     -1
                 };
 
                 // Compare different component types with same category.
                 yield return new object[]
                 {
-                    ComponentType.TypeOf<Rotation3D>(),
-                    ComponentType.TypeOf<Rotation2D>(),
-                    1
+                    ComponentType.TypeOf<Scale2D>(),
+                    ComponentType.TypeOf<Scale3D>(),
+                    -1
                 };
             }
         }
 
-        private static IEnumerable<object[]> TypeOfTestCases
+        private static IEnumerable CreateArrayTestCases
+        {
+            get
+            {
+                // Test Disabled component type array.
+                yield return ComponentType.TypeOf<Disabled>();
+
+                // Test Disabled component type array.
+                yield return ComponentType.TypeOf<Name>();
+
+                // Test Position2D component type array.
+                yield return ComponentType.TypeOf<Position2D>();
+
+                // Test Position3D component type array.
+                yield return ComponentType.TypeOf<Position3D>();
+
+                // Test Rotation2D component type array.
+                yield return ComponentType.TypeOf<Rotation2D>();
+
+                // Test Rotation3D component type array.
+                yield return ComponentType.TypeOf<Rotation3D>();
+
+                // Test Scale2D component type array.
+                yield return ComponentType.TypeOf<Scale2D>();
+
+                // Test Scale3D component type array.
+                yield return ComponentType.TypeOf<Scale3D>();
+            }
+        }
+
+        private static IEnumerable TypeOfTestCases
         {
             get
             {
@@ -179,23 +209,41 @@ namespace Logos.Entities.Tests
             }
         }
 
-        [Test]
-        public static void CompareToExceptionTest()
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                ComponentType.TypeOf<Name>().CompareTo(string.Empty);
-            });
-        }
-
         [TestCaseSource(nameof(CompareToTestCases))]
-        public static void CompareToTest(ComponentType? left, ComponentType? right, int expectedValue)
+        public static void CompareToTest(ComponentType? left, ComponentType? right, int expected)
         {
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(left?.CompareTo(right) ?? -1, Is.EqualTo(expectedValue));
-                Assert.That(left?.CompareTo(right as object) ?? -1, Is.EqualTo(expectedValue));
+                if (left != null)
+                {
+                    Assert.That(left.CompareTo(right), Is.EqualTo(expected));
+                    Assert.That(left.CompareTo(right as object), Is.EqualTo(expected));
+                    Assert.Throws<ArgumentException>(() =>
+                    {
+                        left.CompareTo(typeof(ComponentType));
+                    });
+                }
+
+                if (right != null)
+                {
+                    Assert.That(right.CompareTo(left), Is.EqualTo(-expected));
+                    Assert.That(right.CompareTo(left as object), Is.EqualTo(-expected));
+                    Assert.Throws<ArgumentException>(() =>
+                    {
+                        right.CompareTo(typeof(ComponentType));
+                    });
+                }
             }
+        }
+
+        [TestCaseSource(nameof(CreateArrayTestCases))]
+        public static void CreateArrayTest(ComponentType source)
+        {
+            Assert.That(source.CreateArray(0).GetType().GetElementType(), Is.EqualTo(source.Type));
+            Assert.Throws<OverflowException>(() =>
+            {
+                source.CreateArray(-1);
+            });
         }
 
         [TestCaseSource(nameof(TypeOfTestCases))]
