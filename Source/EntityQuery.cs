@@ -166,22 +166,7 @@ namespace Logos.Entities
             /// </returns>
             public bool MoveNext()
             {
-                if (m_enumerator.MoveNext())
-                {
-                    return true;
-                }
-
-                int index = m_index + 1;
-
-                if (index < m_length)
-                {
-                    m_enumerator = m_cache[index].GetEnumerator();
-                    m_index = index;
-                    return true;
-                }
-
-                m_enumerator = default;
-                return false;
+                return m_enumerator.MoveNext() || MoveNextRare();
             }
 
             /// <summary>
@@ -192,6 +177,22 @@ namespace Logos.Entities
             {
                 m_index = -1;
                 m_enumerator = default;
+            }
+
+            private bool MoveNextRare()
+            {
+                int index = m_index + 1;
+
+                if (index < m_length)
+                {
+                    m_index = index;
+                    m_enumerator = m_cache[index].GetEnumerator();
+                    m_enumerator.MoveNext();
+                    return true;
+                }
+
+                m_enumerator = default;
+                return false;
             }
         }
     }
