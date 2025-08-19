@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace Logos.Entities.Tests
 {
-    [TestFixture]
+    [TestFixture, TestOf(typeof(Entity))]
     public static class EntityTestFixture
     {
         private static IEnumerable EqualsTestCases
