@@ -2,14 +2,294 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Logos.Entities.Tests
 {
-    [TestFixture]
+    [TestFixture, TestOf(typeof(EntityPredicate))]
     public static class EntityPredicateTestFixture
     {
+        private static IEnumerable CreateTestCases
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    Array.Empty<ComponentType>(),
+                    Array.Empty<ComponentType>()
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        null!
+                    },
+                    Array.Empty<ComponentType>()
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>(),
+                        null!
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        null!,
+                        ComponentType.TypeOf<Disabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>(),
+                        ComponentType.TypeOf<Disabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(),
+                        null!,
+                        ComponentType.TypeOf<Disabled>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Disabled>()
+                    }
+                };
+
+                yield return new object[]
+                {
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>(),
+                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Scale2D>()
+                    },
+                    new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Scale2D>(),
+                        ComponentType.TypeOf<Disabled>()
+                    }
+                };
+            }
+        }
+
+        private static IEnumerable EqualsTestCases
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    EntityPredicate.Universal,
+                    null!,
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Universal,
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        Array.Empty<ComponentType>(),
+                        Array.Empty<ComponentType>()),
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Universal,
+                    EntityPredicate.Create(
+                        Array.Empty<ComponentType>(),
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        Array.Empty<ComponentType>()),
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Universal,
+                    EntityPredicate.Create(
+                        Array.Empty<ComponentType>(),
+                        Array.Empty<ComponentType>(),
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        }),
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        }),
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        }),
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        }),
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        }),
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        }),
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        }),
+                    false
+                };
+
+                yield return new object[]
+                {
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        }),
+                    EntityPredicate.Create(
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Position2D>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Disabled>()
+                        },
+                        new ComponentType[]
+                        {
+                            ComponentType.TypeOf<Name>()
+                        }),
+                    false
+                };
+            }
+        }
+
         [Test]
         public static void CreateExceptionTest()
         {
@@ -47,7 +327,7 @@ namespace Logos.Entities.Tests
             });
         }
 
-        [TestCaseSource(typeof(EntityPredicateTestCaseSource), nameof(EntityPredicateTestCaseSource.CreateTestCases))]
+        [TestCaseSource(nameof(CreateTestCases))]
         public static void CreateTest(ComponentType[] arguments, ComponentType[] expectedComponentTypes)
         {
             IEnumerable<ComponentType> collection = arguments;
@@ -67,24 +347,35 @@ namespace Logos.Entities.Tests
 
                 using (Assert.EnterMultipleScope())
                 {
-                    Assert.That(predicate.RequiredComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
-                    Assert.That(predicate.IncludedComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
-                    Assert.That(predicate.ExcludedComponentTypes.SequenceEqual(expectedComponentTypes), Is.True);
+                    Assert.That(predicate.RequiredComponentTypes.SequenceEqual(expectedComponentTypes));
+                    Assert.That(predicate.IncludedComponentTypes.SequenceEqual(expectedComponentTypes));
+                    Assert.That(predicate.ExcludedComponentTypes.SequenceEqual(expectedComponentTypes));
                 }
             }
         }
 
-        [TestCaseSource(typeof(EntityPredicateTestCaseSource), nameof(EntityPredicateTestCaseSource.EqualsTestCases))]
-        public static void EqualsTest(EntityPredicate? source, EntityPredicate? other)
+        [TestCaseSource(nameof(EqualsTestCases))]
+        public static void EqualsTest(EntityPredicate? left, EntityPredicate? right, bool expected)
         {
-            EqualityComparer<EntityPredicate> comparer = EqualityComparer<EntityPredicate>.Default;
-
             using (Assert.EnterMultipleScope())
             {
-                Assert.That(comparer.Equals(source, source), Is.True);
-                Assert.That(comparer.Equals(other, other), Is.True);
-                Assert.That(comparer.Equals(source, other), Is.False);
-                Assert.That(comparer.Equals(other, source), Is.False);
+                if (left is not null)
+                {
+                    Assert.That(left.Equals(right), Is.EqualTo(expected));
+                    Assert.That(left.Equals(right as object), Is.EqualTo(expected));
+                }
+
+                Assert.That(left == right, Is.EqualTo(expected));
+                Assert.That(left != right, Is.Not.EqualTo(expected));
+
+                if (right is not null)
+                {
+                    Assert.That(right.Equals(left), Is.EqualTo(expected));
+                    Assert.That(right.Equals(left as object), Is.EqualTo(expected));
+                }
+
+                Assert.That(right == left, Is.EqualTo(expected));
+                Assert.That(right != left, Is.Not.EqualTo(expected));
             }
         }
 
@@ -138,7 +429,7 @@ namespace Logos.Entities.Tests
                     })
                 };
 
-                Assert.That(predicate.Matches(archetype), Is.True);
+                Assert.That(predicate.Matches(archetype));
             }
 
             for (int mismatch = 0; mismatch < 5; mismatch++)
