@@ -44,17 +44,15 @@ namespace Logos.Entities
         /// <see langword="true"/> if the bit at <paramref name="index"/> is set in
         /// <paramref name="bitmap"/>; otherwise, <see langword="false"/>.
         /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="index"/> is negative.
-        /// </exception>
         public static bool Test(ReadOnlySpan<int> bitmap, int index)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(index);
-
+            // Arithmetic shifting preserves the sign of the operand on the left. This should
+            // prevent conversions of negative bit indices to valid bitmap indices.
             int bitmapIndex = index >> 5;
 
-            // Consider bits beyond the length of the bitmap as all zeroes.
-            return bitmapIndex < bitmap.Length && (bitmap[bitmapIndex] & 1 << index) != 0;
+            // Consider bits outside the bounds of the bitmap as all zeroes.
+            return (uint)bitmapIndex < (uint)bitmap.Length
+                && (bitmap[bitmapIndex] & 1 << index) != 0;
         }
     }
 }
