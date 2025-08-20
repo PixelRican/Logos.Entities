@@ -91,15 +91,8 @@ namespace Logos.Entities.Tests
             Span<Name> names = table.GetComponents<Name>();
             Span<Position2D> positions = table.GetComponents<Position2D>();
             Entity entity = new Entity(-1, -1);
-            Name name = new Name()
-            {
-                Value = "FREE ME"
-            };
-            Position2D position = new Position2D()
-            {
-                X = -1,
-                Y = -1
-            };
+            Name name = new Name("FREE ME");
+            Position2D position = new Position2D(-1, -1);
 
             while (!table.IsFull)
             {
@@ -180,15 +173,8 @@ namespace Logos.Entities.Tests
             Span<Name> names = table.GetComponents<Name>();
             Span<Position2D> positions = table.GetComponents<Position2D>();
             Entity entity = new Entity(-1, -1);
-            Name name = new Name()
-            {
-                Value = "KEEP ME"
-            };
-            Position2D position = new Position2D()
-            {
-                X = 1,
-                Y = 2
-            };
+            Name name = new Name("KEEP ME");
+            Position2D position = new Position2D(1, 2);
 
             names.Fill(name);
             positions.Fill(position);
@@ -222,15 +208,8 @@ namespace Logos.Entities.Tests
             ReadOnlySpan<Entity> entities = table.GetEntities();
             Span<Name> names = table.GetComponents<Name>();
             Span<Position2D> positions = table.GetComponents<Position2D>();
-            Name name = new Name()
-            {
-                Value = "FREE ME"
-            };
-            Position2D position = new Position2D()
-            {
-                X = 1,
-                Y = 2
-            };
+            Name name = new Name("FREE ME");
+            Position2D position = new Position2D(1, 2);
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
@@ -273,18 +252,18 @@ namespace Logos.Entities.Tests
         {
             EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry(), 0);
 
+            Assert.Throws<InvalidOperationException>(table.ClearRows);
             Assert.Throws<InvalidOperationException>(() =>
             {
                 table.CreateRow(default);
             });
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.ImportRow(null!, 0);
+                table.DeleteRow(0);
             });
-            Assert.Throws<InvalidOperationException>(table.ClearRows);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.DeleteRow(0);
+                table.ImportRow(null!, 0);
             });
         }
 
