@@ -2,53 +2,85 @@
 // Released under the MIT License. See LICENSE for details.
 
 using System;
+using System.Collections;
 
 namespace Logos.Entities.Tests
 {
-    [TestFixture]
+    [TestFixture, TestOf(typeof(EntityTable))]
     public static class EntityTableTestFixture
     {
-        [Test]
-        public static void CreateRowTest()
+        private static IEnumerable ConstructorTestCases
         {
-            EntityTable table = CreateTestTable();
-            ReadOnlySpan<Entity> entities = table.GetEntities();
-            Span<Name> names = table.GetComponents<Name>();
-            Span<Position2D> positions = table.GetComponents<Position2D>();
-            Entity entity = new Entity(-1, -1);
-            Name name = new Name()
+            get
             {
-                Value = "KEEP ME"
-            };
-            Position2D position = new Position2D()
-            {
-                X = 1,
-                Y = 2
-            };
-
-            names.Fill(name);
-            positions.Fill(position);
-
-            Assert.That(table.IsEmpty, Is.True);
-
-            for (int i = 0; i < table.Capacity; i++)
-            {
-                table.CreateRow(entity);
-
-                using (Assert.EnterMultipleScope())
+                yield return new object[]
                 {
-                    Assert.That(table.Count, Is.EqualTo(i + 1));
-                    Assert.That(entities[i], Is.EqualTo(entity));
-                    Assert.That(names[i], Is.EqualTo(name));
-                    Assert.That(positions[i], Is.Default);
-                }
-            }
+                    EntityArchetype.Base
+                };
 
-            Assert.That(table.IsFull, Is.True);
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                table.CreateRow(entity);
-            });
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>()
+                    })
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Position2D>()
+                    })
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Disabled>()
+                    })
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Position2D>()
+                    })
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Disabled>()
+                    })
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Position2D>(),
+                        ComponentType.TypeOf<Disabled>()
+                    })
+                };
+
+                yield return new object[]
+                {
+                    EntityArchetype.Create(new ComponentType[]
+                    {
+                        ComponentType.TypeOf<Name>(),
+                        ComponentType.TypeOf<Position2D>(),
+                        ComponentType.TypeOf<Rotation2D>(),
+                        ComponentType.TypeOf<Scale2D>(),
+                        ComponentType.TypeOf<Disabled>()
+                    })
+                };
+            }
         }
 
         [Test]
@@ -99,7 +131,7 @@ namespace Logos.Entities.Tests
             });
         }
 
-        [TestCaseSource(typeof(EntityTableTestCaseSource), nameof(EntityTableTestCaseSource.ConstructorTestCases))]
+        [TestCaseSource(nameof(ConstructorTestCases))]
         public static void ConstructorTest(EntityArchetype archetype)
         {
             EntityTable table = new EntityTable(archetype, 1);
@@ -138,6 +170,49 @@ namespace Logos.Entities.Tests
                     });
                 }
             }
+        }
+
+        [Test]
+        public static void CreateRowTest()
+        {
+            EntityTable table = CreateTestTable();
+            ReadOnlySpan<Entity> entities = table.GetEntities();
+            Span<Name> names = table.GetComponents<Name>();
+            Span<Position2D> positions = table.GetComponents<Position2D>();
+            Entity entity = new Entity(-1, -1);
+            Name name = new Name()
+            {
+                Value = "KEEP ME"
+            };
+            Position2D position = new Position2D()
+            {
+                X = 1,
+                Y = 2
+            };
+
+            names.Fill(name);
+            positions.Fill(position);
+
+            Assert.That(table.IsEmpty, Is.True);
+
+            for (int i = 0; i < table.Capacity; i++)
+            {
+                table.CreateRow(entity);
+
+                using (Assert.EnterMultipleScope())
+                {
+                    Assert.That(table.Count, Is.EqualTo(i + 1));
+                    Assert.That(entities[i], Is.EqualTo(entity));
+                    Assert.That(names[i], Is.EqualTo(name));
+                    Assert.That(positions[i], Is.Default);
+                }
+            }
+
+            Assert.That(table.IsFull, Is.True);
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                table.CreateRow(entity);
+            });
         }
 
         [Test]
@@ -193,16 +268,6 @@ namespace Logos.Entities.Tests
             }
         }
 
-        private static EntityTable CreateTestTable()
-        {
-            return new EntityTable(EntityArchetype.Create(new ComponentType[]
-            {
-                ComponentType.TypeOf<Name>(),
-                ComponentType.TypeOf<Position2D>(),
-                ComponentType.TypeOf<Disabled>()
-            }), 8);
-        }
-
         [Test]
         public static void InvalidRowOperationTest()
         {
@@ -221,6 +286,16 @@ namespace Logos.Entities.Tests
             {
                 table.DeleteRow(0);
             });
+        }
+
+        private static EntityTable CreateTestTable()
+        {
+            return new EntityTable(EntityArchetype.Create(new ComponentType[]
+            {
+                ComponentType.TypeOf<Name>(),
+                ComponentType.TypeOf<Position2D>(),
+                ComponentType.TypeOf<Disabled>()
+            }), 8);
         }
     }
 }
