@@ -219,7 +219,7 @@ namespace Logos.Entities
         /// <param name="entity">
         /// The entity to locate in the <see cref="EntityRegistry"/>.
         /// </param>
-        /// <param name="rowIndex">
+        /// <param name="index">
         /// When this method returns, contains the row index of <paramref name="entity"/> in the
         /// returned table.
         /// </param>
@@ -229,9 +229,9 @@ namespace Logos.Entities
         /// <exception cref="EntityNotFoundException">
         /// Unable to find <paramref name="entity"/> in the <see cref="EntityRegistry"/>.
         /// </exception>
-        public EntityTable Find(Entity entity, out int rowIndex)
+        public EntityTable Find(Entity entity, out int index)
         {
-            return m_container.FindEntity(entity, out rowIndex);
+            return m_container.FindEntity(entity, out index);
         }
 
         /// <summary>
@@ -816,7 +816,7 @@ namespace Logos.Entities
                 int version = record.Version;
 
                 record.Table = table;
-                record.RowIndex = table.Count;
+                record.Index = table.Count;
                 table.CreateRow(new Entity(index, version));
                 return new Entity(index, version);
             }
@@ -831,16 +831,16 @@ namespace Logos.Entities
                 }
 
                 EntityTable table = record.Table;
-                int tableIndex = record.RowIndex;
+                int tableIndex = record.Index;
 
                 record.Table = null!;
-                record.RowIndex = -1;
+                record.Index = -1;
                 record.Version++;
                 table.DeleteRow(tableIndex);
 
                 if (tableIndex < table.Count)
                 {
-                    m_records[table.GetEntities()[tableIndex].Index].RowIndex = tableIndex;
+                    m_records[table.GetEntities()[tableIndex].Index].Index = tableIndex;
                 }
 
                 m_freeIndices[m_nextIndex - m_size--] = entity.Index;
@@ -851,16 +851,16 @@ namespace Logos.Entities
             {
                 ref Record record = ref m_records[entity.Index];
                 EntityTable source = record.Table;
-                int sourceIndex = record.RowIndex;
+                int sourceIndex = record.Index;
 
                 record.Table = destination;
-                record.RowIndex = destination.Count;
+                record.Index = destination.Count;
                 destination.ImportRow(source, sourceIndex);
                 source.DeleteRow(sourceIndex);
 
                 if (sourceIndex < source.Count)
                 {
-                    m_records[source.GetEntities()[sourceIndex].Index].RowIndex = sourceIndex;
+                    m_records[source.GetEntities()[sourceIndex].Index].Index = sourceIndex;
                 }
             }
 
@@ -869,7 +869,7 @@ namespace Logos.Entities
                 return !Unsafe.IsNullRef(ref FindRecord(entity));
             }
 
-            public EntityTable FindEntity(Entity entity, out int rowIndex)
+            public EntityTable FindEntity(Entity entity, out int index)
             {
                 ref Record record = ref FindRecord(entity);
 
@@ -878,7 +878,7 @@ namespace Logos.Entities
                     ThrowForEntityNotFound();
                 }
 
-                rowIndex = record.RowIndex;
+                index = record.Index;
                 return record.Table;
             }
 
@@ -922,7 +922,7 @@ namespace Logos.Entities
                 {
                     ref Record record = ref m_records[entity.Index];
 
-                    if (record.Table != null && record.RowIndex >= 0 && record.Version == entity.Version)
+                    if (record.Table != null && record.Index >= 0 && record.Version == entity.Version)
                     {
                         return ref record;
                     }
@@ -934,7 +934,7 @@ namespace Logos.Entities
             private struct Record
             {
                 public EntityTable Table;
-                public int RowIndex;
+                public int Index;
                 public int Version;
             }
         }
