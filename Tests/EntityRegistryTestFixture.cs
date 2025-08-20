@@ -5,7 +5,7 @@ using System;
 
 namespace Logos.Entities.Tests
 {
-    [TestFixture]
+    [TestFixture, TestOf(typeof(EntityRegistry))]
     public static class EntityRegistryTestFixture
     {
         [Test]
