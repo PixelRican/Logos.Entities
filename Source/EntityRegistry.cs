@@ -17,8 +17,8 @@ namespace Logos.Entities
         private const int TargetTableSize = 16384;
 
         private readonly object m_lock;
-        private volatile Container m_container;
         private volatile EntityLookup m_lookup;
+        private volatile RecordContainer m_container;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EntityRegistry"/> class that is empty and
@@ -27,8 +27,8 @@ namespace Logos.Entities
         public EntityRegistry()
         {
             m_lock = new object();
-            m_container = Container.Empty;
             m_lookup = EntityLookup.Empty;
+            m_container = RecordContainer.Empty;
         }
 
         /// <summary>
@@ -46,10 +46,10 @@ namespace Logos.Entities
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             m_lock = new object();
-            m_container = (capacity > 0)
-                ? new Container(capacity)
-                : Container.Empty;
             m_lookup = EntityLookup.Empty;
+            m_container = (capacity > 0)
+                ? new RecordContainer(capacity)
+                : RecordContainer.Empty;
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Logos.Entities
         {
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable table = GetTable(EntityArchetype.Base);
 
                 if (container.IsFull)
@@ -140,7 +140,7 @@ namespace Logos.Entities
 
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable table = GetTable(archetype);
 
                 if (container.IsFull)
@@ -186,7 +186,7 @@ namespace Logos.Entities
                     AddTable(destination);
                 }
 
-                Container container = m_container;
+                RecordContainer container = m_container;
 
                 if (container.IsFull)
                 {
@@ -266,7 +266,7 @@ namespace Logos.Entities
                     ThrowForFullTable();
                 }
 
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out _);
 
                 if (source != destination)
@@ -309,7 +309,7 @@ namespace Logos.Entities
 
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out _);
 
                 if (!archetype.Equals(source.Archetype))
@@ -379,7 +379,7 @@ namespace Logos.Entities
 
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out _);
 
                 if (source.Archetype.Contains(componentType))
@@ -423,7 +423,7 @@ namespace Logos.Entities
 
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out _);
 
                 if (source.Archetype.Contains(componentType))
@@ -487,7 +487,7 @@ namespace Logos.Entities
         {
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out _);
                 ComponentType componentType = ComponentType.TypeOf<T>();
 
@@ -540,7 +540,7 @@ namespace Logos.Entities
         {
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out int index);
                 ComponentType componentType = ComponentType.TypeOf<T>();
 
@@ -583,7 +583,7 @@ namespace Logos.Entities
         {
             lock (m_lock)
             {
-                Container container = m_container;
+                RecordContainer container = m_container;
                 EntityTable source = container.FindEntity(entity, out int index);
                 ComponentType componentType = ComponentType.TypeOf<T>();
                 Span<T?> components;
@@ -769,32 +769,32 @@ namespace Logos.Entities
             return table;
         }
 
-        private sealed class Container
+        private sealed class RecordContainer
         {
             private const int DefaultCapacity = 4;
 
-            public static readonly Container Empty = new Container();
+            public static readonly RecordContainer Empty = new RecordContainer();
 
-            private readonly Entry[] m_entries;
-            private readonly int[] m_indexPool;
+            private readonly Record[] m_records;
+            private readonly int[] m_freeIndices;
             private int m_size;
             private int m_nextIndex;
 
-            public Container(int capacity)
+            public RecordContainer(int capacity)
             {
-                m_entries = new Entry[capacity];
-                m_indexPool = new int[capacity];
+                m_records = new Record[capacity];
+                m_freeIndices = new int[capacity];
             }
 
-            private Container()
+            private RecordContainer()
             {
-                m_entries = Array.Empty<Entry>();
-                m_indexPool = Array.Empty<int>();
+                m_records = Array.Empty<Record>();
+                m_freeIndices = Array.Empty<int>();
             }
 
             public int Capacity
             {
-                get => m_entries.Length;
+                get => m_records.Length;
             }
 
             public int Count
@@ -804,79 +804,85 @@ namespace Logos.Entities
 
             public bool IsFull
             {
-                get => m_size == m_entries.Length;
+                get => m_size == m_records.Length;
             }
 
-            public Entity CreateEntity(EntityTable destination)
+            public Entity CreateEntity(EntityTable table)
             {
-                Entity entity = CreateEntry(destination);
+                int index = (m_size++ < m_nextIndex)
+                    ? m_freeIndices[m_nextIndex - m_size]
+                    : m_nextIndex++;
+                ref Record record = ref m_records[index];
+                int version = record.Version;
 
-                destination.Add(entity);
-                return entity;
+                record.Table = table;
+                record.RowIndex = table.Count;
+                table.CreateRow(new Entity(index, version));
+                return new Entity(index, version);
             }
 
             public EntityTable? DeleteEntity(Entity entity)
             {
-                ref Entry entry = ref FindEntry(entity);
+                ref Record record = ref FindRecord(entity);
 
-                if (Unsafe.IsNullRef(ref entry))
+                if (Unsafe.IsNullRef(ref record))
                 {
                     return null;
                 }
 
-                EntityTable table = entry.Table;
-                int tableIndex = entry.RowIndex;
+                EntityTable table = record.Table;
+                int tableIndex = record.RowIndex;
 
-                entry.Table = null!;
-                entry.RowIndex = -1;
-                entry.Version++;
-                table.Delete(tableIndex);
+                record.Table = null!;
+                record.RowIndex = -1;
+                record.Version++;
+                table.DeleteRow(tableIndex);
 
                 if (tableIndex < table.Count)
                 {
-                    m_entries[table.GetEntities()[tableIndex].Index].RowIndex = tableIndex;
+                    m_records[table.GetEntities()[tableIndex].Index].RowIndex = tableIndex;
                 }
 
-                m_indexPool[m_nextIndex - m_size--] = entity.Index;
+                m_freeIndices[m_nextIndex - m_size--] = entity.Index;
                 return table;
             }
 
             public void ExportEntity(Entity entity, EntityTable destination)
             {
-                ref Entry entry = ref m_entries[entity.Index];
-                EntityTable source = entry.Table;
-                int sourceIndex = entry.RowIndex;
+                ref Record record = ref m_records[entity.Index];
+                EntityTable source = record.Table;
+                int sourceIndex = record.RowIndex;
 
-                entry.Table = destination;
-                entry.RowIndex = destination.Count;
-                destination.Import(entity, source, sourceIndex);
-                source.Delete(sourceIndex);
+                record.Table = destination;
+                record.RowIndex = destination.Count;
+                destination.ImportRow(source, sourceIndex);
+                source.DeleteRow(sourceIndex);
 
                 if (sourceIndex < source.Count)
                 {
-                    m_entries[source.GetEntities()[sourceIndex].Index].RowIndex = sourceIndex;
+                    m_records[source.GetEntities()[sourceIndex].Index].RowIndex = sourceIndex;
                 }
             }
 
             public bool ContainsEntity(Entity entity)
             {
-                return !Unsafe.IsNullRef(ref FindEntry(entity));
+                return !Unsafe.IsNullRef(ref FindRecord(entity));
             }
 
             public EntityTable FindEntity(Entity entity, out int rowIndex)
             {
-                ref Entry entry = ref FindEntry(entity);
+                ref Record record = ref FindRecord(entity);
 
-                if (Unsafe.IsNullRef(ref entry))
+                if (Unsafe.IsNullRef(ref record))
                 {
                     ThrowForEntityNotFound();
                 }
 
-                rowIndex = entry.RowIndex;
-                return entry.Table;
+                rowIndex = record.RowIndex;
+                return record.Table;
             }
 
-            public Container Resize()
+            public RecordContainer Resize()
             {
                 int size = m_size;
                 int capacity;
@@ -900,44 +906,32 @@ namespace Logos.Entities
                     }
                 }
 
-                Container container = new Container(capacity)
+                RecordContainer container = new RecordContainer(capacity)
                 {
                     m_size = size,
                     m_nextIndex = size
                 };
 
-                Array.Copy(m_entries, container.m_entries, size);
+                Array.Copy(m_records, container.m_records, size);
                 return container;
             }
 
-            private Entity CreateEntry(EntityTable table)
-            {
-                int index = (m_size++ < m_nextIndex)
-                    ? m_indexPool[m_nextIndex - m_size]
-                    : m_nextIndex++;
-                ref Entry entry = ref m_entries[index];
-
-                entry.Table = table;
-                entry.RowIndex = table.Count;
-                return new Entity(index, entry.Version);
-            }
-
-            private ref Entry FindEntry(Entity entity)
+            private ref Record FindRecord(Entity entity)
             {
                 if ((uint)entity.Index < (uint)m_nextIndex)
                 {
-                    ref Entry entry = ref m_entries[entity.Index];
+                    ref Record record = ref m_records[entity.Index];
 
-                    if (entry.Table != null && entry.RowIndex >= 0 && entry.Version == entity.Version)
+                    if (record.Table != null && record.RowIndex >= 0 && record.Version == entity.Version)
                     {
-                        return ref entry;
+                        return ref record;
                     }
                 }
 
-                return ref Unsafe.NullRef<Entry>();
+                return ref Unsafe.NullRef<Record>();
             }
 
-            private struct Entry
+            private struct Record
             {
                 public EntityTable Table;
                 public int RowIndex;

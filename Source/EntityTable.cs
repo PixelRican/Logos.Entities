@@ -42,7 +42,7 @@ namespace Logos.Entities
         /// <summary>
         /// Initializes a new instance of the <see cref="EntityTable"/> class that stores entities
         /// modelled by the specified archetype and has the specified capacity. If the specified
-        /// registry is not <see langword="null"/>, any attempt to modify the structure of the
+        /// registry is not <see langword="null"/>, any attempt to modify the row structure of the
         /// <see cref="EntityTable"/> will throw an exception, unless the attempt was made by the
         /// registry when it has entered a sync point.
         /// </summary>
@@ -50,7 +50,7 @@ namespace Logos.Entities
         /// The archetype that models entities in the <see cref="EntityTable"/>.
         /// </param>
         /// <param name="registry">
-        /// The registry that controls structure modifications to the <see cref="EntityTable"/>, if
+        /// The registry that controls row operations performed on the <see cref="EntityTable"/>, if
         /// not <see langword="null"/>.
         /// </param>
         /// <param name="capacity">
@@ -120,12 +120,12 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets the registry that controls structure modifications to the
+        /// Gets the registry that controls row operations performed on the
         /// <see cref="EntityTable"/>.
         /// </summary>
         /// <returns>
-        /// The registry that controls structure modifications to the <see cref="EntityTable"/>,
-        /// or <see langword="null"/> if no such registry was provided.
+        /// The registry that controls row operations performed on the <see cref="EntityTable"/>, or
+        /// <see langword="null"/> if no such registry was provided.
         /// </returns>
         public EntityRegistry? Registry
         {
@@ -200,15 +200,15 @@ namespace Logos.Entities
         /// The entity to be added to a new row at the end of the <see cref="EntityTable"/>.
         /// </param>
         /// <exception cref="InvalidOperationException">
-        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
+        /// The row structure of the <see cref="EntityTable"/> cannot be modified unless
         /// <see cref="Registry"/> has entered its sync point.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="EntityTable"/> is full.
         /// </exception>
-        public void Add(Entity entity)
+        public void CreateRow(Entity entity)
         {
-            ThrowIfInvalidStructureModification();
+            ThrowIfInvalidRowOperation();
 
             Entity[] entities = m_entities;
             int size = m_size;
@@ -233,15 +233,15 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Removes all entities from the <see cref="EntityTable"/>.
+        /// Removes all rows from the <see cref="EntityTable"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
+        /// The row structure of the <see cref="EntityTable"/> cannot be modified unless
         /// <see cref="Registry"/> has entered its sync point.
         /// </exception>
-        public void Clear()
+        public void ClearRows()
         {
-            ThrowIfInvalidStructureModification();
+            ThrowIfInvalidRowOperation();
 
             Array[] components = m_components;
             int managedComponentCount = m_archetype.ManagedComponentCount;
@@ -258,13 +258,13 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Removes the entity at the specified row index of the <see cref="EntityTable"/>.
+        /// Removes the row at the specified index of the <see cref="EntityTable"/>.
         /// </summary>
         /// <param name="index">
-        /// The zero-based row index of the entity to remove.
+        /// The zero-based row index of the row to remove.
         /// </param>
         /// <exception cref="InvalidOperationException">
-        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
+        /// The row structure of the <see cref="EntityTable"/> cannot be modified unless
         /// <see cref="Registry"/> has entered its sync point.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -273,9 +273,9 @@ namespace Logos.Entities
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="index"/> exceeds the bounds of the <see cref="EntityTable"/>.
         /// </exception>
-        public void Delete(int index)
+        public void DeleteRow(int index)
         {
-            ThrowIfInvalidStructureModification();
+            ThrowIfInvalidRowOperation();
             
             int size = m_size;
 
@@ -371,39 +371,35 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Adds the specified entity to a new row at the end of the <see cref="EntityTable"/> and
-        /// imports its components from the specified table at the specified row index. Any
-        /// components that could not be imported from the table are zero-initialized instead.
+        /// Copies a row at the specified index in the specified table to a new row at the end of
+        /// the <see cref="EntityTable"/>. Any components that could not be copied from the row in
+        /// the table are zero-initialized instead.
         /// </summary>
-        /// <param name="entity">
-        /// The entity to be added to a new row at the end of the <see cref="EntityTable"/>.
-        /// </param>
-        /// <param name="source">
-        /// The table containing the row of components that should be imported.
+        /// <param name="other">
+        /// The table containing a row at <paramref name="index"/> to be copied.
         /// </param>
         /// <param name="index">
-        /// The zero-based row index in <paramref name="source"/> at which components should be
-        /// imported.
+        /// The zero-based index in <paramref name="other"/> at which a row should be copied.
         /// </param>
         /// <exception cref="InvalidOperationException">
-        /// The structure of the <see cref="EntityTable"/> cannot be modified unless
+        /// The row structure of the <see cref="EntityTable"/> cannot be modified unless
         /// <see cref="Registry"/> has entered its sync point.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="EntityTable"/> is full.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="source"/> is <see langword="null"/>.
+        /// <paramref name="other"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="index"/> is negative.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="index"/> exceeds the bounds of <paramref name="source"/>.
+        /// <paramref name="index"/> exceeds the bounds of <paramref name="other"/>.
         /// </exception>
-        public void Import(Entity entity, EntityTable source, int index)
+        public void ImportRow(EntityTable other, int index)
         {
-            ThrowIfInvalidStructureModification();
+            ThrowIfInvalidRowOperation();
 
             Entity[] entities = m_entities;
             int size = m_size;
@@ -413,17 +409,17 @@ namespace Logos.Entities
                 ThrowForFullCapacity();
             }
 
-            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(other);
 
-            if ((uint)index >= (uint)source.m_size)
+            if ((uint)index >= (uint)other.m_size)
             {
                 ThrowForIndexOutOfRange(index);
             }
 
-            Array[] sourceComponents = source.m_components;
+            Array[] sourceComponents = other.m_components;
             Array[] destinationComponents = m_components;
             ReadOnlySpan<ComponentType> sourceComponentTypes =
-                source.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
+                other.m_archetype.ComponentTypes.Slice(0, sourceComponents.Length);
             ReadOnlySpan<ComponentType> destinationComponentTypes =
                 m_archetype.ComponentTypes.Slice(0, destinationComponents.Length);
             int sourceIndex = 0;
@@ -448,20 +444,20 @@ namespace Logos.Entities
 
                 if (comparison == 0)
                 {
-                    // If a matching column is found, import the components from the source column
-                    // to the destination column.
+                    // If a matching column is found, copy the component from the source column to
+                    // the destination column.
                     Array.Copy(sourceColumn, index, destinationColumn, size, 1);
                 }
                 else if (destinationComponentType.Category == ComponentTypeCategory.Unmanaged)
                 {
                     // If a matching column could not be found, zero-initialize the unmanaged
-                    // components in the destination column. Managed components are cleared on
+                    // component in the destination column. Managed components are cleared on
                     // removal.
                     Array.Clear(destinationColumn, size, 1);
                 }
             }
 
-            entities[size] = entity;
+            entities[size] = other.m_entities[index];
             m_size = size + 1;
             m_version++;
         }
@@ -521,20 +517,20 @@ namespace Logos.Entities
         }
 
         [DoesNotReturn]
-        private static void ThrowForInvalidStructureModification()
+        private static void ThrowForInvalidRowOperation()
         {
             throw new InvalidOperationException(
-                "The structure of the EntityTable cannot be modified unless its registry has " +
+                "The row structure of the EntityTable cannot be modified unless its registry has " +
                 "entered its sync point.");
         }
 
-        private void ThrowIfInvalidStructureModification()
+        private void ThrowIfInvalidRowOperation()
         {
             EntityRegistry? registry = m_registry;
 
             if (registry != null && !registry.IsSyncPointEntered)
             {
-                ThrowForInvalidStructureModification();
+                ThrowForInvalidRowOperation();
             }
         }
     }

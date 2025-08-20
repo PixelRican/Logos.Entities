@@ -8,10 +8,8 @@ namespace Logos.Entities.Tests
     [TestFixture]
     public static class EntityTableTestFixture
     {
-        private const int EntityTableCapacity = 8;
-
         [Test]
-        public static void AddTest()
+        public static void CreateRowTest()
         {
             EntityTable table = CreateTestTable();
             ReadOnlySpan<Entity> entities = table.GetEntities();
@@ -35,7 +33,7 @@ namespace Logos.Entities.Tests
 
             for (int i = 0; i < table.Capacity; i++)
             {
-                table.Add(entity);
+                table.CreateRow(entity);
 
                 using (Assert.EnterMultipleScope())
                 {
@@ -49,12 +47,12 @@ namespace Logos.Entities.Tests
             Assert.That(table.IsFull, Is.True);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.Add(entity);
+                table.CreateRow(entity);
             });
         }
 
         [Test]
-        public static void ClearTest()
+        public static void ClearRowsTest()
         {
             EntityTable table = CreateTestTable();
             ReadOnlySpan<Entity> entities = table.GetEntities();
@@ -73,12 +71,12 @@ namespace Logos.Entities.Tests
 
             while (!table.IsFull)
             {
-                table.Add(entity);
+                table.CreateRow(entity);
             }
 
             names.Fill(name);
             positions.Fill(position);
-            table.Clear();
+            table.ClearRows();
 
             using (Assert.EnterMultipleScope())
             {
@@ -143,7 +141,7 @@ namespace Logos.Entities.Tests
         }
 
         [Test]
-        public static void DeleteTest()
+        public static void DeleteRowTest()
         {
             EntityTable table = CreateTestTable();
             ReadOnlySpan<Entity> entities = table.GetEntities();
@@ -161,17 +159,17 @@ namespace Logos.Entities.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                table.Delete(0);
+                table.DeleteRow(0);
             });
 
             for (int i = 0; i < table.Capacity; i++)
             {
-                table.Add(new Entity(i, 0));
+                table.CreateRow(new Entity(i, 0));
             }
 
             names.Fill(name);
             positions.Fill(position);
-            table.Delete(0);
+            table.DeleteRow(0);
 
             using (Assert.EnterMultipleScope())
             {
@@ -184,7 +182,7 @@ namespace Logos.Entities.Tests
 
             for (int i = 6; i >= 0; i--)
             {
-                table.Delete(i);
+                table.DeleteRow(i);
             }
 
             using (Assert.EnterMultipleScope())
@@ -206,22 +204,22 @@ namespace Logos.Entities.Tests
         }
 
         [Test]
-        public static void InvalidStructureModificationTest()
+        public static void InvalidRowOperationTest()
         {
             EntityTable table = new EntityTable(EntityArchetype.Base, new EntityRegistry(), 0);
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.Add(default);
+                table.CreateRow(default);
             });
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.Import(default, null!, 0);
+                table.ImportRow(null!, 0);
             });
-            Assert.Throws<InvalidOperationException>(table.Clear);
+            Assert.Throws<InvalidOperationException>(table.ClearRows);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                table.Delete(0);
+                table.DeleteRow(0);
             });
         }
     }
