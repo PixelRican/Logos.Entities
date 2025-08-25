@@ -224,17 +224,17 @@ namespace Logos.Entities
             }
 
             // Update component type array.
-            ReadOnlySpan<ComponentType> sourceSpan = ComponentTypes;
-            ComponentType[] componentTypes = new ComponentType[sourceSpan.Length + 1];
-            Span<ComponentType> destinationSpan = new Span<ComponentType>(componentTypes);
+            ReadOnlySpan<ComponentType> source = ComponentTypes;
+            ComponentType[] componentTypes = new ComponentType[source.Length + 1];
+            Span<ComponentType> destination = new Span<ComponentType>(componentTypes);
             int index = ~BinarySearch(componentType);
 
-            sourceSpan.Slice(0, index).CopyTo(destinationSpan);
-            destinationSpan[index] = componentType;
-            sourceSpan.Slice(index).CopyTo(destinationSpan.Slice(index + 1));
+            source.Slice(0, index).CopyTo(destination);
+            source.Slice(index).CopyTo(destination.Slice(index + 1));
+            destination[index] = componentType;
 
             // Update component bitmap.
-            int[] componentBitmap = new int[destinationSpan[^1].Index + 32 >> 5];
+            int[] componentBitmap = new int[destination[^1].Index + 32 >> 5];
             Span<int> destinationBitmap = new Span<int>(componentBitmap);
 
             sourceBitmap.CopyTo(destinationBitmap);
@@ -338,24 +338,24 @@ namespace Logos.Entities
                 return this;
             }
 
-            ReadOnlySpan<ComponentType> sourceSpan = ComponentTypes;
+            ReadOnlySpan<ComponentType> source = ComponentTypes;
 
             // Return the base archetype if this instance only contains the component type.
-            if (sourceSpan.Length == 1)
+            if (source.Length == 1)
             {
                 return s_base;
             }
 
             // Update component type array.
-            ComponentType[] componentTypes = new ComponentType[sourceSpan.Length - 1];
-            Span<ComponentType> destinationSpan = new Span<ComponentType>(componentTypes);
+            ComponentType[] componentTypes = new ComponentType[source.Length - 1];
+            Span<ComponentType> destination = new Span<ComponentType>(componentTypes);
             int index = BinarySearch(componentType);
 
-            sourceSpan.Slice(0, index).CopyTo(destinationSpan);
-            sourceSpan.Slice(index + 1).CopyTo(destinationSpan.Slice(index));
+            source.Slice(0, index).CopyTo(destination);
+            source.Slice(index + 1).CopyTo(destination.Slice(index));
 
             // Update component bitmap.
-            int[] componentBitmap = new int[destinationSpan[^1].Index + 32 >> 5];
+            int[] componentBitmap = new int[destination[^1].Index + 32 >> 5];
             Span<int> destinationBitmap = new Span<int>(componentBitmap);
 
             sourceBitmap.Slice(0, destinationBitmap.Length).CopyTo(destinationBitmap);
