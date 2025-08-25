@@ -205,9 +205,10 @@ namespace Logos.Entities
 
             ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
             EntityTable[] values = new EntityTable[source.Length + 1];
+            Span<EntityTable> destination = new Span<EntityTable>(values);
 
-            source.CopyTo(new Span<EntityTable>(values));
-            values[source.Length] = item;
+            source.CopyTo(destination);
+            destination[source.Length] = item;
             return new EntityGrouping(m_key, values);
         }
 
@@ -395,8 +396,8 @@ namespace Logos.Entities
             Span<EntityTable> destination = new Span<EntityTable>(values);
 
             source.Slice(0, index).CopyTo(destination);
-            destination[index] = item;
             source.Slice(index).CopyTo(destination.Slice(index + 1));
+            destination[index] = item;
             return new EntityGrouping(m_key, values);
         }
 
