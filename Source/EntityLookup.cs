@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Logos.Entities
@@ -17,23 +18,24 @@ namespace Logos.Entities
     public sealed class EntityLookup : ILookup<EntityArchetype, EntityTable>,
         ICollection<EntityGrouping>, ICollection, IReadOnlyCollection<EntityGrouping>
     {
+        private const int BranchIndexMask = 0x1F;
+        private const int TwigIndexMask = 0x03;
+        private const int TwigLevel = 6;
         private const int StackallocIntBufferSizeLimit = 32;
 
         private static readonly EntityLookup s_empty = new EntityLookup();
 
-        private readonly int[] m_buckets;
-        private readonly Entry[] m_entries;
+        private readonly Node m_root;
+        private readonly int m_count;
 
         private EntityLookup()
         {
-            m_buckets = Array.Empty<int>();
-            m_entries = Array.Empty<Entry>();
         }
 
-        private EntityLookup(int[] buckets, Entry[] entries)
+        private EntityLookup(Node root, int count)
         {
-            m_buckets = buckets;
-            m_entries = entries;
+            m_root = root;
+            m_count = count;
         }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace Logos.Entities
         /// </returns>
         public int Count
         {
-            get => m_entries.Length;
+            get => m_count;
         }
 
         /// <summary>
@@ -67,7 +69,7 @@ namespace Logos.Entities
         /// </returns>
         public bool IsEmpty
         {
-            get => m_entries.Length == 0;
+            get => m_count == 0;
         }
 
         /// <summary>
@@ -93,14 +95,14 @@ namespace Logos.Entities
             {
                 ArgumentNullException.ThrowIfNull(key);
 
-                ref readonly Entry entry = ref FindEntry(key.ComponentBitmap, out _);
+                EntityGrouping? item = FindItem(key.ComponentBitmap);
 
-                if (Unsafe.IsNullRef(in entry))
+                if (item == null)
                 {
                     ThrowForKeyNotFound();
                 }
 
-                return entry.Grouping;
+                return item;
             }
         }
 
@@ -121,20 +123,7 @@ namespace Logos.Entities
 
         IEnumerable<EntityTable> ILookup<EntityArchetype, EntityTable>.this[EntityArchetype key]
         {
-            get
-            {
-                if (key is not null)
-                {
-                    ref readonly Entry entry = ref FindEntry(key.ComponentBitmap, out _);
-
-                    if (!Unsafe.IsNullRef(in entry))
-                    {
-                        return entry.Grouping;
-                    }
-                }
-
-                return Enumerable.Empty<EntityTable>();
-            }
+            get => this[key];
         }
 
         /// <summary>
@@ -153,14 +142,7 @@ namespace Logos.Entities
         /// </exception>
         public EntityLookup Add(EntityGrouping item)
         {
-            ArgumentNullException.ThrowIfNull(item);
-
-            if (Unsafe.IsNullRef(in FindEntry(item.Key.ComponentBitmap, out uint hashCode)))
-            {
-                return AddEntry(item, hashCode);
-            }
-
-            return this;
+            return InsertItem(item, throwOnDuplicateKey: true);
         }
 
         /// <summary>
@@ -180,42 +162,7 @@ namespace Logos.Entities
         /// </exception>
         public EntityLookup AddOrUpdate(EntityGrouping item)
         {
-            ArgumentNullException.ThrowIfNull(item);
-
-            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmap, out uint hashCode);
-
-            if (Unsafe.IsNullRef(in targetEntry))
-            {
-                return AddEntry(item, hashCode);
-            }
-
-            if (targetEntry.Grouping == item)
-            {
-                return this;
-            }
-
-            Entry[] sourceEntries = m_entries;
-            int length = sourceEntries.Length;
-            Entry[] destinationEntries = new Entry[length];
-
-            for (int i = 0; i < length; i++)
-            {
-                ref readonly Entry sourceEntry = ref sourceEntries[i];
-                ref Entry destinationEntry = ref destinationEntries[i];
-
-                if (Unsafe.AreSame(in sourceEntry, in targetEntry))
-                {
-                    destinationEntry.Grouping = item;
-                    destinationEntry.HashCode = hashCode;
-                    destinationEntry.Next = sourceEntry.Next;
-                }
-                else
-                {
-                    destinationEntry = sourceEntry;
-                }
-            }
-
-            return new EntityLookup(m_buckets, destinationEntries);
+            return InsertItem(item, throwOnDuplicateKey: false);
         }
 
         /// <summary>
@@ -228,14 +175,31 @@ namespace Logos.Entities
         /// </returns>
         public EntityLookup Clear()
         {
-            // This method is redundant considering that the only instance that should be empty is
-            // s_empty. This method was only added to mirror the API of the EntityGrouping class.
-            if (m_entries.Length == 0)
+            if (m_count == 0)
             {
                 return this;
             }
 
             return s_empty;
+        }
+
+        /// <summary>
+        /// Determines whether a specified key exists in the <see cref="EntityLookup"/>.
+        /// </summary>
+        /// <param name="key">
+        /// The key to search for in the <see cref="EntityLookup"/>.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="key"/> is in the <see cref="EntityLookup"/>;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        public bool Contains(EntityArchetype key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            return FindItem(key.ComponentBitmap) != null;
         }
 
         /// <summary>
@@ -249,16 +213,13 @@ namespace Logos.Entities
         /// <see langword="true"/> if <paramref name="item"/> is found in the
         /// <see cref="EntityLookup"/>; otherwise, <see langword="false"/>.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public bool Contains(EntityGrouping item)
         {
-            if (item == null)
-            {
-                return false;
-            }
-
-            ref readonly Entry entry = ref FindEntry(item.Key.ComponentBitmap, out _);
-
-            return !Unsafe.IsNullRef(in entry) && entry.Grouping == item;
+            ArgumentNullException.ThrowIfNull(item);
+            return FindItem(item.Key.ComponentBitmap) == item;
         }
 
         /// <summary>
@@ -274,7 +235,7 @@ namespace Logos.Entities
         /// The zero-based index in <paramref name="array"/> at which copying begins.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="array"/> is null.
+        /// <paramref name="array"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="arrayIndex"/> is negative.
@@ -288,18 +249,89 @@ namespace Logos.Entities
             ArgumentNullException.ThrowIfNull(array);
             ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
 
-            Entry[] entries = m_entries;
-            int upperBound = arrayIndex + entries.Length;
+            int upperBound = arrayIndex + m_count;
 
             if ((uint)array.Length < (uint)upperBound)
             {
                 ThrowForInsufficientArraySpace();
             }
 
-            while (arrayIndex < upperBound)
+            if (arrayIndex == upperBound)
             {
-                array[arrayIndex] = entries[arrayIndex++].Grouping;
+                return;
             }
+
+            int level = 0;
+            int indexStack = 0;
+            JaggedNodeArray subtrie = default;
+            Array children = m_root.Children;
+
+            while (true)
+            {
+                while (level < TwigLevel)
+                {
+                    Node[] branches = subtrie[level++] = (Node[])children;
+
+                    children = branches[0].Children;
+                    indexStack <<= 5;
+                }
+
+                EntityGrouping[][] twigs = (EntityGrouping[][])children;
+
+                for (int twigIndex = 0; twigIndex < twigs.Length; twigIndex++)
+                {
+                    EntityGrouping[] leaves = twigs[twigIndex];
+
+                    for (int leafIndex = 0; leafIndex < leaves.Length; leafIndex++)
+                    {
+                        array[arrayIndex++] = leaves[leafIndex];
+                    }
+                }
+
+                if (arrayIndex == upperBound)
+                {
+                    return;
+                }
+
+                while (true)
+                {
+                    int branchIndex = (indexStack & BranchIndexMask) + 1;
+                    int subtrieIndex = level - 1;
+                    Node[] branches = subtrie[subtrieIndex];
+
+                    if (branchIndex < branches.Length)
+                    {
+                        children = branches[branchIndex].Children;
+                        indexStack++;
+                        break;
+                    }
+
+                    indexStack >>>= 5;
+                    level = subtrieIndex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates a copy of the <see cref="EntityLookup"/> with the sequence of values indexed by
+        /// the specified key removed from it.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the sequence of values to remove from the copy of the
+        /// <see cref="EntityLookup"/>.
+        /// </param>
+        /// <returns>
+        /// A copy of the <see cref="EntityLookup"/> with the sequence of values indexed by
+        /// <paramref name="key"/> removed from it, or the <see cref="EntityLookup"/> if
+        /// <paramref name="key"/> is not found in it.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        public EntityLookup Remove(EntityArchetype key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            return RemoveItem(key.ComponentBitmap, comparand: null);
         }
 
         /// <summary>
@@ -313,49 +345,13 @@ namespace Logos.Entities
         /// A copy of the <see cref="EntityLookup"/> with <paramref name="item"/> removed from it,
         /// or the <see cref="EntityLookup"/> if <paramref name="item"/> is not found in it.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="item"/> is <see langword="null"/>.
+        /// </exception>
         public EntityLookup Remove(EntityGrouping item)
         {
             ArgumentNullException.ThrowIfNull(item);
-
-            ref readonly Entry targetEntry = ref FindEntry(item.Key.ComponentBitmap, out _);
-
-            if (Unsafe.IsNullRef(in targetEntry) || targetEntry.Grouping != item)
-            {
-                return this;
-            }
-
-            Entry[] sourceEntries = m_entries;
-            int sourceLength = sourceEntries.Length;
-
-            if (sourceLength == 1)
-            {
-                return s_empty;
-            }
-
-            uint destinationLength = (uint)sourceLength - 1;
-            int[] destinationBuckets = new int[destinationLength];
-            Entry[] destinationEntries = new Entry[destinationLength];
-            int sourceIndex = 0;
-            int destinationIndex = 0;
-
-            do
-            {
-                ref readonly Entry sourceEntry = ref sourceEntries[sourceIndex++];
-
-                if (!Unsafe.AreSame(in targetEntry, in sourceEntry))
-                {
-                    ref Entry destinationEntry = ref destinationEntries[destinationIndex];
-                    ref int destinationBucket = ref destinationBuckets[sourceEntry.HashCode % destinationLength];
-
-                    destinationEntry.Grouping = sourceEntry.Grouping;
-                    destinationEntry.HashCode = sourceEntry.HashCode;
-                    destinationEntry.Next = destinationBucket;
-                    destinationBucket = ~destinationIndex++;
-                }
-            }
-            while (sourceIndex < sourceLength);
-
-            return new EntityLookup(destinationBuckets, destinationEntries);
+            return RemoveItem(item.Key.ComponentBitmap, comparand: item);
         }
 
         /// <summary>
@@ -378,7 +374,7 @@ namespace Logos.Entities
         /// <param name="key">
         /// The key of the desired sequence of values.
         /// </param>
-        /// <param name="grouping">
+        /// <param name="item">
         /// When this method returns, contains the sequence of values indexed by
         /// <paramref name="key"/> in the <see cref="EntityLookup"/>, if <paramref name="key"/> is
         /// found; otherwise, <see langword="null"/>. This parameter is passed uninitialized.
@@ -390,105 +386,10 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="key"/> is <see langword="null"/>.
         /// </exception>
-        public bool TryGetGrouping(EntityArchetype key, [NotNullWhen(true)] out EntityGrouping? grouping)
+        public bool TryGetValue(EntityArchetype key, [NotNullWhen(true)] out EntityGrouping? item)
         {
             ArgumentNullException.ThrowIfNull(key);
-
-            ref readonly Entry entry = ref FindEntry(key.ComponentBitmap, out _);
-
-            if (Unsafe.IsNullRef(in entry))
-            {
-                grouping = null;
-                return false;
-            }
-
-            grouping = entry.Grouping;
-            return true;
-        }
-
-        /// <summary>
-        /// Gets the sequence of values indexed by a key in the <see cref="EntityLookup"/> that is
-        /// equivalent to the specified key with the specified component type removed from it.
-        /// </summary>
-        /// <param name="key">
-        /// The key whose component types form the superset of component types contained by the key
-        /// of the desired sequence of values.
-        /// </param>
-        /// <param name="componentType">
-        /// The component type to exclude from <paramref name="key"/> when searching for the desired
-        /// sequence of values.
-        /// </param>
-        /// <param name="grouping">
-        /// When this method returns, contains the sequence of values indexed by a key in the
-        /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
-        /// <paramref name="componentType"/> removed from it, if such a key is found; otherwise,
-        /// <see langword="null"/>. This parameter is passed uninitialized.
-        /// </param>
-        /// <returns>
-        /// <see langword="true"/> if the <see cref="EntityLookup"/> contains an element whose key
-        /// is equivalent to <paramref name="key"/> with <paramref name="componentType"/> removed
-        /// from it; otherwise, <see langword="false"/>.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="key"/> is <see langword="null"/>.
-        /// </exception>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="componentType"/> is <see langword="null"/>.
-        /// </exception>
-        public bool TryGetSubgrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? grouping)
-        {
-            ArgumentNullException.ThrowIfNull(key);
-            ArgumentNullException.ThrowIfNull(componentType);
-
-            ReadOnlySpan<int> bitmap = key.ComponentBitmap;
-            int index = componentType.Index >> 5;
-            int bit = 1 << componentType.Index;
-
-            if (index >= bitmap.Length || (bit & bitmap[index]) == 0)
-            {
-                return TryGetGrouping(key, out grouping);
-            }
-
-            int[]? rentedArray;
-            scoped Span<int> buffer;
-
-            if (bitmap.Length <= StackallocIntBufferSizeLimit)
-            {
-                rentedArray = null;
-                buffer = stackalloc int[bitmap.Length];
-            }
-            else
-            {
-                rentedArray = ArrayPool<int>.Shared.Rent(bitmap.Length);
-                buffer = new Span<int>(rentedArray, 0, bitmap.Length);
-            }
-
-            bitmap.CopyTo(buffer);
-
-            if ((buffer[index] ^= bit) == 0 && buffer.Length == index + 1)
-            {
-                ReadOnlySpan<ComponentType> keyElements = key.ComponentTypes;
-
-                buffer = (keyElements.Length > 1)
-                    ? buffer.Slice(0, keyElements[^2].Index + 32 >> 5)
-                    : Span<int>.Empty;
-            }
-
-            ref readonly Entry entry = ref FindEntry(buffer, out _);
-
-            if (rentedArray != null)
-            {
-                ArrayPool<int>.Shared.Return(rentedArray);
-            }
-
-            if (Unsafe.IsNullRef(in entry))
-            {
-                grouping = null;
-                return false;
-            }
-
-            grouping = entry.Grouping;
-            return true;
+            return (item = FindItem(key.ComponentBitmap)) != null;
         }
 
         /// <summary>
@@ -503,7 +404,7 @@ namespace Logos.Entities
         /// The component type to include with <paramref name="key"/> when searching for the desired
         /// sequence of values.
         /// </param>
-        /// <param name="grouping">
+        /// <param name="item">
         /// When this method returns, contains the sequence of values indexed by a key in the
         /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
         /// <paramref name="componentType"/> added to it, if such a key is found; otherwise,
@@ -520,26 +421,26 @@ namespace Logos.Entities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="componentType"/> is <see langword="null"/>.
         /// </exception>
-        public bool TryGetSupergrouping(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? grouping)
+        public bool TryGetValueWith(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? item)
         {
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> bitmap = key.ComponentBitmap;
+            ReadOnlySpan<int> componentBitmap = key.ComponentBitmap;
             int index = componentType.Index >> 5;
             int bit = 1 << componentType.Index;
             int length;
             int[]? rentedArray;
             scoped Span<int> buffer;
 
-            if (index < bitmap.Length)
+            if (index < componentBitmap.Length)
             {
-                if ((bit & bitmap[index]) != 0)
+                if ((bit & componentBitmap[index]) != 0)
                 {
-                    return TryGetGrouping(key, out grouping);
+                    return TryGetValue(key, out item);
                 }
 
-                length = bitmap.Length;
+                length = componentBitmap.Length;
             }
             else
             {
@@ -557,30 +458,96 @@ namespace Logos.Entities
                 buffer = new Span<int>(rentedArray, 0, length);
             }
 
-            bitmap.CopyTo(buffer);
-            buffer.Slice(bitmap.Length).Clear();
+            componentBitmap.CopyTo(buffer);
+            buffer.Slice(componentBitmap.Length).Clear();
             buffer[index] |= bit;
 
-            ref readonly Entry entry = ref FindEntry(buffer, out _);
+            bool result = (item = FindItem(buffer)) != null;
 
             if (rentedArray != null)
             {
                 ArrayPool<int>.Shared.Return(rentedArray);
             }
 
-            if (Unsafe.IsNullRef(in entry))
-            {
-                grouping = null;
-                return false;
-            }
-
-            grouping = entry.Grouping;
-            return true;
+            return result;
         }
 
-        bool ILookup<EntityArchetype, EntityTable>.Contains(EntityArchetype key)
+        /// <summary>
+        /// Gets the sequence of values indexed by a key in the <see cref="EntityLookup"/> that is
+        /// equivalent to the specified key with the specified component type removed from it.
+        /// </summary>
+        /// <param name="key">
+        /// The key whose component types form the superset of component types contained by the key
+        /// of the desired sequence of values.
+        /// </param>
+        /// <param name="componentType">
+        /// The component type to exclude from <paramref name="key"/> when searching for the desired
+        /// sequence of values.
+        /// </param>
+        /// <param name="item">
+        /// When this method returns, contains the sequence of values indexed by a key in the
+        /// <see cref="EntityLookup"/> that is equivalent to <paramref name="key"/> with
+        /// <paramref name="componentType"/> removed from it, if such a key is found; otherwise,
+        /// <see langword="null"/>. This parameter is passed uninitialized.
+        /// </param>
+        /// <returns>
+        /// <see langword="true"/> if the <see cref="EntityLookup"/> contains an element whose key
+        /// is equivalent to <paramref name="key"/> with <paramref name="componentType"/> removed
+        /// from it; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="componentType"/> is <see langword="null"/>.
+        /// </exception>
+        public bool TryGetValueWithout(EntityArchetype key, ComponentType componentType, [NotNullWhen(true)] out EntityGrouping? item)
         {
-            return key is not null && !Unsafe.IsNullRef(in FindEntry(key.ComponentBitmap, out _));
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(componentType);
+
+            ReadOnlySpan<int> componentBitmap = key.ComponentBitmap;
+            int index = componentType.Index >> 5;
+            int bit = 1 << componentType.Index;
+
+            if (index >= componentBitmap.Length || (bit & componentBitmap[index]) == 0)
+            {
+                return TryGetValue(key, out item);
+            }
+
+            int[]? rentedArray;
+            scoped Span<int> buffer;
+
+            if (componentBitmap.Length <= StackallocIntBufferSizeLimit)
+            {
+                rentedArray = null;
+                buffer = stackalloc int[componentBitmap.Length];
+            }
+            else
+            {
+                rentedArray = ArrayPool<int>.Shared.Rent(componentBitmap.Length);
+                buffer = new Span<int>(rentedArray, 0, componentBitmap.Length);
+            }
+
+            componentBitmap.CopyTo(buffer);
+
+            if ((buffer[index] ^= bit) == 0 && buffer.Length == index + 1)
+            {
+                ReadOnlySpan<ComponentType> componentTypes = key.ComponentTypes;
+
+                buffer = (componentTypes.Length > 1)
+                    ? buffer.Slice(0, componentTypes[^2].Index + 32 >> 5)
+                    : Span<int>.Empty;
+            }
+
+            bool result = (item = FindItem(buffer)) != null;
+
+            if (rentedArray != null)
+            {
+                ArrayPool<int>.Shared.Return(rentedArray);
+            }
+
+            return result;
         }
 
         void ICollection<EntityGrouping>.Add(EntityGrouping item)
@@ -614,12 +581,16 @@ namespace Logos.Entities
 
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            Entry[] entries = m_entries;
-            int upperBound = index + entries.Length;
+            int upperBound = index + m_count;
 
             if ((uint)array.Length < (uint)upperBound)
             {
                 ThrowForInsufficientArraySpace();
+            }
+
+            if (index == upperBound)
+            {
+                return;
             }
 
             object[]? objects = array as object[];
@@ -629,11 +600,56 @@ namespace Logos.Entities
                 ThrowForInvalidArrayType();
             }
 
+            int level = 0;
+            int indexStack = 0;
+            JaggedNodeArray subtrie = default;
+            Array children = m_root.Children;
+
             try
             {
-                while (index < upperBound)
+                while (true)
                 {
-                    objects[index] = entries[index++].Grouping;
+                    while (level < TwigLevel)
+                    {
+                        Node[] branches = subtrie[level++] = (Node[])children;
+
+                        children = branches[0].Children;
+                        indexStack <<= 5;
+                    }
+
+                    EntityGrouping[][] twigs = (EntityGrouping[][])children;
+
+                    for (int twigIndex = 0; twigIndex < twigs.Length; twigIndex++)
+                    {
+                        EntityGrouping[] leaves = twigs[twigIndex];
+
+                        for (int leafIndex = 0; leafIndex < leaves.Length; leafIndex++)
+                        {
+                            objects[index++] = leaves[leafIndex];
+                        }
+                    }
+
+                    if (index == upperBound)
+                    {
+                        return;
+                    }
+
+                    while (true)
+                    {
+                        int branchIndex = (indexStack & BranchIndexMask) + 1;
+                        int subtrieIndex = level - 1;
+                        Node[] branches = subtrie[subtrieIndex];
+
+                        if (branchIndex < branches.Length)
+                        {
+                            children = branches[branchIndex].Children;
+                            indexStack++;
+                            break;
+                        }
+
+                        indexStack >>>= 5;
+                        level = subtrieIndex;
+                    }
                 }
             }
             catch (ArrayTypeMismatchException)
@@ -664,6 +680,13 @@ namespace Logos.Entities
         }
 
         [DoesNotReturn]
+        private static void ThrowForDuplicateKey()
+        {
+            throw new ArgumentException(
+                "An element with the same key already exists in the EntityLookup.", "item");
+        }
+
+        [DoesNotReturn]
         private static void ThrowForInvalidArrayRank()
         {
             throw new ArgumentException("The array is multidimensional.", "array");
@@ -691,76 +714,289 @@ namespace Logos.Entities
                 "array");
         }
 
-        private EntityLookup AddEntry(EntityGrouping item, uint hashCode)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetChildIndex(int bitmap, int mask)
         {
-            Entry[] sourceEntries = m_entries;
-            int sourceLength = sourceEntries.Length;
-            uint destinationLength = (uint)sourceLength + 1;
-            int[] destinationBuckets = new int[destinationLength];
-            Entry[] destinationEntries = new Entry[destinationLength];
-
-            for (int i = 0; i < sourceLength; i++)
-            {
-                ref readonly Entry sourceEntry = ref sourceEntries[i];
-                ref Entry destinationEntry = ref destinationEntries[i];
-                ref int destinationBucket = ref destinationBuckets[sourceEntry.HashCode % destinationLength];
-
-                destinationEntry.Grouping = sourceEntry.Grouping;
-                destinationEntry.HashCode = sourceEntry.HashCode;
-                destinationEntry.Next = destinationBucket;
-                destinationBucket = ~i;
-            }
-
-            ref Entry newEntry = ref destinationEntries[sourceLength];
-            ref int newBucket = ref destinationBuckets[hashCode % destinationLength];
-
-            newEntry.Grouping = item;
-            newEntry.HashCode = hashCode;
-            newEntry.Next = newBucket;
-            newBucket = ~sourceLength;
-            return new EntityLookup(destinationBuckets, destinationEntries);
+            return BitOperations.PopCount((uint)(bitmap & mask - 1));
         }
 
-        private ref readonly Entry FindEntry(ReadOnlySpan<int> bitmap, out uint hashCode)
+        private EntityGrouping? FindItem(ReadOnlySpan<int> componentBitmap)
         {
-            Entry[] entries = m_entries;
-            hashCode = (uint)BitmapOperations.GetHashCode(bitmap);
+            int hashCode = BitmapOperations.GetHashCode(componentBitmap);
+            int mask = 1 << hashCode;
+            Node node = m_root;
 
-            if (entries.Length > 0)
+            for (int level = 0; level < TwigLevel; level++)
             {
-                int index = m_buckets[hashCode % (uint)entries.Length];
-
-                while (index < 0)
+                if ((node.Bitmap & mask) == 0)
                 {
-                    ref readonly Entry entry = ref entries[~index];
+                    return null;
+                }
 
-                    if (entry.HashCode == hashCode &&
-                        entry.Grouping.Key.ComponentBitmap.SequenceEqual(bitmap))
+                Node[] branches = (Node[])node.Children;
+
+                node = branches[GetChildIndex(node.Bitmap, mask)];
+                mask = 1 << (hashCode >>>= 5);
+            }
+
+            if ((node.Bitmap & mask) != 0)
+            {
+                EntityGrouping[][] twigs = (EntityGrouping[][])node.Children;
+                EntityGrouping[] leaves = twigs[GetChildIndex(node.Bitmap, mask)];
+
+                for (int i = 0; i < leaves.Length; i++)
+                {
+                    EntityGrouping leaf = leaves[i];
+
+                    if (leaf.Key.ComponentBitmap.SequenceEqual(componentBitmap))
                     {
-                        return ref entry;
+                        return leaf;
                     }
-
-                    index = entry.Next;
                 }
             }
 
-            return ref Unsafe.NullRef<Entry>();
+            return null;
+        }
+
+        private EntityLookup InsertItem(EntityGrouping item, bool throwOnDuplicateKey)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+
+            ReadOnlySpan<int> componentBitmap = item.Key.ComponentBitmap;
+            int hashCode = BitmapOperations.GetHashCode(componentBitmap);
+            int mask = 1 << hashCode;
+            Node root = m_root;
+            ref Node current = ref root;
+
+            for (int level = 0; level < TwigLevel; level++)
+            {
+                ReadOnlySpan<Node> sourceBranches = new ReadOnlySpan<Node>((Node[])current.Children);
+                int branchIndex = GetChildIndex(current.Bitmap, mask);
+                Node[] branches;
+
+                if ((current.Bitmap & mask) == 0)
+                {
+                    current.Bitmap |= mask;
+                    branches = new Node[sourceBranches.Length + 1];
+
+                    Span<Node> destinationBranches = new Span<Node>(branches);
+
+                    sourceBranches.Slice(0, branchIndex).CopyTo(destinationBranches);
+                    sourceBranches.Slice(branchIndex).CopyTo(destinationBranches.Slice(branchIndex + 1));
+                }
+                else
+                {
+                    branches = sourceBranches.ToArray();
+                }
+
+                current.Children = branches;
+                current = ref branches[branchIndex];
+                mask = 1 << (hashCode >>>= 5);
+            }
+
+            ReadOnlySpan<EntityGrouping[]> sourceTwigs =
+                new ReadOnlySpan<EntityGrouping[]>((EntityGrouping[][])current.Children);
+            int twigIndex = GetChildIndex(current.Bitmap, mask);
+            int count = m_count;
+            EntityGrouping[][] twigs;
+            EntityGrouping[] leaves;
+
+            if ((current.Bitmap & mask) == 0)
+            {
+                current.Bitmap |= mask;
+                twigs = new EntityGrouping[sourceTwigs.Length + 1][];
+
+                Span<EntityGrouping[]> destinationTwigs = new Span<EntityGrouping[]>(twigs);
+
+                sourceTwigs.Slice(0, twigIndex).CopyTo(destinationTwigs);
+                sourceTwigs.Slice(twigIndex).CopyTo(destinationTwigs.Slice(twigIndex + 1));
+                leaves = new EntityGrouping[] { item };
+                count++;
+            }
+            else
+            {
+                ReadOnlySpan<EntityGrouping> sourceLeaves =
+                    new ReadOnlySpan<EntityGrouping>(sourceTwigs[twigIndex]);
+                int leafIndex = 0;
+
+                while (true)
+                {
+                    EntityGrouping leaf = sourceLeaves[leafIndex];
+
+                    if (leaf == item)
+                    {
+                        return this;
+                    }
+
+                    if (leaf.Key.ComponentBitmap.SequenceEqual(componentBitmap))
+                    {
+                        if (throwOnDuplicateKey)
+                        {
+                            ThrowForDuplicateKey();
+                        }
+
+                        leaves = sourceLeaves.ToArray();
+                        break;
+                    }
+
+                    if (++leafIndex == sourceLeaves.Length)
+                    {
+                        leaves = new EntityGrouping[sourceLeaves.Length + 1];
+                        sourceLeaves.CopyTo(new Span<EntityGrouping>(leaves));
+                        count++;
+                        break;
+                    }
+                }
+
+                twigs = sourceTwigs.ToArray();
+                leaves[leafIndex] = item;
+            }
+
+            current.Children = twigs;
+            twigs[twigIndex] = leaves;
+            return new EntityLookup(root, count);
+        }
+
+        private EntityLookup RemoveItem(ReadOnlySpan<int> componentBitmap, EntityGrouping? comparand)
+        {
+            int hashCode = BitmapOperations.GetHashCode(componentBitmap);
+            int mask = 1 << hashCode;
+            int indexQueue = 0;
+            int pruneMask = 0;
+            int pruneLevel = -1;
+            Node root = m_root;
+            Node node = root;
+
+            for (int level = 0; level < TwigLevel; level++)
+            {
+                if ((node.Bitmap & mask) == 0)
+                {
+                    return this;
+                }
+
+                Node[] branches = (Node[])node.Children;
+                int branchIndex = GetChildIndex(node.Bitmap, mask);
+
+                if (branches.Length > 1)
+                {
+                    pruneMask = mask;
+                    pruneLevel = level;
+                }
+
+                indexQueue |= branchIndex << level * 5;
+                node = branches[branchIndex];
+                mask = 1 << (hashCode >>>= 5);
+            }
+
+            if ((node.Bitmap & mask) == 0)
+            {
+                return this;
+            }
+
+            ReadOnlySpan<EntityGrouping[]> sourceTwigs =
+                new ReadOnlySpan<EntityGrouping[]>((EntityGrouping[][])node.Children);
+            int twigIndex = GetChildIndex(node.Bitmap, mask);
+            ReadOnlySpan<EntityGrouping> sourceLeaves =
+                new ReadOnlySpan<EntityGrouping>(sourceTwigs[twigIndex]);
+            int leafIndex = 0;
+
+            while (true)
+            {
+                EntityGrouping leaf = sourceLeaves[leafIndex];
+
+                if (leaf.Key.ComponentBitmap.SequenceEqual(componentBitmap))
+                {
+                    if (comparand == null || comparand == leaf)
+                    {
+                        break;
+                    }
+
+                    return this;
+                }
+
+                if (++leafIndex == sourceLeaves.Length)
+                {
+                    return this;
+                }
+            }
+
+            if (sourceLeaves.Length > 1)
+            {
+                EntityGrouping[][]? twigs = sourceTwigs.ToArray();
+                EntityGrouping[] leaves = new EntityGrouping[sourceLeaves.Length - 1];
+                Span<EntityGrouping> destinationLeaves = new Span<EntityGrouping>(leaves);
+
+                node.Children = twigs;
+                twigs[twigIndex] = leaves;
+                sourceLeaves.Slice(0, leafIndex).CopyTo(destinationLeaves);
+                sourceLeaves.Slice(leafIndex + 1).CopyTo(destinationLeaves.Slice(leafIndex));
+                pruneLevel = TwigLevel;
+            }
+            else if ((node.Bitmap ^= mask) != 0)
+            {
+                EntityGrouping[][]? twigs = new EntityGrouping[sourceTwigs.Length - 1][];
+                Span<EntityGrouping[]> destinationTwigs = new Span<EntityGrouping[]>(twigs);
+
+                node.Children = twigs;
+                sourceTwigs.Slice(0, twigIndex).CopyTo(destinationTwigs);
+                sourceTwigs.Slice(twigIndex + 1).CopyTo(destinationTwigs.Slice(twigIndex));
+                pruneLevel = TwigLevel;
+            }
+            else if (pruneLevel == -1)
+            {
+                return s_empty;
+            }
+
+            ref Node current = ref root;
+
+            while (pruneLevel > 0)
+            {
+                Node[] branches = new ReadOnlySpan<Node>((Node[])current.Children).ToArray();
+
+                current.Children = branches;
+                current = ref branches[indexQueue & BranchIndexMask];
+                indexQueue >>>= 5;
+                pruneLevel--;
+            }
+
+            if (node.Bitmap == 0)
+            {
+                ReadOnlySpan<Node> sourceBranches = new ReadOnlySpan<Node>((Node[])current.Children);
+                Node[] branches = new Node[sourceBranches.Length - 1];
+                Span<Node> destinationBranches = new Span<Node>(branches);
+                int branchIndex = indexQueue & BranchIndexMask;
+
+                sourceBranches.Slice(0, branchIndex).CopyTo(destinationBranches);
+                sourceBranches.Slice(branchIndex + 1).CopyTo(destinationBranches.Slice(branchIndex));
+                current.Bitmap ^= pruneMask;
+                current.Children = branches;
+            }
+            else
+            {
+                current = node;
+            }
+
+            return new EntityLookup(root, m_count - 1);
         }
 
         /// <summary>
         /// Enumerates the elements of an <see cref="EntityLookup"/>.
         /// </summary>
-        public struct Enumerator : IEnumerator<EntityGrouping>
+        public sealed class Enumerator : IEnumerator<EntityGrouping>
         {
-            private readonly Entry[] m_entries;
-            private readonly int m_length;
-            private int m_index;
+            private readonly EntityLookup m_lookup;
+            private JaggedNodeArray m_subtrie;
+            private EntityGrouping[][]? m_twigs;
+            private EntityGrouping[]? m_leaves;
+            private EntityGrouping? m_current;
+            private int m_count;
+            private int m_indexStack;
+            private int m_leafIndex;
 
             internal Enumerator(EntityLookup lookup)
             {
-                m_entries = lookup.m_entries;
-                m_length = m_entries.Length;
-                m_index = -1;
+                m_lookup = lookup;
+                Reset();
             }
 
             /// <summary>
@@ -771,19 +1007,24 @@ namespace Logos.Entities
             /// The element in the <see cref="EntityLookup"/> at the current position of the
             /// <see cref="Enumerator"/>.
             /// </returns>
-            public readonly EntityGrouping Current
+            public EntityGrouping Current
             {
-                get => m_entries[m_index].Grouping;
+                get => m_current!;
             }
 
-            readonly object IEnumerator.Current
+            object IEnumerator.Current
             {
-                get => m_entries[m_index].Grouping;
+                get => m_current!;
             }
 
             /// <inheritdoc cref="IDisposable.Dispose"/>
-            public readonly void Dispose()
+            public void Dispose()
             {
+                m_subtrie = default;
+                m_twigs = null;
+                m_leaves = null;
+                m_current = null;
+                m_count = 0;
             }
 
             /// <summary>
@@ -797,15 +1038,83 @@ namespace Logos.Entities
             /// </returns>
             public bool MoveNext()
             {
-                int index = m_index + 1;
+                int count = m_count;
 
-                if (index < m_length)
+                if (count == 0)
                 {
-                    m_index = index;
+                    return false;
+                }
+
+                EntityGrouping[] leaves = m_leaves!;
+                int index = m_leafIndex + 1;
+
+                if (index < leaves.Length)
+                {
+                    m_current = leaves[index];
+                    m_count = count - 1;
+                    m_leafIndex = index;
                     return true;
                 }
 
-                return false;
+                EntityGrouping[][] twigs = m_twigs!;
+                int indexStack = m_indexStack;
+
+                index = (indexStack & TwigIndexMask) + 1;
+
+                if (index < twigs.Length)
+                {
+                    leaves = twigs[index];
+
+                    m_leaves = leaves;
+                    m_current = leaves[0];
+                    m_count = count - 1;
+                    m_indexStack = indexStack + 1;
+                    m_leafIndex = 0;
+                    return true;
+                }
+
+                ref JaggedNodeArray subtrie = ref m_subtrie;
+                int level = TwigLevel;
+                Array children;
+
+                indexStack >>>= 2;
+
+                while (true)
+                {
+                    int subtrieIndex = level - 1;
+                    Node[] branches = subtrie[subtrieIndex];
+
+                    index = (indexStack & BranchIndexMask) + 1;
+
+                    if (index < branches.Length)
+                    {
+                        children = branches[index].Children;
+                        indexStack++;
+                        break;
+                    }
+
+                    indexStack >>>= 5;
+                    level = subtrieIndex;
+                }
+
+                while (level < TwigLevel)
+                {
+                    Node[] branches = subtrie[level++] = (Node[])children;
+
+                    children = branches[0].Children;
+                    indexStack <<= 5;
+                }
+
+                twigs = (EntityGrouping[][])children;
+                leaves = twigs[0];
+
+                m_twigs = twigs;
+                m_leaves = leaves;
+                m_current = leaves[0];
+                m_count = count - 1;
+                m_indexStack = indexStack << 2;
+                m_leafIndex = 0;
+                return true;
             }
 
             /// <summary>
@@ -814,15 +1123,44 @@ namespace Logos.Entities
             /// </summary>
             public void Reset()
             {
-                m_index = -1;
+                EntityLookup lookup = m_lookup;
+                int count = lookup.m_count;
+
+                if (count == 0)
+                {
+                    return;
+                }
+
+                ref JaggedNodeArray subtrie = ref m_subtrie;
+                Array children = lookup.m_root.Children;
+
+                for (int level = 0; level < TwigLevel; level++)
+                {
+                    Node[] branches = subtrie[level] = (Node[])children;
+
+                    children = branches[0].Children;
+                }
+
+                EntityGrouping[][] twigs = (EntityGrouping[][])children;
+                EntityGrouping[] leaves = twigs[0];
+
+                m_twigs = twigs;
+                m_leaves = leaves;
+                m_count = count;
+                m_leafIndex = -1;
             }
         }
 
-        private struct Entry
+        [InlineArray(TwigLevel)]
+        private struct JaggedNodeArray
         {
-            public EntityGrouping Grouping;
-            public uint HashCode;
-            public int Next;
+            public Node[] Reference;
+        }
+
+        private struct Node
+        {
+            public int Bitmap;
+            public Array Children;
         }
     }
 }

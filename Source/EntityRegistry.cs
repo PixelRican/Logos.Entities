@@ -683,7 +683,7 @@ namespace Logos.Entities
         {
             EntityLookup lookup = m_lookup;
 
-            m_lookup = lookup.TryGetGrouping(table.Archetype, out EntityGrouping? grouping)
+            m_lookup = lookup.TryGetValue(table.Archetype, out EntityGrouping? grouping)
                 ? lookup.AddOrUpdate(grouping.Add(table))
                 : lookup.Add(EntityGrouping.Create(table));
         }
@@ -702,7 +702,7 @@ namespace Logos.Entities
         {
             EntityLookup lookup = m_lookup;
 
-            if (lookup.TryGetGrouping(archetype, out EntityGrouping? grouping))
+            if (lookup.TryGetValue(archetype, out EntityGrouping? grouping))
             {
                 foreach (EntityTable value in grouping)
                 {
@@ -720,7 +720,7 @@ namespace Logos.Entities
         {
             EntityLookup lookup = m_lookup;
 
-            if (lookup.TryGetSupergrouping(archetype, componentType, out EntityGrouping? grouping))
+            if (lookup.TryGetValueWith(archetype, componentType, out EntityGrouping? grouping))
             {
                 foreach (EntityTable value in grouping)
                 {
@@ -738,7 +738,7 @@ namespace Logos.Entities
         {
             EntityLookup lookup = m_lookup;
 
-            if (lookup.TryGetSubgrouping(archetype, componentType, out EntityGrouping? grouping))
+            if (lookup.TryGetValueWithout(archetype, componentType, out EntityGrouping? grouping))
             {
                 foreach (EntityTable value in grouping)
                 {
