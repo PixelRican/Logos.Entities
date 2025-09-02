@@ -18,18 +18,18 @@ namespace Logos.Entities
         private static readonly EntityGrouping s_empty = new EntityGrouping();
 
         private readonly EntityArchetype m_key;
-        private readonly EntityTable[] m_values;
+        private readonly EntityTable[] m_items;
 
         private EntityGrouping()
         {
             m_key = EntityArchetype.Base;
-            m_values = Array.Empty<EntityTable>();
+            m_items = Array.Empty<EntityTable>();
         }
 
-        private EntityGrouping(EntityArchetype key, EntityTable[] values)
+        private EntityGrouping(EntityArchetype key, EntityTable[] items)
         {
             m_key = key;
-            m_values = values;
+            m_items = items;
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Logos.Entities
         /// </returns>
         public int Count
         {
-            get => m_values.Length;
+            get => m_items.Length;
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace Logos.Entities
         /// </returns>
         public bool IsEmpty
         {
-            get => m_values.Length == 0;
+            get => m_items.Length == 0;
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Logos.Entities
         /// </exception>
         public EntityTable this[int index]
         {
-            get => m_values[index];
+            get => m_items[index];
         }
 
         bool ICollection<EntityTable>.IsReadOnly
@@ -124,13 +124,13 @@ namespace Logos.Entities
 
         EntityTable IList<EntityTable>.this[int index]
         {
-            get => m_values[index];
+            get => m_items[index];
             set => throw new NotSupportedException();
         }
 
         object? IList.this[int index]
         {
-            get => m_values[index];
+            get => m_items[index];
             set => throw new NotSupportedException();
         }
 
@@ -203,13 +203,13 @@ namespace Logos.Entities
                 ThrowForKeyMismatch();
             }
 
-            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
-            EntityTable[] values = new EntityTable[source.Length + 1];
-            Span<EntityTable> destination = new Span<EntityTable>(values);
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_items);
+            EntityTable[] items = new EntityTable[source.Length + 1];
+            Span<EntityTable> destination = new Span<EntityTable>(items);
 
             source.CopyTo(destination);
             destination[source.Length] = item;
-            return new EntityGrouping(m_key, values);
+            return new EntityGrouping(m_key, items);
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Logos.Entities
         /// </returns>
         public EntityGrouping Clear()
         {
-            if (m_values.Length == 0)
+            if (m_items.Length == 0)
             {
                 return this;
             }
@@ -246,9 +246,7 @@ namespace Logos.Entities
         /// </returns>
         public bool Contains(EntityTable item)
         {
-            return item != null
-                && m_key.Equals(item.Archetype)
-                && Array.IndexOf(m_values, item) != -1;
+            return Array.IndexOf(m_items, item) != -1;
         }
 
         /// <summary>
@@ -275,7 +273,7 @@ namespace Logos.Entities
         /// </exception>
         public void CopyTo(EntityTable[] array, int arrayIndex)
         {
-            Array.Copy(m_values, 0, array, arrayIndex, m_values.Length);
+            Array.Copy(m_items, 0, array, arrayIndex, m_items.Length);
         }
 
         /// <summary>
@@ -305,7 +303,7 @@ namespace Logos.Entities
                 ThrowForKeyMismatch();
             }
 
-            int index = Array.IndexOf(m_values, item);
+            int index = Array.IndexOf(m_items, item);
 
             if (index != -1)
             {
@@ -340,12 +338,7 @@ namespace Logos.Entities
         /// </returns>
         public int IndexOf(EntityTable item)
         {
-            if (item != null && m_key.Equals(item.Archetype))
-            {
-                return Array.IndexOf(m_values, item);
-            }
-
-            return -1;
+            return Array.IndexOf(m_items, item);
         }
 
         /// <summary>
@@ -385,20 +378,20 @@ namespace Logos.Entities
                 ThrowForKeyMismatch();
             }
 
-            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_items);
 
             if ((uint)index > (uint)source.Length)
             {
                 ThrowForIndexOutOfRange(index);
             }
 
-            EntityTable[] values = new EntityTable[source.Length + 1];
-            Span<EntityTable> destination = new Span<EntityTable>(values);
+            EntityTable[] items = new EntityTable[source.Length + 1];
+            Span<EntityTable> destination = new Span<EntityTable>(items);
 
             source.Slice(0, index).CopyTo(destination);
             source.Slice(index).CopyTo(destination.Slice(index + 1));
             destination[index] = item;
-            return new EntityGrouping(m_key, values);
+            return new EntityGrouping(m_key, items);
         }
 
         /// <summary>
@@ -421,7 +414,7 @@ namespace Logos.Entities
         /// </exception>
         public EntityGrouping RemoveAt(int index)
         {
-            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_items);
 
             if ((uint)index >= (uint)source.Length)
             {
@@ -438,12 +431,12 @@ namespace Logos.Entities
                 return new EntityGrouping(m_key, Array.Empty<EntityTable>());
             }
 
-            EntityTable[] values = new EntityTable[source.Length - 1];
-            Span<EntityTable> destination = new Span<EntityTable>(values);
+            EntityTable[] items = new EntityTable[source.Length - 1];
+            Span<EntityTable> destination = new Span<EntityTable>(items);
 
             source.Slice(0, index).CopyTo(destination);
             source.Slice(index + 1).CopyTo(destination.Slice(index));
-            return new EntityGrouping(m_key, values);
+            return new EntityGrouping(m_key, items);
         }
 
         /// <summary>
@@ -484,7 +477,7 @@ namespace Logos.Entities
                 ThrowForKeyMismatch();
             }
 
-            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_values);
+            ReadOnlySpan<EntityTable> source = new ReadOnlySpan<EntityTable>(m_items);
 
             if ((uint)index >= (uint)source.Length)
             {
@@ -496,10 +489,10 @@ namespace Logos.Entities
                 return this;
             }
 
-            EntityTable[] values = source.ToArray();
+            EntityTable[] items = source.ToArray();
 
-            values[index] = item;
-            return new EntityGrouping(m_key, values);
+            items[index] = item;
+            return new EntityGrouping(m_key, items);
         }
 
         void ICollection<EntityTable>.Add(EntityTable item)
@@ -526,7 +519,7 @@ namespace Logos.Entities
 
             try
             {
-                Array.Copy(m_values, 0, array!, index, m_values.Length);
+                Array.Copy(m_items, 0, array!, index, m_items.Length);
             }
             catch (ArrayTypeMismatchException)
             {
@@ -624,14 +617,14 @@ namespace Logos.Entities
         /// </summary>
         public struct Enumerator : IEnumerator<EntityTable>
         {
-            private readonly EntityTable[] m_values;
+            private readonly EntityTable[] m_items;
             private readonly int m_length;
             private int m_index;
 
             internal Enumerator(EntityGrouping grouping)
             {
-                m_values = grouping.m_values;
-                m_length = m_values.Length;
+                m_items = grouping.m_items;
+                m_length = m_items.Length;
                 m_index = -1;
             }
 
@@ -645,12 +638,12 @@ namespace Logos.Entities
             /// </returns>
             public readonly EntityTable Current
             {
-                get => m_values[m_index];
+                get => m_items[m_index];
             }
 
             readonly object IEnumerator.Current
             {
-                get => m_values[m_index];
+                get => m_items[m_index];
             }
 
             /// <inheritdoc cref="IDisposable.Dispose"/>
