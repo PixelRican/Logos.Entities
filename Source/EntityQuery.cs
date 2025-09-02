@@ -9,8 +9,8 @@ using System.Collections.Generic;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a query that selects tables from a registry whose archetypes match a set of
-    /// criteria defined by a predicate.
+    /// Represents a query that selects tables from a registry whose archetypes satisfy a set of
+    /// conditions defined by a predicate.
     /// </summary>
     public class EntityQuery : IEnumerable<EntityTable>
     {
@@ -21,7 +21,7 @@ namespace Logos.Entities
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EntityQuery"/> class that selects tables
-        /// from the specified registry whose archetypes match a set of criteria defined by the
+        /// from the specified registry whose archetypes satisfy a set of conditions defined by the
         /// specified predicate.
         /// </summary>
         /// <param name="predicate">
@@ -99,10 +99,17 @@ namespace Logos.Entities
         {
             EntityPredicate predicate = m_predicate;
             EntityGrouping[] array = ArrayPool<EntityGrouping>.Shared.Rent(lookup.Count);
+
+            // Avoid allocating a large enumerator onto the heap by calling the CopyTo method. This
+            // method is fairly efficient at flattening the EntityLookup's underlying trie.
+            lookup.CopyTo(array, 0);
+
             int count = 0;
 
-            foreach (EntityGrouping grouping in lookup)
+            for (int i = 0; i < lookup.Count; i++)
             {
+                EntityGrouping grouping = array[i];
+
                 if (predicate.Test(grouping.Key))
                 {
                     array[count++] = grouping;
@@ -187,8 +194,7 @@ namespace Logos.Entities
                 {
                     m_index = index;
                     m_enumerator = m_cache[index].GetEnumerator();
-                    m_enumerator.MoveNext();
-                    return true;
+                    return m_enumerator.MoveNext();
                 }
 
                 m_enumerator = default;
