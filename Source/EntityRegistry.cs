@@ -235,13 +235,14 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Exports the specified entity to a new row at the end of the specified table.
+        /// Exports the specified entity from the table it is stored in to a new row at the end of
+        /// the specified table.
         /// </summary>
         /// <param name="entity">
         /// The entity to export to a new row at the end of <paramref name="destination"/>.
         /// </param>
         /// <param name="destination">
-        /// The destination table to export <paramref name="entity"/> into.
+        /// The table that is the destination of <paramref name="entity"/>.
         /// </param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="destination"/> is <see langword="null"/>.
@@ -587,18 +588,18 @@ namespace Logos.Entities
                 EntityTable source = container.FindEntity(entity, out int index);
                 ComponentType componentType = ComponentType.TypeOf<T>();
                 Span<T?> components;
-                bool isWriteable;
+                bool hasDataMembers;
 
                 if (source.Archetype.Contains(componentType))
                 {
-                    isWriteable = source.TryGetComponents(out components);
+                    hasDataMembers = source.TryGetComponents(out components);
                 }
                 else
                 {
                     EntityTable destination = GetTableWithComponent(source.Archetype, componentType);
 
                     index = destination.Count;
-                    isWriteable = destination.TryGetComponents(out components);
+                    hasDataMembers = destination.TryGetComponents(out components);
                     container.ExportEntity(entity, destination);
 
                     if (source.IsEmpty)
@@ -607,7 +608,7 @@ namespace Logos.Entities
                     }
                 }
 
-                if (isWriteable)
+                if (hasDataMembers)
                 {
                     components[index] = component;
                 }
@@ -754,8 +755,11 @@ namespace Logos.Entities
 
         private EntityTable CreateTable(EntityArchetype archetype, EntityLookup lookup, EntityGrouping? grouping)
         {
+            // Try to fit the size of the new EntityTable to the size of a typical L1 cache (16KB).
             int capacity = TargetTableSize / archetype.EntitySize;
 
+            // If the EntityTable cannot be fitted into the L1 cache due to its size, maintain a
+            // minimum capacity of 128 entities to avoid frequent allocations.
             if (capacity < MinimumTableCapacity)
             {
                 capacity = MinimumTableCapacity;
@@ -776,20 +780,27 @@ namespace Logos.Entities
             public static readonly RecordContainer Empty = new RecordContainer();
 
             private readonly Record[] m_records;
-            private readonly int[] m_freeIndices;
+            private readonly int[] m_indexStack;
             private int m_size;
             private int m_nextIndex;
 
             public RecordContainer(int capacity)
             {
                 m_records = new Record[capacity];
-                m_freeIndices = new int[capacity];
+                m_indexStack = new int[capacity];
             }
 
             private RecordContainer()
             {
                 m_records = Array.Empty<Record>();
-                m_freeIndices = Array.Empty<int>();
+                m_indexStack = Array.Empty<int>();
+            }
+
+            private RecordContainer(int capacity, int size)
+            {
+                m_records = new Record[capacity];
+                m_indexStack = new int[capacity];
+                m_nextIndex = m_size = size;
             }
 
             public int Capacity
@@ -807,17 +818,19 @@ namespace Logos.Entities
                 get => m_size == m_records.Length;
             }
 
-            public Entity CreateEntity(EntityTable table)
+            public Entity CreateEntity(EntityTable destination)
             {
+                // Attempt to pop a recycled entity index from the index stack. If the stack is
+                // empty, create a new entity index instead.
                 int index = (m_size++ < m_nextIndex)
-                    ? m_freeIndices[m_nextIndex - m_size]
+                    ? m_indexStack[m_nextIndex - m_size]
                     : m_nextIndex++;
                 ref Record record = ref m_records[index];
                 int version = record.Version;
 
-                record.Table = table;
-                record.Index = table.Count;
-                table.CreateRow(new Entity(index, version));
+                record.Table = destination;
+                record.Index = destination.Count;
+                destination.CreateRow(new Entity(index, version));
                 return new Entity(index, version);
             }
 
@@ -830,21 +843,24 @@ namespace Logos.Entities
                     return null;
                 }
 
-                EntityTable table = record.Table;
-                int tableIndex = record.Index;
+                EntityTable source = record.Table;
+                int sourceIndex = record.Index;
 
                 record.Table = null!;
                 record.Index = -1;
                 record.Version++;
-                table.DeleteRow(tableIndex);
+                source.DeleteRow(sourceIndex);
 
-                if (tableIndex < table.Count)
+                if (sourceIndex < source.Count)
                 {
-                    m_records[table.GetEntities()[tableIndex].Index].Index = tableIndex;
+                    // Update the row index of the entity that was moved to fill the hole left by
+                    // the deleted entity.
+                    m_records[source.GetEntities()[sourceIndex].Index].Index = sourceIndex;
                 }
 
-                m_freeIndices[m_nextIndex - m_size--] = entity.Index;
-                return table;
+                // Push the deleted entity's index to the index stack so that it may be recycled.
+                m_indexStack[m_nextIndex - m_size--] = entity.Index;
+                return source;
             }
 
             public void ExportEntity(Entity entity, EntityTable destination)
@@ -860,6 +876,8 @@ namespace Logos.Entities
 
                 if (sourceIndex < source.Count)
                 {
+                    // Update the row index of the entity that was moved to fill the hole left by
+                    // the exported entity.
                     m_records[source.GetEntities()[sourceIndex].Index].Index = sourceIndex;
                 }
             }
@@ -906,11 +924,7 @@ namespace Logos.Entities
                     }
                 }
 
-                RecordContainer container = new RecordContainer(capacity)
-                {
-                    m_size = size,
-                    m_nextIndex = size
-                };
+                RecordContainer container = new RecordContainer(capacity, size);
 
                 Array.Copy(m_records, container.m_records, size);
                 return container;
@@ -922,7 +936,7 @@ namespace Logos.Entities
                 {
                     ref Record record = ref m_records[entity.Index];
 
-                    if (record.Table != null && record.Index >= 0 && record.Version == entity.Version)
+                    if (record.Table != null && record.Index != -1 && record.Version == entity.Version)
                     {
                         return ref record;
                     }
