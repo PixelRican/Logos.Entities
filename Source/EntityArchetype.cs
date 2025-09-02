@@ -214,31 +214,31 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> sourceBitmap = ComponentBitmap;
+            ReadOnlySpan<int> sourceComponentBitmap = ComponentBitmap;
             int commponentTypeIndex = componentType.Index;
 
             // Return this instance if it already contains the component type.
-            if (BitmapOperations.Test(sourceBitmap, commponentTypeIndex))
+            if (BitmapOperations.Test(sourceComponentBitmap, commponentTypeIndex))
             {
                 return this;
             }
 
             // Update component type array.
-            ReadOnlySpan<ComponentType> source = ComponentTypes;
-            ComponentType[] componentTypes = new ComponentType[source.Length + 1];
-            Span<ComponentType> destination = new Span<ComponentType>(componentTypes);
+            ReadOnlySpan<ComponentType> sourceComponentTypes = ComponentTypes;
+            ComponentType[] componentTypes = new ComponentType[sourceComponentTypes.Length + 1];
+            Span<ComponentType> destinationComponentTypes = new Span<ComponentType>(componentTypes);
             int index = ~BinarySearch(componentType);
 
-            source.Slice(0, index).CopyTo(destination);
-            source.Slice(index).CopyTo(destination.Slice(index + 1));
-            destination[index] = componentType;
+            sourceComponentTypes.Slice(0, index).CopyTo(destinationComponentTypes);
+            sourceComponentTypes.Slice(index).CopyTo(destinationComponentTypes.Slice(index + 1));
+            destinationComponentTypes[index] = componentType;
 
             // Update component bitmap.
-            int[] componentBitmap = new int[destination[^1].Index + 32 >> 5];
-            Span<int> destinationBitmap = new Span<int>(componentBitmap);
+            int[] componentBitmap = new int[destinationComponentTypes[^1].Index + 32 >> 5];
+            Span<int> destinationComponentBitmap = new Span<int>(componentBitmap);
 
-            sourceBitmap.CopyTo(destinationBitmap);
-            destinationBitmap[commponentTypeIndex >> 5] |= 1 << commponentTypeIndex;
+            sourceComponentBitmap.CopyTo(destinationComponentBitmap);
+            destinationComponentBitmap[commponentTypeIndex >> 5] |= 1 << commponentTypeIndex;
 
             // Update component count and entity size based on the category of the component type.
             int managedComponentCount = m_managedComponentCount;
@@ -329,41 +329,41 @@ namespace Logos.Entities
         {
             ArgumentNullException.ThrowIfNull(componentType);
 
-            ReadOnlySpan<int> sourceBitmap = ComponentBitmap;
+            ReadOnlySpan<int> sourceComponentBitmap = ComponentBitmap;
             int componentTypeIndex = componentType.Index;
 
             // Return this instance if it does not contain the component type.
-            if (!BitmapOperations.Test(sourceBitmap, componentTypeIndex))
+            if (!BitmapOperations.Test(sourceComponentBitmap, componentTypeIndex))
             {
                 return this;
             }
 
-            ReadOnlySpan<ComponentType> source = ComponentTypes;
+            ReadOnlySpan<ComponentType> sourceComponentTypes = ComponentTypes;
 
             // Return the base archetype if this instance only contains the component type.
-            if (source.Length == 1)
+            if (sourceComponentTypes.Length == 1)
             {
                 return s_base;
             }
 
             // Update component type array.
-            ComponentType[] componentTypes = new ComponentType[source.Length - 1];
-            Span<ComponentType> destination = new Span<ComponentType>(componentTypes);
+            ComponentType[] componentTypes = new ComponentType[sourceComponentTypes.Length - 1];
+            Span<ComponentType> destinationComponentTypes = new Span<ComponentType>(componentTypes);
             int index = BinarySearch(componentType);
 
-            source.Slice(0, index).CopyTo(destination);
-            source.Slice(index + 1).CopyTo(destination.Slice(index));
+            sourceComponentTypes.Slice(0, index).CopyTo(destinationComponentTypes);
+            sourceComponentTypes.Slice(index + 1).CopyTo(destinationComponentTypes.Slice(index));
 
             // Update component bitmap.
-            int[] componentBitmap = new int[destination[^1].Index + 32 >> 5];
-            Span<int> destinationBitmap = new Span<int>(componentBitmap);
+            int[] componentBitmap = new int[destinationComponentTypes[^1].Index + 32 >> 5];
+            Span<int> destinationComponentBitmap = new Span<int>(componentBitmap);
 
-            sourceBitmap.Slice(0, destinationBitmap.Length).CopyTo(destinationBitmap);
+            sourceComponentBitmap.Slice(0, destinationComponentBitmap.Length).CopyTo(destinationComponentBitmap);
             index = componentTypeIndex >> 5;
 
-            if (index < destinationBitmap.Length)
+            if (index < destinationComponentBitmap.Length)
             {
-                destinationBitmap[index] ^= 1 << componentTypeIndex;
+                destinationComponentBitmap[index] ^= 1 << componentTypeIndex;
             }
 
             // Update component count and entity size based on the category of the component type.
@@ -395,7 +395,7 @@ namespace Logos.Entities
         /// <inheritdoc cref="IEquatable{T}.Equals"/>
         public bool Equals([NotNullWhen(true)] EntityArchetype? other)
         {
-            return ReferenceEquals(other, this)
+            return ReferenceEquals(this, other)
                 || other is not null
                 && ComponentBitmap.SequenceEqual(other.ComponentBitmap);
         }
@@ -445,8 +445,10 @@ namespace Logos.Entities
 
             previousComponentType = null;
 
-            foreach (ComponentType? currentComponentType in componentTypes)
+            for (int i = 0; i < componentTypes.Length; i++)
             {
+                ComponentType? currentComponentType = componentTypes[i];
+
                 if (currentComponentType != previousComponentType)
                 {
                     int componentTypeIndex = currentComponentType.Index;
@@ -458,16 +460,17 @@ namespace Logos.Entities
                     {
                         case ComponentTypeCategory.Managed:
                             managedComponentCount++;
-                            break;
+                            goto default;
                         case ComponentTypeCategory.Unmanaged:
                             unmanagedComponentCount++;
-                            break;
+                            goto default;
                         case ComponentTypeCategory.Tag:
                             tagComponentCount++;
                             continue;
+                        default:
+                            entitySize += currentComponentType.Size;
+                            continue;
                     }
-
-                    entitySize += currentComponentType.Size;
                 }
             }
 
