@@ -266,8 +266,10 @@ namespace Logos.Entities
             JaggedNodeArray subtrie = default;
             Array children = m_root.Children;
 
+            // Perform a depth-first trie traversal using iteration.
             while (true)
             {
+                // Climb up the trie from the current branch node to reach a twig node.
                 while (level < TwigLevel)
                 {
                     Node[] branches = subtrie[level++] = (Node[])children;
@@ -278,6 +280,8 @@ namespace Logos.Entities
 
                 EntityGrouping[][] twigs = (EntityGrouping[][])children;
 
+                // Climb up the twig nodes to access the leaf nodes and copy their contents to the
+                // array.
                 for (int twigIndex = 0; twigIndex < twigs.Length; twigIndex++)
                 {
                     EntityGrouping[] leaves = twigs[twigIndex];
@@ -288,11 +292,14 @@ namespace Logos.Entities
                     }
                 }
 
+                // Return if every leaf node has been visited.
                 if (arrayIndex == upperBound)
                 {
                     return;
                 }
 
+                // Climb down all completely explored branch nodes and move onto the next branch
+                // node.
                 while (true)
                 {
                     int branchIndex = (indexStack & BranchIndexMask) + 1;
@@ -607,6 +614,8 @@ namespace Logos.Entities
 
             try
             {
+                // See the comments in the strongly typed version of this method for more
+                // information on how this traversal works.
                 while (true)
                 {
                     while (level < TwigLevel)
@@ -722,12 +731,23 @@ namespace Logos.Entities
 
         private EntityGrouping? FindItem(ReadOnlySpan<int> componentBitmap)
         {
+            // In Phil Bagwell's hash array mapped trie, hash codes are treated as an encoding for
+            // the path of nodes that need to be taken in order to reach a leaf node. The hash code
+            // is split into six 5-bit partitions and one 2-bit partition. Each 5-bit partition is
+            // used as index in each branch nodes bitmap, which is used to check if an edge exists
+            // from one branch node to another. If an edge does exist from one branch to another,
+            // its index in the source branch node's array of children can be determined by counting
+            // the number of bits to the right of the bitmap index. The 2-bit partition is used
+            // similarly as the previous 5-bit partitions, with the main difference being that they
+            // are used to index twig nodes, which contain leaf nodes as children.
             int hashCode = BitmapOperations.GetHashCode(componentBitmap);
             int mask = 1 << hashCode;
             Node node = m_root;
 
+            // Climb up the branch nodes until a twig node has been reached.
             for (int level = 0; level < TwigLevel; level++)
             {
+                // Return null when a path to the next branch node does not exist.
                 if ((node.Bitmap & mask) == 0)
                 {
                     return null;
@@ -739,11 +759,14 @@ namespace Logos.Entities
                 mask = 1 << (hashCode >>>= 5);
             }
 
+            // Check if the branch node the loop stopped at has a path to the requested twig node.
             if ((node.Bitmap & mask) != 0)
             {
                 EntityGrouping[][] twigs = (EntityGrouping[][])node.Children;
                 EntityGrouping[] leaves = twigs[GetChildIndex(node.Bitmap, mask)];
 
+                // Climb up the twig node to the leaf nodes. Perform a linear search to filter out
+                // items with the same hash code.
                 for (int i = 0; i < leaves.Length; i++)
                 {
                     EntityGrouping leaf = leaves[i];
@@ -760,14 +783,21 @@ namespace Logos.Entities
 
         private EntityLookup InsertItem(EntityGrouping item, bool throwOnDuplicateKey)
         {
+            // For time efficiency purposes, this method performs allocations during traversal. This
+            // may lead to increased memory pressure on the garbage collector if insertion fails.
+            // Callers should not attempt to insert duplicate items if they care about memory
+            // efficiency.
             ArgumentNullException.ThrowIfNull(item);
 
+            // See the top comment in the FindItem method for information on how hash codes are used
+            // to traverse the trie.
             ReadOnlySpan<int> componentBitmap = item.Key.ComponentBitmap;
             int hashCode = BitmapOperations.GetHashCode(componentBitmap);
             int mask = 1 << hashCode;
             Node root = m_root;
             ref Node current = ref root;
 
+            // Climb up the branch nodes until a twig node has been reached.
             for (int level = 0; level < TwigLevel; level++)
             {
                 ReadOnlySpan<Node> sourceBranches = new ReadOnlySpan<Node>((Node[])current.Children);
@@ -776,6 +806,7 @@ namespace Logos.Entities
 
                 if ((current.Bitmap & mask) == 0)
                 {
+                    // Create shallow copies of existing branch nodes along with a new branch node.
                     current.Bitmap |= mask;
                     branches = new Node[sourceBranches.Length + 1];
 
@@ -786,9 +817,11 @@ namespace Logos.Entities
                 }
                 else
                 {
+                    // Create shallow copies of existing branch nodes.
                     branches = sourceBranches.ToArray();
                 }
 
+                // Update the current branch node and move up to the next branch node.
                 current.Children = branches;
                 current = ref branches[branchIndex];
                 mask = 1 << (hashCode >>>= 5);
@@ -801,8 +834,11 @@ namespace Logos.Entities
             EntityGrouping[][] twigs;
             EntityGrouping[] leaves;
 
+            // Construct the twig and leaf nodes necessary to accommodate the new item.
             if ((current.Bitmap & mask) == 0)
             {
+                // Create shallow copies of existing twig nodes along with a new twig node, which
+                // will contain the item as its sole child node.
                 current.Bitmap |= mask;
                 twigs = new EntityGrouping[sourceTwigs.Length + 1][];
 
@@ -815,6 +851,8 @@ namespace Logos.Entities
             }
             else
             {
+                // Create shallow copies of existing twig nodes and insert the item to its array of
+                // children.
                 ReadOnlySpan<EntityGrouping> sourceLeaves =
                     new ReadOnlySpan<EntityGrouping>(sourceTwigs[twigIndex]);
                 int leafIndex = 0;
@@ -823,11 +861,15 @@ namespace Logos.Entities
                 {
                     EntityGrouping leaf = sourceLeaves[leafIndex];
 
+                    // Do not throw when the item is already in the trie. Just discard the
+                    // previously allocated nodes and have the garbage collection clean them up.
                     if (leaf == item)
                     {
                         return this;
                     }
 
+                    // If a duplicate key has been found, determine whether to throw an exception
+                    // or replace the existing leaf node with the item.
                     if (leaf.Key.ComponentBitmap.SequenceEqual(componentBitmap))
                     {
                         if (throwOnDuplicateKey)
@@ -839,6 +881,8 @@ namespace Logos.Entities
                         break;
                     }
 
+                    // If a leaf node with an equivalent key could not be found, insert the item as
+                    // a new leaf in the twig's array of children.
                     if (++leafIndex == sourceLeaves.Length)
                     {
                         leaves = new EntityGrouping[sourceLeaves.Length + 1];
@@ -859,6 +903,8 @@ namespace Logos.Entities
 
         private EntityLookup RemoveItem(ReadOnlySpan<int> componentBitmap, EntityGrouping? comparand)
         {
+            // See the top comment in the FindItem method for information on how hash codes are used
+            // to traverse the trie.
             int hashCode = BitmapOperations.GetHashCode(componentBitmap);
             int mask = 1 << hashCode;
             int indexQueue = 0;
@@ -867,8 +913,10 @@ namespace Logos.Entities
             Node root = m_root;
             Node node = root;
 
+            // Climb up the branch nodes until a twig node has been reached.
             for (int level = 0; level < TwigLevel; level++)
             {
+                // Return self when a path to the next branch node does not exist.
                 if ((node.Bitmap & mask) == 0)
                 {
                     return this;
@@ -877,17 +925,22 @@ namespace Logos.Entities
                 Node[] branches = (Node[])node.Children;
                 int branchIndex = GetChildIndex(node.Bitmap, mask);
 
+                // Determine the level at which branch nodes can be safely cut off in order to
+                // reduce the amount of allocations needed to construct the final trie.
                 if (branches.Length > 1)
                 {
                     pruneMask = mask;
                     pruneLevel = level;
                 }
 
+                // Enqueue the branch index taken so that it can be quickly retrieved during the
+                // construction of the final trie.
                 indexQueue |= branchIndex << level * 5;
                 node = branches[branchIndex];
                 mask = 1 << (hashCode >>>= 5);
             }
 
+            // Return self when a path to the requested twig node does not exist.
             if ((node.Bitmap & mask) == 0)
             {
                 return this;
@@ -900,12 +953,16 @@ namespace Logos.Entities
                 new ReadOnlySpan<EntityGrouping>(sourceTwigs[twigIndex]);
             int leafIndex = 0;
 
+            // Determine which leaf node contains the requested item.
             while (true)
             {
                 EntityGrouping leaf = sourceLeaves[leafIndex];
 
                 if (leaf.Key.ComponentBitmap.SequenceEqual(componentBitmap))
                 {
+                    // Check if the caller is requesting to remove a specific item, or any item with
+                    // a specific key. The final trie will only be constructed if either one of the
+                    // following conditions are satisfied.
                     if (comparand == null || comparand == leaf)
                     {
                         break;
@@ -914,6 +971,7 @@ namespace Logos.Entities
                     return this;
                 }
 
+                // Return self if the requested item could not be found among the leaf nodes.
                 if (++leafIndex == sourceLeaves.Length)
                 {
                     return this;
@@ -922,6 +980,8 @@ namespace Logos.Entities
 
             if (sourceLeaves.Length > 1)
             {
+                // Create a shallow copy of the twig nodes and remove the item from the source twig
+                // node's array of children.
                 EntityGrouping[][]? twigs = sourceTwigs.ToArray();
                 EntityGrouping[] leaves = new EntityGrouping[sourceLeaves.Length - 1];
                 Span<EntityGrouping> destinationLeaves = new Span<EntityGrouping>(leaves);
@@ -934,6 +994,8 @@ namespace Logos.Entities
             }
             else if ((node.Bitmap ^= mask) != 0)
             {
+                // Create a shallow copy of the twig nodes and prune the twig node containing the
+                // item to remove.
                 EntityGrouping[][]? twigs = new EntityGrouping[sourceTwigs.Length - 1][];
                 Span<EntityGrouping[]> destinationTwigs = new Span<EntityGrouping[]>(twigs);
 
@@ -944,11 +1006,13 @@ namespace Logos.Entities
             }
             else if (pruneLevel == -1)
             {
+                // Return an empty trie if there was only one item in the trie.
                 return s_empty;
             }
 
             ref Node current = ref root;
 
+            // Create shallow copies of the branch nodes that should be preserved in the final trie.
             while (pruneLevel > 0)
             {
                 Node[] branches = new ReadOnlySpan<Node>((Node[])current.Children).ToArray();
@@ -959,8 +1023,12 @@ namespace Logos.Entities
                 pruneLevel--;
             }
 
+            // Check if the twig node containing the item among its children should be preserved in
+            // the final trie.
             if (node.Bitmap == 0)
             {
+                // If the twig node needs to be excluded from the final trie, prune the branch node
+                // connecting it to the rest of the trie.
                 ReadOnlySpan<Node> sourceBranches = new ReadOnlySpan<Node>((Node[])current.Children);
                 Node[] branches = new Node[sourceBranches.Length - 1];
                 Span<Node> destinationBranches = new Span<Node>(branches);
@@ -973,6 +1041,9 @@ namespace Logos.Entities
             }
             else
             {
+                // If the twig node should be preserved in the final trie, then assign the current
+                // node to the updated twig node. This is the only case where assigning the twig
+                // node directly to the current node is valid.
                 current = node;
             }
 
@@ -1045,6 +1116,7 @@ namespace Logos.Entities
                     return false;
                 }
 
+                // Check leaf nodes for the next item.
                 EntityGrouping[] leaves = m_leaves!;
                 int index = m_leafIndex + 1;
 
@@ -1056,6 +1128,8 @@ namespace Logos.Entities
                     return true;
                 }
 
+                // If the next item could not be retrieved from the leaf nodes, then try to find one
+                // in the leaf nodes from the next twig node.
                 EntityGrouping[][] twigs = m_twigs!;
                 int indexStack = m_indexStack;
 
@@ -1073,12 +1147,15 @@ namespace Logos.Entities
                     return true;
                 }
 
+                // If the next twig node could not be found, then the branch nodes need to be
+                // traversed via a depth-first search in order to find the next item.
                 ref JaggedNodeArray subtrie = ref m_subtrie;
                 int level = TwigLevel;
                 Array children;
 
                 indexStack >>>= 2;
 
+                // Climb down all fully explored branch nodes.
                 while (true)
                 {
                     int subtrieIndex = level - 1;
@@ -1097,6 +1174,7 @@ namespace Logos.Entities
                     level = subtrieIndex;
                 }
 
+                // Climb up to the twig node containing the next item in its leaf nodes.
                 while (level < TwigLevel)
                 {
                     Node[] branches = subtrie[level++] = (Node[])children;
@@ -1105,6 +1183,7 @@ namespace Logos.Entities
                     indexStack <<= 5;
                 }
 
+                // Retrieve the next item from the first leaf node in the twig node.
                 twigs = (EntityGrouping[][])children;
                 leaves = twigs[0];
 
@@ -1126,11 +1205,13 @@ namespace Logos.Entities
                 EntityLookup lookup = m_lookup;
                 int count = lookup.m_count;
 
+                // Return early if the source lookup was empty.
                 if (count == 0)
                 {
                     return;
                 }
 
+                // Set up a stack of branch nodes to traverse once enumeration starts.
                 ref JaggedNodeArray subtrie = ref m_subtrie;
                 Array children = lookup.m_root.Children;
 
@@ -1141,6 +1222,8 @@ namespace Logos.Entities
                     children = branches[0].Children;
                 }
 
+                // Get the first twig node encountered and retrieve the array of leaf nodes
+                // containing the first set of items.
                 EntityGrouping[][] twigs = (EntityGrouping[][])children;
                 EntityGrouping[] leaves = twigs[0];
 
