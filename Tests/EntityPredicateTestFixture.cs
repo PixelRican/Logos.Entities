@@ -340,9 +340,9 @@ namespace Logos.Entities.Tests
                     0 => EntityPredicate.Create(arguments, arguments, arguments),
                     1 => EntityPredicate.Create(collection, collection, collection),
                     2 => EntityPredicate.Create(span, span, span),
-                    3 => EntityPredicate.Require(arguments).Include(collection).Exclude(span).Construct(),
-                    4 => EntityPredicate.Require(collection).Include(span).Exclude(arguments).Construct(),
-                    _ => EntityPredicate.Require(span).Include(arguments).Exclude(collection).Construct(),
+                    3 => EntityPredicate.Require(arguments).Include(collection).Exclude(span).ToPredicate(),
+                    4 => EntityPredicate.Require(collection).Include(span).Exclude(arguments).ToPredicate(),
+                    _ => EntityPredicate.Require(span).Include(arguments).Exclude(collection).ToPredicate(),
                 };
 
                 using (Assert.EnterMultipleScope())
@@ -380,7 +380,7 @@ namespace Logos.Entities.Tests
         }
 
         [Test]
-        public static void MatchesTest()
+        public static void TestTest()
         {
             EntityPredicate predicate = EntityPredicate.Create(
                 new ComponentType[]
@@ -429,7 +429,7 @@ namespace Logos.Entities.Tests
                     })
                 };
 
-                Assert.That(predicate.Matches(archetype));
+                Assert.That(predicate.Test(archetype));
             }
 
             for (int mismatch = 0; mismatch < 5; mismatch++)
@@ -464,7 +464,7 @@ namespace Logos.Entities.Tests
                     })
                 };
 
-                Assert.That(predicate.Matches(archetype), Is.False);
+                Assert.That(predicate.Test(archetype), Is.False);
             }
         }
     }

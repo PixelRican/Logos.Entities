@@ -9,8 +9,8 @@ using System.Linq;
 namespace Logos.Entities
 {
     /// <summary>
-    /// Represents a predicate that determines whether archetypes match a set of criteria in terms
-    /// of required, included, and excluded component types.
+    /// Represents a predicate that determines whether archetypes satisfy a set of conditions in
+    /// terms of required, included, and excluded component types.
     /// </summary>
     public sealed class EntityPredicate : IEquatable<EntityPredicate>
     {
@@ -44,8 +44,8 @@ namespace Logos.Entities
         }
 
         private EntityPredicate(ComponentType[] requiredComponentTypes, int[] requiredComponentBitmap,
-                             ComponentType[] includedComponentTypes, int[] includedComponentBitmap,
-                             ComponentType[] excludedComponentTypes, int[] excludedComponentBitmap)
+                                ComponentType[] includedComponentTypes, int[] includedComponentBitmap,
+                                ComponentType[] excludedComponentTypes, int[] excludedComponentBitmap)
         {
             m_requiredComponentTypes = requiredComponentTypes;
             m_includedComponentTypes = includedComponentTypes;
@@ -56,10 +56,12 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets an <see cref="EntityPredicate"/> that matches all archetypes.
+        /// Gets an <see cref="EntityPredicate"/> that is satisfiable over the set of all possible
+        /// archetypes.
         /// </summary>
         /// <returns>
-        /// An <see cref="EntityPredicate"/> that matches all archetypes.
+        /// An <see cref="EntityPredicate"/> that is satisfiable over the set of all possible
+        /// archetypes.
         /// </returns>
         public static EntityPredicate Universal
         {
@@ -67,12 +69,12 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Gets a read-only span of component types that archetypes must contain in order to match
-        /// with the <see cref="EntityPredicate"/>.
+        /// Gets a read-only span of component types that archetypes must contain in order to
+        /// satisfy the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
-        /// A read-only span of component types that archetypes must contain in order to match with
-        /// the <see cref="EntityPredicate"/>.
+        /// A read-only span of component types that archetypes must contain in order to satisfy the
+        /// <see cref="EntityPredicate"/>.
         /// </returns>
         public ReadOnlySpan<ComponentType> RequiredComponentTypes
         {
@@ -81,11 +83,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only span of component types that archetypes must contain at least one
-        /// instance of in order to match with the <see cref="EntityPredicate"/>.
+        /// instance of in order to satisfy the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
         /// A read-only span of component types that, if not empty, archetypes must contain at least
-        /// one instance of in order to match with the <see cref="EntityPredicate"/>.
+        /// one instance of in order to satisfy the <see cref="EntityPredicate"/>.
         /// </returns>
         public ReadOnlySpan<ComponentType> IncludedComponentTypes
         {
@@ -94,11 +96,11 @@ namespace Logos.Entities
 
         /// <summary>
         /// Gets a read-only span of component types that archetypes must not contain in order to
-        /// match with the <see cref="EntityPredicate"/>.
+        /// satisfy the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <returns>
-        /// A read-only span of component types that archetypes must not contain in order to match
-        /// with the <see cref="EntityPredicate"/>.
+        /// A read-only span of component types that archetypes must not contain in order to satisfy
+        /// the <see cref="EntityPredicate"/>.
         /// </returns>
         public ReadOnlySpan<ComponentType> ExcludedComponentTypes
         {
@@ -179,9 +181,9 @@ namespace Logos.Entities
         /// The array of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific component
-        /// types from <paramref name="requiredArray"/>, <paramref name="includedArray"/>, and
-        /// <paramref name="excludedArray"/>, or <see cref="Universal"/> if
+        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific
+        /// component types from <paramref name="requiredArray"/>, <paramref name="includedArray"/>,
+        /// and <paramref name="excludedArray"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredArray"/>, <paramref name="includedArray"/>, and
         /// <paramref name="excludedArray"/> do not contain any component types.
         /// </returns>
@@ -195,8 +197,8 @@ namespace Logos.Entities
         /// <paramref name="excludedArray"/> is <see langword="null"/>.
         /// </exception>
         public static EntityPredicate Create(ComponentType[] requiredArray,
-                                          ComponentType[] includedArray,
-                                          ComponentType[] excludedArray)
+                                             ComponentType[] includedArray,
+                                             ComponentType[] excludedArray)
         {
             ArgumentNullException.ThrowIfNull(requiredArray);
             ArgumentNullException.ThrowIfNull(includedArray);
@@ -241,11 +243,12 @@ namespace Logos.Entities
         /// The collection of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific component
-        /// types from <paramref name="requiredCollection"/>, <paramref name="includedCollection"/>, and
-        /// <paramref name="excludedCollection"/>, or <see cref="Universal"/> if
-        /// <paramref name="requiredCollection"/>, <paramref name="includedCollection"/>, and
-        /// <paramref name="excludedCollection"/> do not contain any component types.
+        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific
+        /// component types from <paramref name="requiredCollection"/>,
+        /// <paramref name="includedCollection"/>, and <paramref name="excludedCollection"/>, or
+        /// <see cref="Universal"/> if <paramref name="requiredCollection"/>,
+        /// <paramref name="includedCollection"/>, and <paramref name="excludedCollection"/> do not
+        /// contain any component types.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="requiredCollection"/> is <see langword="null"/>.
@@ -257,8 +260,8 @@ namespace Logos.Entities
         /// <paramref name="excludedCollection"/> is <see langword="null"/>.
         /// </exception>
         public static EntityPredicate Create(IEnumerable<ComponentType> requiredCollection,
-                                          IEnumerable<ComponentType> includedCollection,
-                                          IEnumerable<ComponentType> excludedCollection)
+                                             IEnumerable<ComponentType> includedCollection,
+                                             IEnumerable<ComponentType> excludedCollection)
         {
             return CreateInstance(requiredCollection.ToArray(),
                                   includedCollection.ToArray(),
@@ -296,15 +299,15 @@ namespace Logos.Entities
         /// The span of excluded component types.
         /// </param>
         /// <returns>
-        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific component
-        /// types from <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>, and
-        /// <paramref name="excludedSpan"/>, or <see cref="Universal"/> if
+        /// An <see cref="EntityPredicate"/> that requires, includes, and excludes specific
+        /// component types from <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>,
+        /// and <paramref name="excludedSpan"/>, or <see cref="Universal"/> if
         /// <paramref name="requiredSpan"/>, <paramref name="includedSpan"/>, and
         /// <paramref name="excludedSpan"/> do not contain any component types.
         /// </returns>
         public static EntityPredicate Create(ReadOnlySpan<ComponentType> requiredSpan,
-                                          ReadOnlySpan<ComponentType> includedSpan,
-                                          ReadOnlySpan<ComponentType> excludedSpan)
+                                             ReadOnlySpan<ComponentType> includedSpan,
+                                             ReadOnlySpan<ComponentType> excludedSpan)
         {
             return CreateInstance(requiredSpan.ToArray(),
                                   includedSpan.ToArray(),
@@ -314,12 +317,12 @@ namespace Logos.Entities
         /// <summary>
         /// Creates an <see cref="Builder"/> that can be used to construct
         /// <see cref="EntityPredicate"/> instances that require, include, and exclude specific
-        /// component types from a variety of inputs.
+        /// component types from a variety of data sources.
         /// </summary>
         /// <returns>
         /// An <see cref="Builder"/> that can be used to construct <see cref="EntityPredicate"/>
         /// instances that require, include, and exclude specific component types from a variety of
-        /// inputs.
+        /// data sources.
         /// </returns>
         public static Builder CreateBuilder()
         {
@@ -504,10 +507,11 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityPredicate"/> requires the specified component type.
+        /// Determines whether the <see cref="EntityPredicate"/> requires the specified component
+        /// type.
         /// </summary>
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The component type to query.
         /// </param>
         /// <returns>
         /// <see langword="true"/> if the <see cref="EntityPredicate"/> requires
@@ -520,10 +524,11 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the <see cref="EntityPredicate"/> includes the specified component type.
+        /// Determines whether the <see cref="EntityPredicate"/> includes the specified component
+        /// type.
         /// </summary>
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The component type to query.
         /// </param>
         /// <returns>
         /// <see langword="true"/> if the <see cref="EntityPredicate"/> includes
@@ -539,7 +544,7 @@ namespace Logos.Entities
         /// Determines whether the <see cref="EntityPredicate"/> excludes the specified component type.
         /// </summary>
         /// <param name="componentType">
-        /// The component type to search for.
+        /// The component type to query.
         /// </param>
         /// <returns>
         /// <see langword="true"/> if the <see cref="EntityPredicate"/> excludes
@@ -552,17 +557,17 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Determines whether the specified archetype meets the criteria defined by the
-        /// <see cref="EntityPredicate"/>.
+        /// Determines whether the specified archetype satisfies the <see cref="EntityPredicate"/>.
         /// </summary>
         /// <param name="archetype">
-        /// The archetype to compare against the criteria defined by the <see cref="EntityPredicate"/>.
+        /// The archetype to compare against the set of conditions defined by the
+        /// <see cref="EntityPredicate"/>.
         /// </param>
         /// <returns>
-        /// <see langword="true"/> if <paramref name="archetype"/> meets the criteria defined by the
+        /// <see langword="true"/> if <paramref name="archetype"/> satisfies the
         /// <see cref="EntityPredicate"/>; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool Matches(EntityArchetype archetype)
+        public bool Test(EntityArchetype archetype)
         {
             if (archetype is null)
             {
@@ -570,60 +575,65 @@ namespace Logos.Entities
             }
 
             // Compare against the required component bitmap.
-            ReadOnlySpan<int> targetBitmap = archetype.ComponentBitmap;
-            int[] sourceBitmap = m_requiredComponentBitmap;
-            int length = sourceBitmap.Length;
+            ReadOnlySpan<int> targetComponentBitmap = archetype.ComponentBitmap;
+            int[] sourceComponentBitmap = m_requiredComponentBitmap;
+            int length = sourceComponentBitmap.Length;
 
-            if (length > targetBitmap.Length)
+            if (length > targetComponentBitmap.Length)
             {
                 return false;
             }
 
             for (int i = 0; i < length; i++)
             {
-                if ((sourceBitmap[i] & ~targetBitmap[i]) != 0)
+                if ((sourceComponentBitmap[i] & ~targetComponentBitmap[i]) != 0)
                 {
                     return false;
                 }
             }
 
             // Compare against the included component bitmap.
-            sourceBitmap = m_includedComponentBitmap;
-            length = sourceBitmap.Length;
+            sourceComponentBitmap = m_includedComponentBitmap;
+            length = sourceComponentBitmap.Length;
 
             if (length > 0)
             {
-                if (length > targetBitmap.Length)
+                if (length > targetComponentBitmap.Length)
                 {
-                    length = targetBitmap.Length;
+                    length = targetComponentBitmap.Length;
                 }
 
-                int index = 0;
+                int i = 0;
 
-                while (index < length && (sourceBitmap[index] & targetBitmap[index]) == 0)
+                while (true)
                 {
-                    index++;
-                }
+                    if (i == length)
+                    {
+                        return false;
+                    }
 
-                if (index == length)
-                {
-                    return false;
+                    if ((sourceComponentBitmap[i] & targetComponentBitmap[i]) != 0)
+                    {
+                        break;
+                    }
+
+                    i++;
                 }
             }
 
             // Compare against the excluded component bitmap.
-            sourceBitmap = m_excludedComponentBitmap;
-            length = Math.Min(sourceBitmap.Length, targetBitmap.Length);
+            sourceComponentBitmap = m_excludedComponentBitmap;
+            length = Math.Min(sourceComponentBitmap.Length, targetComponentBitmap.Length);
 
             for (int i = 0; i < length; i++)
             {
-                if ((sourceBitmap[i] & targetBitmap[i]) != 0)
+                if ((sourceComponentBitmap[i] & targetComponentBitmap[i]) != 0)
                 {
                     return false;
                 }
             }
 
-            // Return true after passing every comparison.
+            // Return true after passing all comparisons.
             return true;
         }
 
@@ -644,7 +654,7 @@ namespace Logos.Entities
         /// <inheritdoc cref="IEquatable{T}.Equals"/>
         public bool Equals(EntityPredicate? other)
         {
-            return ReferenceEquals(other, this)
+            return ReferenceEquals(this, other)
                 || other is not null
                 && RequiredComponentBitmap.SequenceEqual(other.RequiredComponentBitmap)
                 && IncludedComponentBitmap.SequenceEqual(other.IncludedComponentBitmap)
@@ -688,16 +698,16 @@ namespace Logos.Entities
         }
 
         private static EntityPredicate CreateInstance(ComponentType[] requiredComponentTypes,
-                                                   ComponentType[] includedComponentTypes,
-                                                   ComponentType[] excludedComponentTypes)
+                                                      ComponentType[] includedComponentTypes,
+                                                      ComponentType[] excludedComponentTypes)
         {
             if (TryBuild(ref requiredComponentTypes, out int[] requiredComponentBitmap) |
                 TryBuild(ref includedComponentTypes, out int[] includedComponentBitmap) |
                 TryBuild(ref excludedComponentTypes, out int[] excludedComponentBitmap))
             {
                 return new EntityPredicate(requiredComponentTypes, requiredComponentBitmap,
-                                        includedComponentTypes, includedComponentBitmap,
-                                        excludedComponentTypes, excludedComponentBitmap);
+                                           includedComponentTypes, includedComponentBitmap,
+                                           excludedComponentTypes, excludedComponentBitmap);
             }
 
             return s_universal;
@@ -724,13 +734,15 @@ namespace Logos.Entities
                 return false;
             }
 
-            int[] localComponentBitmap = new int[previousComponentType.Index + 32 >> 5];
+            int[] localComponentBitmap = componentBitmap = new int[previousComponentType.Index + 32 >> 5];
             int count = 0;
 
             previousComponentType = null;
 
-            foreach (ComponentType? currentComponentType in localComponentTypes)
+            for (int i = 0; i < localComponentTypes.Length; i++)
             {
+                ComponentType? currentComponentType = localComponentTypes[i];
+
                 if (currentComponentType != previousComponentType)
                 {
                     int componentTypeIndex = currentComponentType.Index;
@@ -740,9 +752,7 @@ namespace Logos.Entities
                 }
             }
 
-            Array.Resize(ref localComponentTypes, count);
-            componentTypes = localComponentTypes;
-            componentBitmap = localComponentBitmap;
+            Array.Resize(ref componentTypes, count);
             return true;
         }
 
@@ -764,8 +774,9 @@ namespace Logos.Entities
         }
 
         /// <summary>
-        /// Represents a builder that can be used to construct <see cref="EntityPredicate"/> instances
-        /// that require, include, and exclude specific component types from a variety of inputs.
+        /// Represents a builder that can be used to construct <see cref="EntityPredicate"/>
+        /// instances that require, include, and exclude specific component types from a variety of
+        /// data sources.
         /// </summary>
         public sealed class Builder
         {
@@ -796,27 +807,27 @@ namespace Logos.Entities
             /// component types specified by the <see cref="Builder"/>.
             /// </summary>
             /// <returns>
-            /// An <see cref="EntityPredicate"/> that requires, includes, and excludes component types
-            /// specified by the <see cref="Builder"/>, or <see cref="Universal"/> if the
+            /// An <see cref="EntityPredicate"/> that requires, includes, and excludes component
+            /// types specified by the <see cref="Builder"/>, or <see cref="Universal"/> if the
             /// <see cref="Builder"/> does not specify any component types.
             /// </returns>
-            public EntityPredicate Construct()
+            public EntityPredicate ToPredicate()
             {
                 if (m_requiredComponentTypes.Length > 0 ||
                     m_includedComponentTypes.Length > 0 ||
                     m_excludedComponentTypes.Length > 0)
                 {
                     return new EntityPredicate(m_requiredComponentTypes, m_requiredComponentBitmap,
-                                            m_includedComponentTypes, m_includedComponentBitmap,
-                                            m_excludedComponentTypes, m_excludedComponentBitmap);
+                                               m_includedComponentTypes, m_includedComponentBitmap,
+                                               m_excludedComponentTypes, m_excludedComponentBitmap);
                 }
 
                 return s_universal;
             }
 
             /// <summary>
-            /// Sets the <see cref="Builder"/> to its default state, which specifies a criteria
-            /// identical to the one defined by <see cref="Universal"/>.
+            /// Sets the <see cref="Builder"/> to its default state, which specifies no required,
+            /// included, or excluded component types.
             /// </summary>
             [MemberNotNull(nameof(m_requiredComponentTypes), nameof(m_requiredComponentBitmap),
                            nameof(m_includedComponentTypes), nameof(m_includedComponentBitmap),
@@ -832,15 +843,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> requires specific component types from the
-            /// specified array, if any.
+            /// Sets the required component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified array, if any.
             /// </summary>
             /// <param name="array">
             /// The array of required component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             /// <exception cref="ArgumentNullException">
             /// <paramref name="array"/> is <see langword="null"/>.
@@ -852,15 +862,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> requires specific component types from the
-            /// specified collection, if any.
+            /// Sets the required component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified collection, if any.
             /// </summary>
             /// <param name="collection">
             /// The collection of required component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             /// <exception cref="ArgumentNullException">
             /// <paramref name="collection"/> is <see langword="null"/>.
@@ -871,15 +880,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> requires specific component types from the
-            /// specified span, if any.
+            /// Sets the required component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified span, if any.
             /// </summary>
             /// <param name="span">
             /// The span of required component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             public Builder Require(ReadOnlySpan<ComponentType> span)
             {
@@ -887,15 +895,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> includes specific component types from the
-            /// specified array, if any.
+            /// Sets the included component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified array, if any.
             /// </summary>
             /// <param name="array">
             /// The array of included component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             /// <exception cref="ArgumentNullException">
             /// <paramref name="array"/> is <see langword="null"/>.
@@ -907,15 +914,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> includes specific component types from the
-            /// specified collection, if any.
+            /// Sets the included component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified collection, if any.
             /// </summary>
             /// <param name="collection">
             /// The collection of included component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             /// <exception cref="ArgumentNullException">
             /// <paramref name="collection"/> is <see langword="null"/>.
@@ -926,15 +932,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> includes specific component types from the
-            /// specified span, if any.
+            /// Sets the included component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified span, if any.
             /// </summary>
             /// <param name="span">
             /// The span of included component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             public Builder Include(ReadOnlySpan<ComponentType> span)
             {
@@ -942,15 +947,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> excludes specific component types from the
-            /// specified array, if any.
+            /// Sets the excluded component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified array, if any.
             /// </summary>
             /// <param name="array">
             /// The array of excluded component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             /// <exception cref="ArgumentNullException">
             /// <paramref name="array"/> is <see langword="null"/>.
@@ -962,15 +966,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> excludes specific component types from the
-            /// specified collection, if any.
+            /// Sets the excluded component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified collection, if any.
             /// </summary>
             /// <param name="collection">
             /// The collection of excluded component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             /// <exception cref="ArgumentNullException">
             /// <paramref name="collection"/> is <see langword="null"/>.
@@ -981,15 +984,14 @@ namespace Logos.Entities
             }
 
             /// <summary>
-            /// Updates the criteria specified by the <see cref="Builder"/> such that the
-            /// constructed <see cref="EntityPredicate"/> excludes specific component types from the
-            /// specified span, if any.
+            /// Sets the excluded component types specified by the <see cref="Builder"/> to the
+            /// component types in the specified span, if any.
             /// </summary>
             /// <param name="span">
             /// The span of excluded component types.
             /// </param>
             /// <returns>
-            /// The <see cref="Builder"/> which can be used to chain method calls.
+            /// The <see cref="Builder"/>, which can be used to chain method calls.
             /// </returns>
             public Builder Exclude(ReadOnlySpan<ComponentType> span)
             {

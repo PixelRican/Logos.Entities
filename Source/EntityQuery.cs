@@ -103,7 +103,7 @@ namespace Logos.Entities
 
             foreach (EntityGrouping grouping in lookup)
             {
-                if (predicate.Matches(grouping.Key))
+                if (predicate.Test(grouping.Key))
                 {
                     array[count++] = grouping;
                 }
