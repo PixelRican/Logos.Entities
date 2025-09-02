@@ -18,6 +18,8 @@ namespace Logos.Entities
         private const DynamicallyAccessedMemberTypes FieldMembers =
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.NonPublicFields;
+        private const BindingFlags InstanceMembers =
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static int s_nextIndex = -1;
 
@@ -178,9 +180,6 @@ namespace Logos.Entities
 
             private static ComponentTypeCategory GetCategory()
             {
-                const BindingFlags InstanceMembers = BindingFlags.Instance |
-                    BindingFlags.Public | BindingFlags.NonPublic;
-
                 if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
                     return ComponentTypeCategory.Managed;
